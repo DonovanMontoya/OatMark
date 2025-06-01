@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import MapView, {Marker} from 'react-native-maps';
+import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import {StyleSheet, Text, View} from 'react-native';
 
