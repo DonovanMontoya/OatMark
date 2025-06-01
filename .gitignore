@@ -1,0 +1,10 @@
+### ReactNative template
+# React Native Stack Base
+
+.expo
+__generated__
+node_modules
+*.log
+*.DS_Store
+*.idea/
+.env
