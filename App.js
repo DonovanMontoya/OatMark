@@ -1,7 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
 import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
+import {TouchableOpacity} from 'react-native';
 
 const mockShops = [
     {
@@ -14,16 +15,17 @@ const mockShops = [
     },
     {
         id: 2,
-        name: "Bean Enthusiast",
+        name: "Arabica Coffee",
         oatMilk: "Califia",
-        latitude: 37.78825,
-        longitude: -122.4324,
+        latitude: 43.656982,
+        longitude: -70.257258,
         image: "https://example.com/image1.jpg",
     },
 ];
 
 export default function App() {
     const [location, setLocation] = useState(null);
+    const mapRef = useRef(null);
 
     useEffect(() => {
         (async () => {
@@ -44,6 +46,7 @@ export default function App() {
         <View style={styles.container}>
             {location ? (
                 <MapView
+                    ref={mapRef}
                     style={styles.map}
                     showsUserLocation={true}
                     followsUserLocation={true}
@@ -69,20 +72,36 @@ export default function App() {
             )}
             <Text style={styles.label}>Welcome to OatMark</Text>
 
-            {/* Show Mock Shot list*/}
+            {/* Show a Mock Shop list*/}
             <FlatList
                 data={mockShops}
                 keyExtractor={item => item.id.toString()}
-                renderItem={({ item }) => (
-                    <View style={styles.card}>
-                        <Image source={{ uri: item.image }} style={styles.image} />
-                        <View style={styles.cardText}>
-                            <Text style={styles.shopName}>{item.name}</Text>
-                            <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                renderItem={({item}) => (
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (mapRef.current) {
+                                mapRef.current.animateToRegion(
+                                    {
+                                        latitude: item.latitude,
+                                        longitude: item.longitude,
+                                        latitudeDelta: 0.01,
+                                        longitudeDelta: 0.01,
+                                    },
+                                    1000
+                                );
+                            }
+                        }}
+                    >
+                        <View style={styles.card}>
+                            <Image source={{uri: item.image}} style={styles.image}/>
+                            <View style={styles.cardText}>
+                                <Text style={styles.shopName}>{item.name}</Text>
+                                <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                            </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 )}
-                />
+            />
         </View>
     );
 }
