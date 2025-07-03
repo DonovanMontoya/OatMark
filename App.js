@@ -3,28 +3,13 @@ import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
 import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
 import {TouchableOpacity} from 'react-native';
+import { db } from './services/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
-const mockShops = [
-    {
-        id: 1,
-        name: "Bean Flicker",
-        oatMilk: "Califia",
-        latitude: 37.78825,
-        longitude: -122.4324,
-        image: "https://example.com/image1.jpg",
-    },
-    {
-        id: 2,
-        name: "Arabica Coffee",
-        oatMilk: "Califia",
-        latitude: 43.656982,
-        longitude: -70.257258,
-        image: "https://example.com/image1.jpg",
-    },
-];
 
 export default function App() {
     const [location, setLocation] = useState(null);
+    const [shops, setShops] = useState([]);
     const mapRef = useRef(null);
 
     useEffect(() => {
@@ -42,6 +27,17 @@ export default function App() {
         })();
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'shops'), (querySnapshot) => {
+            const shopsData = [];
+            querySnapshot.forEach((doc) => {
+                shopsData.push({ id: doc.id, ...doc.data() });
+            });
+            setShops(shopsData);
+        });
+        return unsubscribe;
+    }, []);
+
     return (
         <View style={styles.container}>
             {location ? (
@@ -57,8 +53,7 @@ export default function App() {
                         longitudeDelta: 0.01,
                     }}
                 >
-                    {/* 🔹 Show mock coffee shop markers */}
-                    {mockShops.map(shop => (
+                    {shops.map(shop => (
                         <Marker
                             key={shop.id}
                             coordinate={{latitude: shop.latitude, longitude: shop.longitude}}
@@ -72,10 +67,9 @@ export default function App() {
             )}
             <Text style={styles.label}>Welcome to OatMark</Text>
 
-            {/* Show a Mock Shop list*/}
             <FlatList
-                data={mockShops}
-                keyExtractor={item => item.id.toString()}
+                data={shops}
+                keyExtractor={item => item.id}
                 renderItem={({item}) => (
                     <TouchableOpacity
                         onPress={() => {
