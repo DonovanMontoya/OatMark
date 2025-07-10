@@ -1,10 +1,9 @@
 import React, {useEffect, useRef, useState} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
-import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
-import {TouchableOpacity} from 'react-native';
-import { db } from './services/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import {FlatList, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {db} from './services/firebase';
+import {collection, onSnapshot} from 'firebase/firestore';
 
 
 export default function App() {
@@ -28,14 +27,13 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, 'shops'), (querySnapshot) => {
+        return onSnapshot(collection(db, 'coffee_shops'), (querySnapshot) => {
             const shopsData = [];
             querySnapshot.forEach((doc) => {
-                shopsData.push({ id: doc.id, ...doc.data() });
+                shopsData.push({id: doc.id, ...doc.data()});
             });
             setShops(shopsData);
         });
-        return unsubscribe;
     }, []);
 
     return (
