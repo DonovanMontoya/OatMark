@@ -97,7 +97,10 @@ export default function App() {
                             <View style={styles.cardText}>
                                 <Text style={styles.shopName}>{item.name}</Text>
                                 <Text style={styles.oatMilk}>{item.oatMilk}</Text>
-                                <Text style={styles.location}>{item.location}</Text>
+                                <Text style={styles.upCharge}>Upcharge for Alternative Milk: {item.upCharge}</Text>
+                                <Text style={styles.location}>
+                                    {`${item.location.latitude.toFixed(6)}, ${item.location.longitude.toFixed(6)}`}
+                                </Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -143,6 +146,10 @@ const styles = StyleSheet.create({
     },
     location: {
         fontSize: 14,
+        color: '#666',
+    },
+    upCharge: {
+        fontSize: 15,
         color: '#666',
     },
     oatMilk: {
