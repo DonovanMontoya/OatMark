@@ -28,9 +28,14 @@ export default function App() {
 
     useEffect(() => {
         return onSnapshot(collection(db, 'coffee_shops'), (querySnapshot) => {
-            const shopsData = [];
-            querySnapshot.forEach((doc) => {
-                shopsData.push({id: doc.id, ...doc.data()});
+            const shopsData = querySnapshot.docs.map((doc) => {
+                const data = doc.data();
+                const geo = data.location; // Firestore GeoPoint
+                return {
+                    id: doc.id,
+                    ...data,
+                    location: { latitude: geo.latitude, longitude: geo.longitude },
+                };
             });
             setShops(shopsData);
         });
@@ -54,7 +59,10 @@ export default function App() {
                     {shops.map(shop => (
                         <Marker
                             key={shop.id}
-                            coordinate={{latitude: shop.latitude, longitude: shop.longitude}}
+                            coordinate={{
+                                latitude: shop.location.latitude,
+                                longitude: shop.location.longitude,
+                            }}
                             title={shop.name}
                             description={`Oat Milk: ${shop.oatMilk}`}
                         />
@@ -74,8 +82,8 @@ export default function App() {
                             if (mapRef.current) {
                                 mapRef.current.animateToRegion(
                                     {
-                                        latitude: item.latitude,
-                                        longitude: item.longitude,
+                                        latitude: item.location.latitude,
+                                        longitude: item.location.longitude,
                                         latitudeDelta: 0.01,
                                         longitudeDelta: 0.01,
                                     },
@@ -89,6 +97,7 @@ export default function App() {
                             <View style={styles.cardText}>
                                 <Text style={styles.shopName}>{item.name}</Text>
                                 <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                                <Text style={styles.location}>{item.location}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -131,6 +140,10 @@ const styles = StyleSheet.create({
     shopName: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    location: {
+        fontSize: 14,
+        color: '#666',
     },
     oatMilk: {
         fontSize: 14,
