@@ -1,6 +1,6 @@
 /**
  * Configure Firebase and export Firestore database instance.
- * Replace placeholders in firebaseConfig with your Firebase project credentials.
+ * Enable long-polling to avoid WebChannel transport errors in React Native / web environments.
  */
 import {
   VITE_FIREBASE_API_KEY,
@@ -13,7 +13,7 @@ import {
 } from '@env';
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: VITE_FIREBASE_API_KEY,
@@ -26,6 +26,13 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+/**
+ * Create and configure Firestore with long-polling for React Native / web environments
+ * to avoid transport errors when streaming is not supported.
+ */
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false,
+});
 
 export { db };
