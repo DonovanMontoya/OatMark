@@ -1,30 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
-import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
-import {TouchableOpacity} from 'react-native';
+import {FlatList, Image, Text, TouchableOpacity, View} from 'react-native';
+import styles from './styles';
+import {db} from './services/firebase';
+import {collection, onSnapshot} from 'firebase/firestore';
 
-const mockShops = [
-    {
-        id: 1,
-        name: "Bean Flicker",
-        oatMilk: "Califia",
-        latitude: 37.78825,
-        longitude: -122.4324,
-        image: "https://example.com/image1.jpg",
-    },
-    {
-        id: 2,
-        name: "Arabica Coffee",
-        oatMilk: "Califia",
-        latitude: 43.656982,
-        longitude: -70.257258,
-        image: "https://example.com/image1.jpg",
-    },
-];
 
 export default function App() {
     const [location, setLocation] = useState(null);
+    const [shops, setShops] = useState([]);
     const mapRef = useRef(null);
 
     useEffect(() => {
@@ -42,6 +27,21 @@ export default function App() {
         })();
     }, []);
 
+    useEffect(() => {
+        return onSnapshot(collection(db, 'coffee_shops'), (querySnapshot) => {
+            const shopsData = querySnapshot.docs.map((doc) => {
+                const data = doc.data();
+                const geo = data.location; // Firestore GeoPoint
+                return {
+                    id: doc.id,
+                    ...data,
+                    location: { latitude: geo.latitude, longitude: geo.longitude },
+                };
+            });
+            setShops(shopsData);
+        });
+    }, []);
+
     return (
         <View style={styles.container}>
             {location ? (
@@ -57,11 +57,13 @@ export default function App() {
                         longitudeDelta: 0.01,
                     }}
                 >
-                    {/* 🔹 Show mock coffee shop markers */}
-                    {mockShops.map(shop => (
+                    {shops.map(shop => (
                         <Marker
                             key={shop.id}
-                            coordinate={{latitude: shop.latitude, longitude: shop.longitude}}
+                            coordinate={{
+                                latitude: shop.location.latitude,
+                                longitude: shop.location.longitude,
+                            }}
                             title={shop.name}
                             description={`Oat Milk: ${shop.oatMilk}`}
                         />
@@ -72,18 +74,17 @@ export default function App() {
             )}
             <Text style={styles.label}>Welcome to OatMark</Text>
 
-            {/* Show a Mock Shop list*/}
             <FlatList
-                data={mockShops}
-                keyExtractor={item => item.id.toString()}
+                data={shops}
+                keyExtractor={item => item.id}
                 renderItem={({item}) => (
                     <TouchableOpacity
                         onPress={() => {
                             if (mapRef.current) {
                                 mapRef.current.animateToRegion(
                                     {
-                                        latitude: item.latitude,
-                                        longitude: item.longitude,
+                                        latitude: item.location.latitude,
+                                        longitude: item.location.longitude,
                                         latitudeDelta: 0.01,
                                         longitudeDelta: 0.01,
                                     },
@@ -95,8 +96,14 @@ export default function App() {
                         <View style={styles.card}>
                             <Image source={{uri: item.image}} style={styles.image}/>
                             <View style={styles.cardText}>
-                                <Text style={styles.shopName}>{item.name}</Text>
-                                <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                                <View style={styles.cardInfo}>
+                                    <Text style={styles.shopName}>{item.name}</Text>
+                                    <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                                    <Text style={styles.location}>
+                                        {`${item.location.latitude.toFixed(6)}, ${item.location.longitude.toFixed(6)}`}
+                                    </Text>
+                                </View>
+                                <Text style={styles.upCharge}>{`+${item.upCharge}`}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -105,43 +112,3 @@ export default function App() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        width: '100%',
-        height: '50%',
-    },
-    label: {
-        textAlign: 'center',
-        marginVertical: 5,
-        fontSize: 18,
-    },
-    card: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        backgroundColor: '#f2f2f2',
-        borderRadius: 8,
-    },
-    image: {
-        width: 60,
-        height: 60,
-        borderRadius: 8,
-    },
-    cardText: {
-        marginLeft: 10,
-    },
-    shopName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    oatMilk: {
-        fontSize: 14,
-        color: '#555',
-    },
-});
