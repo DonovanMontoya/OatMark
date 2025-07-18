@@ -1,7 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
-import {FlatList, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {FlatList, Image, Text, TouchableOpacity, View} from 'react-native';
+import styles from './styles';
 import {db} from './services/firebase';
 import {collection, onSnapshot} from 'firebase/firestore';
 
@@ -95,12 +96,14 @@ export default function App() {
                         <View style={styles.card}>
                             <Image source={{uri: item.image}} style={styles.image}/>
                             <View style={styles.cardText}>
-                                <Text style={styles.shopName}>{item.name}</Text>
-                                <Text style={styles.oatMilk}>{item.oatMilk}</Text>
-                                <Text style={styles.upCharge}>Upcharge for Alternative Milk: {item.upCharge}</Text>
-                                <Text style={styles.location}>
-                                    {`${item.location.latitude.toFixed(6)}, ${item.location.longitude.toFixed(6)}`}
-                                </Text>
+                                <View style={styles.cardInfo}>
+                                    <Text style={styles.shopName}>{item.name}</Text>
+                                    <Text style={styles.oatMilk}>{item.oatMilk}</Text>
+                                    <Text style={styles.location}>
+                                        {`${item.location.latitude.toFixed(6)}, ${item.location.longitude.toFixed(6)}`}
+                                    </Text>
+                                </View>
+                                <Text style={styles.upCharge}>{`+${item.upCharge}`}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -109,51 +112,3 @@ export default function App() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        width: '100%',
-        height: '50%',
-    },
-    label: {
-        textAlign: 'center',
-        marginVertical: 5,
-        fontSize: 18,
-    },
-    card: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        backgroundColor: '#f2f2f2',
-        borderRadius: 8,
-    },
-    image: {
-        width: 60,
-        height: 60,
-        borderRadius: 8,
-    },
-    cardText: {
-        marginLeft: 10,
-    },
-    shopName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    location: {
-        fontSize: 14,
-        color: '#666',
-    },
-    upCharge: {
-        fontSize: 15,
-        color: '#666',
-    },
-    oatMilk: {
-        fontSize: 14,
-        color: '#555',
-    },
-});
