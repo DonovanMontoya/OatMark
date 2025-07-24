@@ -57,4 +57,13 @@ export default StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
+    locationButton: {
+      position: 'absolute',
+      bottom: 20,
+        right: 20,
+        backgroundColor: '#333',
+        padding: 10,
+        borderRadius: 8,
+        zIndex: 1,
+    },
 });

@@ -3,6 +3,7 @@ import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
 import {FlatList, Image, Text, TouchableOpacity, View} from 'react-native';
 import styles from './styles';
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6'
 import {db} from './services/firebase';
 import {collection, onSnapshot} from 'firebase/firestore';
 
@@ -57,6 +58,21 @@ export default function App() {
                         longitudeDelta: 0.01,
                     }}
                 >
+                <TouchableOpacity style={styles.locationButton} onPress={() => {
+                    if (mapRef.current) {
+                        mapRef.current.animateToRegion(
+                            {
+                                latitude: location.latitude,
+                                longitude: location.longitude,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                            },
+                            500
+                        );
+                    }
+                }}>
+                    <FontAwesome6 name="location-arrow" size={20} color="white" iconStyle='solid' />
+                </TouchableOpacity>
                     {shops.map(shop => (
                         <Marker
                             key={shop.id}
@@ -88,7 +104,7 @@ export default function App() {
                                         latitudeDelta: 0.01,
                                         longitudeDelta: 0.01,
                                     },
-                                    1000
+                                    500
                                 );
                             }
                         }}
