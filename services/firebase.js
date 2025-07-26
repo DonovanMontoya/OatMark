@@ -2,6 +2,12 @@
  * Configure Firebase and export Firestore database instance.
  * Enable long-polling to avoid WebChannel transport errors in React Native / web environments.
  */
+import { initializeApp } from 'firebase/app';
+import {
+    initializeAuth,
+    getReactNativePersistence,
+} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   VITE_FIREBASE_API_KEY,
   VITE_FIREBASE_AUTH_DOMAIN,
@@ -11,8 +17,6 @@ import {
   VITE_FIREBASE_SENDER_ID,
   VITE_FIREBASE_APP_ID
 } from '@env';
-
-import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -26,13 +30,14 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-/**
- * Create and configure Firestore with long-polling for React Native / web environments
- * to avoid transport errors when streaming is not supported.
- */
+
+const auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+});
+
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   useFetchStreams: false,
 });
 
-export { db };
+export { auth, db };
