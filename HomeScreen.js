@@ -1,31 +1,41 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {FlatList, Image, Text, TouchableOpacity, View} from 'react-native';
-import MapView, {Marker} from 'react-native-maps';
-import * as Location from 'expo-location';
-import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
-import styles from './styles';
-import {auth, db} from './services/firebase';
-import {collection, onSnapshot} from 'firebase/firestore';
-import {signOut} from 'firebase/auth';
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+  Modal,
+} from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
+import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
+import styles from "./styles";
+import { db } from "./services/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
+import HamburgerMenu from "./components/HamburgerMenu";
+import SubmitShopScreen from "./components/SubmitShopScreen";
+import SettingsScreen from "./components/SettingsScreen";
 
 export default function HomeScreen() {
   const [location, setLocation] = useState(null);
   const [shops, setShops] = useState([]);
   const mapRef = useRef(null);
   const [selectedShop, setSelectedShop] = useState(null);
+  const [showSubmitShop, setShowSubmitShop] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      console.log('Logged out!');
-    } catch (err) {
-      console.error('Logout error', err);
-    }
+  const handleSubmitShop = () => {
+    setShowSubmitShop(true);
+  };
+
+  const handleSettings = () => {
+    setShowSettings(true);
   };
 
   function getDistanceMeters(a, b) {
     const R = 6371000; // Radius of Earth in meters
-    const toRad = deg => (deg * Math.PI) / 180;
+    const toRad = (deg) => (deg * Math.PI) / 180;
     const dLat = toRad(b.latitude - a.latitude);
     const lat1 = toRad(a.latitude);
     const lat2 = toRad(b.longitude);
@@ -37,9 +47,9 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      let {status} = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.error('Permission to access location was denied');
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.error("Permission to access location was denied");
         return;
       }
 
@@ -49,14 +59,14 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    return onSnapshot(collection(db, 'coffee_shops'), querySnapshot => {
-      const shopsData = querySnapshot.docs.map(doc => {
+    return onSnapshot(collection(db, "coffee_shops"), (querySnapshot) => {
+      const shopsData = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         const geo = data.location;
         return {
           id: doc.id,
           ...data,
-          location: {latitude: geo.latitude, longitude: geo.longitude},
+          location: { latitude: geo.latitude, longitude: geo.longitude },
         };
       });
 
@@ -64,7 +74,7 @@ export default function HomeScreen() {
         shopsData.sort(
           (a, b) =>
             getDistanceMeters(location, a.location) -
-            getDistanceMeters(location, b.location)
+            getDistanceMeters(location, b.location),
         );
       }
 
@@ -74,6 +84,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <HamburgerMenu
+        onSubmitShop={handleSubmitShop}
+        onSettings={handleSettings}
+      />
+
       {location ? (
         <MapView
           showsPointsOfInterest
@@ -87,14 +102,15 @@ export default function HomeScreen() {
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           }}
-          onPress={e => {
+          onPress={(e) => {
             const tapped = e.nativeEvent.coordinate;
-            const nearby = shops.find(shop => {
+            const nearby = shops.find((shop) => {
               const distance = getDistanceMeters(tapped, shop.location);
               return distance < 100;
             });
             setSelectedShop(nearby || null);
-          }}>
+          }}
+        >
           <TouchableOpacity
             style={styles.locationButton}
             onPress={() => {
@@ -106,10 +122,11 @@ export default function HomeScreen() {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                   },
-                  500
+                  500,
                 );
               }
-            }}>
+            }}
+          >
             <FontAwesome6
               name="location-arrow"
               size={20}
@@ -117,7 +134,7 @@ export default function HomeScreen() {
               iconStyle="solid"
             />
           </TouchableOpacity>
-          {shops.map(shop => (
+          {shops.map((shop) => (
             <Marker
               key={shop.id}
               coordinate={{
@@ -135,8 +152,8 @@ export default function HomeScreen() {
       <Text style={styles.label}>Welcome to OatMark</Text>
       <FlatList
         data={shops}
-        keyExtractor={item => item.id}
-        renderItem={({item}) => (
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {
               if (mapRef.current) {
@@ -147,19 +164,20 @@ export default function HomeScreen() {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                   },
-                  500
+                  500,
                 );
               }
-            }}>
+            }}
+          >
             <View style={styles.card}>
-              <Image source={{uri: item.image}} style={styles.image} />
+              <Image source={{ uri: item.image }} style={styles.image} />
               <View style={styles.cardText}>
                 <View style={styles.cardInfo}>
                   <Text style={styles.shopName}>{item.name}</Text>
                   <Text style={styles.oatMilk}>{item.oatMilk}</Text>
                   <Text style={styles.location}>
                     {`${item.location.latitude.toFixed(
-                      6
+                      6,
                     )}, ${item.location.longitude.toFixed(6)}`}
                   </Text>
                 </View>
@@ -176,11 +194,30 @@ export default function HomeScreen() {
           <Text style={styles.upCharge}>+{selectedShop.upCharge}</Text>
           <TouchableOpacity
             style={styles.dismissButton}
-            onPress={() => setSelectedShop(null)}>
+            onPress={() => setSelectedShop(null)}
+          >
             <Text style={styles.dismissText}>Dismiss</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showSubmitShop}
+        onRequestClose={() => setShowSubmitShop(false)}
+      >
+        <SubmitShopScreen onClose={() => setShowSubmitShop(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showSettings}
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <SettingsScreen onClose={() => setShowSettings(false)} />
+      </Modal>
     </View>
   );
 }
