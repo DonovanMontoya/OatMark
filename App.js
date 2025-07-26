@@ -1,17 +1,54 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {FlatList, Image, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
-import {FlatList, Image, Text, TouchableOpacity, View} from 'react-native';
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import styles from './styles';
-import FontAwesome6 from '@react-native-vector-icons/fontawesome6'
-import {db} from './services/firebase';
+import {auth, db} from './services/firebase';
 import {collection, onSnapshot} from 'firebase/firestore';
 
+import {createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut,} from 'firebase/auth';
 
 export default function App() {
     const [location, setLocation] = useState(null);
     const [shops, setShops] = useState([]);
     const mapRef = useRef(null);
+    const [user, setUser] = useState(null);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleSignUp = async (email, password) => {
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            console.log("User registered!");
+        } catch (err) {
+            console.error("Sign-up error", err);
+        }
+    };
+
+    const handleLogin = async (email, password) => {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            console.log("Logged in!");
+        } catch (err) {
+            console.error("Login error", err);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            console.log('Logged out!');
+        } catch (err) {
+            console.error('Logout error', err);
+        }
+    };
+
+    useEffect(() => {
+        return onAuthStateChanged(auth, (firebaseUser) => {
+            setUser(firebaseUser);
+        });
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -43,6 +80,43 @@ export default function App() {
         });
     }, []);
 
+    if (!user) {
+        return (
+            <View style={styles.authContainer}>
+                <Image
+                    source={require('./assets/icon.png')}
+                    style={styles.authLogo}
+                />
+                <Text style={styles.authTitle}>Welcome to OatMark</Text>
+                <Text style={styles.authSubtitle}>Please sign in to use OatMark</Text>
+
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={setEmail}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    secureTextEntry
+                    value={password}
+                    onChangeText={setPassword}
+                />
+
+                <TouchableOpacity style={styles.authButton} onPress={() => handleLogin(email, password)}>
+                    <Text style={styles.authButtonText}>Log In</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.authButtonSecondary} onPress={() => handleSignUp(email, password)}>
+                    <Text style={styles.authButtonText}>Sign Up</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
     return (
         <View style={styles.container}>
             {location ? (
