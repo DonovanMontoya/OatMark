@@ -209,4 +209,62 @@ export default StyleSheet.create({
     color: "#333",
     fontWeight: "500",
   },
+
+  // Submit Shop Upcharge Styles
+  upchargeContainer: {
+    marginBottom: 10,
+  },
+  freeButton: {
+    backgroundColor: "#f0f0f0",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginBottom: 15,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  freeButtonActive: {
+    backgroundColor: "#e8f5e8",
+    borderColor: "#4CAF50",
+  },
+  freeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+  },
+  freeButtonTextActive: {
+    color: "#4CAF50",
+  },
+  priceInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  dollarSign: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4285F4",
+    marginRight: 5,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 0,
+  },
+  whimsicalText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 10,
+    lineHeight: 18,
+  },
 });
