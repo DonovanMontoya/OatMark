@@ -16,6 +16,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
+import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
 
 export default function HomeScreen() {
   const [location, setLocation] = useState(null);
@@ -181,7 +182,14 @@ export default function HomeScreen() {
                     )}, ${item.location.longitude.toFixed(6)}`}
                   </Text>
                 </View>
-                <Text style={styles.upCharge}>{`+${item.upCharge}`}</Text>
+                <Text
+                  style={[
+                    styles.upchargeEmojiText,
+                    { color: getUpchargeColor(item.upCharge) },
+                  ]}
+                >
+                  {getFormattedUpcharge(item.upCharge)}
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -191,7 +199,14 @@ export default function HomeScreen() {
         <View style={styles.selectedShopOverlay}>
           <Text style={styles.shopName}>{selectedShop.name}</Text>
           <Text style={styles.oatMilk}>Oat Milk: {selectedShop.oatMilk}</Text>
-          <Text style={styles.upCharge}>+{selectedShop.upCharge}</Text>
+          <Text
+            style={[
+              styles.overlayUpchargeEmoji,
+              { color: getUpchargeColor(selectedShop.upCharge) },
+            ]}
+          >
+            {getFormattedUpcharge(selectedShop.upCharge)}
+          </Text>
           <TouchableOpacity
             style={styles.dismissButton}
             onPress={() => setSelectedShop(null)}
