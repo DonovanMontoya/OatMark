@@ -8,34 +8,16 @@ import styles from './styles';
 import {auth, db} from './services/firebase';
 import {collection, onSnapshot} from 'firebase/firestore';
 
-import {createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut,} from 'firebase/auth';
+import {onAuthStateChanged, signOut} from 'firebase/auth';
+import LoginPage from './LoginPage';
 
 export default function App() {
     const [location, setLocation] = useState(null);
     const [shops, setShops] = useState([]);
     const mapRef = useRef(null);
     const [user, setUser] = useState(null);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [selectedShop, setSelectedShop] = useState(null);
 
-    const handleSignUp = async (email, password) => {
-        try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            console.log("User registered!");
-        } catch (err) {
-            console.error("Sign-up error", err);
-        }
-    };
-
-    const handleLogin = async (email, password) => {
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            console.log("Logged in!");
-        } catch (err) {
-            console.error("Login error", err);
-        }
-    };
 
     const handleLogout = async () => {
         try {
@@ -103,41 +85,7 @@ export default function App() {
 
 
     if (!user) {
-        return (
-            <View style={styles.authContainer}>
-                <Image
-                    source={require('./assets/icon.png')}
-                    style={styles.authLogo}
-                />
-                <Text style={styles.authTitle}>Welcome to OatMark</Text>
-                <Text style={styles.authSubtitle}>Please sign in to use OatMark</Text>
-
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    value={email}
-                    onChangeText={setEmail}
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
-
-                <TouchableOpacity style={styles.authButton} onPress={() => handleLogin(email, password)}>
-                    <Text style={styles.authButtonText}>Log In</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.authButtonSecondary} onPress={() => handleSignUp(email, password)}>
-                    <Text style={styles.authButtonText}>Sign Up</Text>
-                </TouchableOpacity>
-            </View>
-        );
+        return <LoginPage />;
     }
     return (
         <View style={styles.container}>
