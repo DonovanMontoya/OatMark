@@ -2,6 +2,7 @@
   "expo": {
     "name": "oatmark",
     "slug": "oatmark",
+    "scheme": "oatmark",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +26,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ab55d0c6-3725-4cf8-a1ed-f9f85bd09a98"
+      }
+    },
+    "owner": "thechromecrafter"
   }
 }
