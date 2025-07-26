@@ -53,6 +53,13 @@ export default StyleSheet.create({
     textAlign: "right",
     marginLeft: 10,
   },
+  upChargeWithEmoji: {
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "right",
+    marginLeft: 10,
+    // Color will be dynamically set based on price
+  },
   oatMilk: {
     fontSize: 14,
     color: "#555",
@@ -266,5 +273,18 @@ export default StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 10,
     lineHeight: 18,
+  },
+
+  // Upcharge emoji styles
+  upchargeEmojiText: {
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "right",
+    marginLeft: 10,
+  },
+  overlayUpchargeEmoji: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 5,
   },
 });
