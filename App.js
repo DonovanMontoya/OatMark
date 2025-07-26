@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React, {useEffect, useRef, useState} from 'react';
 import {FlatList, Image, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
@@ -16,6 +17,7 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [selectedShop, setSelectedShop] = useState(null);
 
     const handleSignUp = async (email, password) => {
         try {
@@ -44,6 +46,18 @@ export default function App() {
         }
     };
 
+    function getDistanceMeters(a, b) {
+        const R = 6371000; // Radius of Earth in meters
+        const toRad = deg => (deg * Math.PI) / 180;
+        const dLat = toRad(b.latitude - a.latitude);
+        const lat1 = toRad(a.latitude);
+        const lat2 = toRad(b.longitude);
+        const aVal =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLat / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
+    }
+
     useEffect(() => {
         return onAuthStateChanged(auth, (firebaseUser) => {
             setUser(firebaseUser);
@@ -69,16 +83,24 @@ export default function App() {
         return onSnapshot(collection(db, 'coffee_shops'), (querySnapshot) => {
             const shopsData = querySnapshot.docs.map((doc) => {
                 const data = doc.data();
-                const geo = data.location; // Firestore GeoPoint
+                const geo = data.location;
                 return {
                     id: doc.id,
                     ...data,
                     location: { latitude: geo.latitude, longitude: geo.longitude },
                 };
             });
+
+            if (location) {
+                shopsData.sort((a, b) =>
+                    getDistanceMeters(location, a.location) - getDistanceMeters(location, b.location)
+                );
+            }
+
             setShops(shopsData);
         });
-    }, []);
+    }, [location]);
+
 
     if (!user) {
         return (
@@ -121,6 +143,7 @@ export default function App() {
         <View style={styles.container}>
             {location ? (
                 <MapView
+                    showsPointsOfInterest={true}
                     ref={mapRef}
                     style={styles.map}
                     showsUserLocation={true}
@@ -130,6 +153,17 @@ export default function App() {
                         longitude: location.longitude,
                         latitudeDelta: 0.01,
                         longitudeDelta: 0.01,
+                    }}
+                    onPress={(e) => {
+                        const tapped = e.nativeEvent.coordinate;
+
+                        // Try to find a shop within ~100m of the tap
+                        const nearby = shops.find((shop) => {
+                            const distance = getDistanceMeters(tapped, shop.location);
+                            return distance < 100;
+                        });
+
+                        setSelectedShop(nearby || null);
                     }}
                 >
                 <TouchableOpacity style={styles.locationButton} onPress={() => {
@@ -192,13 +226,26 @@ export default function App() {
                                     <Text style={styles.location}>
                                         {`${item.location.latitude.toFixed(6)}, ${item.location.longitude.toFixed(6)}`}
                                     </Text>
-                                </View>
+                                    </View>
                                 <Text style={styles.upCharge}>{`+${item.upCharge}`}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
                 )}
             />
+            {selectedShop && (
+                <View style={styles.selectedShopOverlay}>
+                    <Text style={styles.shopName}>{selectedShop.name}</Text>
+                    <Text style={styles.oatMilk}>Oat Milk: {selectedShop.oatMilk}</Text>
+                    <Text style={styles.upCharge}>+{selectedShop.upCharge}</Text>
+                    <TouchableOpacity
+                        style={styles.dismissButton}
+                        onPress={() => setSelectedShop(null)}
+                    >
+                        <Text style={styles.dismissText}>Dismiss</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }

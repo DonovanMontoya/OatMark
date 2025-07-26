@@ -133,4 +133,29 @@ export default StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
+    selectedShopOverlay: {
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        right: 10,
+        backgroundColor: 'white',
+        padding: 15,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+
+    dismissButton: {
+        marginTop: 10,
+        alignSelf: 'flex-end',
+    },
+
+    dismissText: {
+        color: '#007AFF',
+        fontWeight: '600',
+    },
+
 });
