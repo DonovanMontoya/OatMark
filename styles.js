@@ -216,19 +216,181 @@ export default StyleSheet.create({
   },
   selectedShopOverlay: {
     position: "absolute",
-    bottom: 10,
-    left: 10,
-    right: 10,
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+    borderRadius: 20, // Add rounded corners
+    overflow: "hidden", // Ensure content respects the border radius
+  },
+  
+  // iOS-style card header
+  iosCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: "#F9F9FB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 3,
   },
-
+  
+  shopIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#E9F7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+    transform: [{ rotate: "-5deg" }],
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: "#C7E6FF",
+    // Add gradient-like effect with border
+    borderTopColor: "#E0F2FF",
+    borderLeftColor: "#D5EDFF",
+    borderRightColor: "#B8DFFF",
+    borderBottomColor: "#A5D4FF",
+  },
+  
+  iosShopName: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#000000",
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.05)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  
+  iosCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F2F2F7",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+  },
+  
+  // Divider
+  iosDivider: {
+    height: 1,
+    backgroundColor: "#E5E5EA",
+    marginHorizontal: 20,
+    marginBottom: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+  },
+  
+  // Card content
+  iosCardContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  
+  iosDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "rgba(249, 249, 251, 0.7)",
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+  },
+  
+  iosDetailText: {
+    fontSize: 17,
+    color: "#000000",
+    marginLeft: 16,
+    flex: 1,
+  },
+  
+  iosDetailLabel: {
+    fontWeight: "600",
+    color: "#3C3C43",
+    letterSpacing: -0.2,
+  },
+  
+  // Directions button
+  iosDirectionsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007AFF",
+    marginHorizontal: 20,
+    marginBottom: 40,
+    paddingVertical: 16,
+    borderRadius: 30,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "#0066CC",
+    // Add gradient-like effect with inner shadow
+    borderTopColor: "#1A8CFF",
+    borderLeftColor: "#1A8CFF",
+    borderRightColor: "#0062CC",
+    borderBottomColor: "#0062CC",
+  },
+  
+  iosButtonIcon: {
+    marginRight: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  
+  iosDirectionsButtonText: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  
+  // Legacy styles kept for compatibility
   dismissButton: {
     marginTop: 10,
     alignSelf: "flex-end",
@@ -292,9 +454,6 @@ export default StyleSheet.create({
   },
 
   // Submit Shop Upcharge Styles
-  upchargeContainer: {
-    marginBottom: 10,
-  },
   freeButton: {
     backgroundColor: "#f0f0f0",
     paddingVertical: 12,

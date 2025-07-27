@@ -8,6 +8,9 @@ import {
   Modal,
   Animated,
   ActivityIndicator,
+  Linking,
+  Platform,
+  Easing,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -28,6 +31,12 @@ export default function HomeScreen() {
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
+  
+  // Animation values
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(100)).current;
+  const cardScale = useRef(new Animated.Value(0.9)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const handleSubmitShop = () => {
     setShowSubmitShop(true);
@@ -43,6 +52,120 @@ export default function HomeScreen() {
 
   const handleImageLoadEnd = (shopId) => {
     setImageLoadingStates((prev) => ({ ...prev, [shopId]: false }));
+  };
+  
+  // Animation functions
+  const animateCardIn = () => {
+    // Reset animation values
+    cardOpacity.setValue(0);
+    cardTranslateY.setValue(100);
+    cardScale.setValue(0.9);
+    
+    // Run animations in parallel
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.5)),
+      }),
+      Animated.timing(cardScale, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }),
+    ]).start(() => {
+      // Start the button pulse animation after the card appears
+      startButtonPulse();
+    });
+  };
+  
+  const animateCardOut = (callback) => {
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: 50,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+      Animated.timing(cardScale, {
+        toValue: 0.95,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+    ]).start(callback);
+  };
+  
+  // Pulse animation for the directions button
+  const startButtonPulse = () => {
+    // Reset to initial value
+    buttonScale.setValue(1);
+    
+    // Create a sequence of animations
+    Animated.sequence([
+      // Wait a moment before starting
+      Animated.delay(1000),
+      // Create a loop
+      Animated.loop(
+        // Define the sequence for one pulse
+        Animated.sequence([
+          // Scale up
+          Animated.timing(buttonScale, {
+            toValue: 1.08,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.ease),
+          }),
+          // Scale back down
+          Animated.timing(buttonScale, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.ease),
+          }),
+          // Pause before next pulse
+          Animated.delay(1000),
+        ]),
+        { iterations: 3 } // Limit to 3 pulses
+      ),
+    ]).start();
+  };
+  
+  const getDirections = (shop) => {
+    if (!shop || !shop.location) return;
+    
+    const { latitude, longitude } = shop.location;
+    const label = encodeURIComponent(shop.name);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${latitude},${longitude}`,
+      android: `geo:0,0?q=${latitude},${longitude}(${label})`,
+      default: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}&query_place_id=${label}`,
+    });
+    
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          const browserUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+          return Linking.openURL(browserUrl);
+        }
+      })
+      .catch((err) => console.error('An error occurred', err));
   };
 
   function getDistanceMeters(a, b) {
@@ -190,6 +313,13 @@ export default function HomeScreen() {
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
               onPress={() => {
+                // Set the selected shop
+                setSelectedShop(item);
+                
+                // Start entrance animation
+                animateCardIn();
+                
+                // Animate map to the shop's location
                 if (mapRef.current) {
                   mapRef.current.animateToRegion(
                     {
@@ -280,24 +410,122 @@ export default function HomeScreen() {
         }}
       />
       {selectedShop && (
-        <View style={styles.selectedShopOverlay}>
-          <Text style={styles.shopName}>{selectedShop.name}</Text>
-          <Text style={styles.oatMilk}>Oat Milk: {selectedShop.oatMilk}</Text>
-          <Text
-            style={[
-              styles.overlayUpchargeEmoji,
-              { color: getUpchargeColor(selectedShop.upCharge) },
-            ]}
-          >
-            {getFormattedUpcharge(selectedShop.upCharge)}
-          </Text>
+        <Animated.View 
+          style={[
+            styles.selectedShopOverlay,
+            {
+              opacity: cardOpacity,
+              transform: [
+                { translateY: cardTranslateY },
+                { scale: cardScale }
+              ]
+            }
+          ]}
+        >
+          {/* Header with shop name and close button */}
+          <View style={styles.iosCardHeader}>
+            <View style={styles.shopIconContainer}>
+              <FontAwesome6
+                name="store"
+                size={20}
+                color="#007AFF"
+                iconStyle="solid"
+              />
+            </View>
+            <Text style={styles.iosShopName}>{selectedShop.name}</Text>
+            <TouchableOpacity
+              style={styles.iosCloseButton}
+              onPress={() => {
+                // Run exit animation and then set selectedShop to null
+                animateCardOut(() => setSelectedShop(null));
+              }}
+            >
+              <FontAwesome6
+                name="xmark"
+                size={16}
+                color="#8E8E93"
+                iconStyle="solid"
+              />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Divider */}
+          <View style={styles.iosDivider} />
+          
+          {/* Shop details */}
+          <View style={styles.iosCardContent}>
+            {/* Oat Milk Row */}
+            <View style={styles.iosDetailRow}>
+              <FontAwesome6
+                name="seedling"
+                size={16}
+                color="#4CAF50"
+                iconStyle="solid"
+              />
+              <Text style={styles.iosDetailText}>
+                <Text style={styles.iosDetailLabel}>Oat Milk: </Text>
+                {selectedShop.oatMilk}
+              </Text>
+            </View>
+            
+            {/* Upcharge Row */}
+            <View style={styles.iosDetailRow}>
+              <FontAwesome6
+                name="money-bill"
+                size={16}
+                color="#8E8E93"
+                iconStyle="solid"
+              />
+              <Text style={styles.iosDetailText}>
+                <Text style={styles.iosDetailLabel}>Upcharge: </Text>
+                <Text style={{ color: getUpchargeColor(selectedShop.upCharge) }}>
+                  {getFormattedUpcharge(selectedShop.upCharge)}
+                </Text>
+              </Text>
+            </View>
+            
+            {/* Distance Row */}
+            {location && (
+              <View style={styles.iosDetailRow}>
+                <FontAwesome6
+                  name="location-dot"
+                  size={16}
+                  color="#FF9500"
+                  iconStyle="solid"
+                />
+                <Text style={styles.iosDetailText}>
+                  <Text style={styles.iosDetailLabel}>Distance: </Text>
+                  {(getDistanceMeters(location, selectedShop.location) / 1000).toFixed(1)}km away
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          {/* Directions Button */}
           <TouchableOpacity
-            style={styles.dismissButton}
-            onPress={() => setSelectedShop(null)}
+            style={styles.iosDirectionsButton}
+            onPress={() => getDirections(selectedShop)}
+            activeOpacity={0.7}
           >
-            <Text style={styles.dismissText}>Dismiss</Text>
+            <Animated.View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                transform: [{ scale: buttonScale }]
+              }}
+            >
+              <FontAwesome6
+                name="route"
+                size={16}
+                color="#FFFFFF"
+                iconStyle="solid"
+                style={styles.iosButtonIcon}
+              />
+              <Text style={styles.iosDirectionsButtonText}>Get Directions</Text>
+            </Animated.View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
 
       <Modal
