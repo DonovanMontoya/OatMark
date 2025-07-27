@@ -21,6 +21,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
+import PendingShopsScreen from "./components/PendingShopsScreen";
 import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
 
 export default function HomeScreen() {
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const [selectedShop, setSelectedShop] = useState(null);
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPendingShops, setShowPendingShops] = useState(false);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   
   // Animation values
@@ -44,6 +46,10 @@ export default function HomeScreen() {
 
   const handleSettings = () => {
     setShowSettings(true);
+  };
+  
+  const handlePendingShops = () => {
+    setShowPendingShops(true);
   };
 
   const handleImageLoadStart = (shopId) => {
@@ -222,6 +228,7 @@ export default function HomeScreen() {
       <HamburgerMenu
         onSubmitShop={handleSubmitShop}
         onSettings={handleSettings}
+        onPendingShops={handlePendingShops}
       />
 
       {location ? (
@@ -543,6 +550,15 @@ export default function HomeScreen() {
         onRequestClose={() => setShowSettings(false)}
       >
         <SettingsScreen onClose={() => setShowSettings(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showPendingShops}
+        onRequestClose={() => setShowPendingShops(false)}
+      >
+        <PendingShopsScreen onClose={() => setShowPendingShops(false)} />
       </Modal>
     </View>
   );
