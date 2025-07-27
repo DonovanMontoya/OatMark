@@ -28,7 +28,7 @@ const AdminScreen = ({ onClose }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if current user is an admin and load pending shops if so
+    // Check if the current user is an admin and load pending shops if so
     if (!auth.currentUser) {
       setLoading(false);
       return;
@@ -66,7 +66,28 @@ const AdminScreen = ({ onClose }) => {
       }
     };
 
-    checkAdminAndLoad();
+    let unsubscribeFunction;
+    
+    const loadData = async () => {
+      unsubscribeFunction = await checkAdminAndLoad();
+    };
+    
+    // Use immediately invoked async function to properly handle the promise
+    (async () => {
+      try {
+        await loadData();
+      } catch (error) {
+        console.error("Error in loadData:", error);
+        setLoading(false);
+      }
+    })();
+    
+    // Return cleanup function
+    return () => {
+      if (unsubscribeFunction) {
+        unsubscribeFunction();
+      }
+    };
   }, []);
 
   const handleImageLoadStart = (shopId) => {
@@ -88,7 +109,7 @@ const AdminScreen = ({ onClose }) => {
           style: "default",
           onPress: async () => {
             try {
-              // 1. Add to coffee_shops collection
+              // 1. Add to the coffee_shops collection
               await addDoc(collection(db, "coffee_shops"), {
                 name: shop.name,
                 oatMilk: shop.oatMilk,
@@ -100,7 +121,7 @@ const AdminScreen = ({ onClose }) => {
                 approvedBy: auth.currentUser.uid
               });
 
-              // 2. Delete from pendingShops collection
+              // 2. Delete it from the pendingShops collection
               await deleteDoc(doc(db, "pendingShops", shop.id));
               
               Alert.alert("Success", "Shop approved and published successfully");
