@@ -13,7 +13,9 @@ import { auth } from "../services/firebase";
 import Constants from "expo-constants";
 
 const SettingsScreen = ({ onClose }) => {
+  // noinspection JSUnusedLocalSymbols
   const [notifications, setNotifications] = useState(true);
+  // noinspection JSUnusedLocalSymbols
   const [locationSharing, setLocationSharing] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
 
