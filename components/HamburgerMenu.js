@@ -9,7 +9,7 @@ import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
-const HamburgerMenu = ({ onSubmitShop, onSettings }) => {
+const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops }) => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const handleLogout = async () => {
@@ -33,6 +33,13 @@ const HamburgerMenu = ({ onSubmitShop, onSettings }) => {
     setIsMenuVisible(false);
     if (onSettings) {
       onSettings();
+    }
+  };
+  
+  const handlePendingShops = () => {
+    setIsMenuVisible(false);
+    if (onPendingShops) {
+      onPendingShops();
     }
   };
 
@@ -75,6 +82,22 @@ const HamburgerMenu = ({ onSubmitShop, onSettings }) => {
               />
               <Text style={styles.menuText}>Submit Shop</Text>
             </TouchableOpacity>
+            
+            {auth.currentUser && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handlePendingShops}
+              >
+                <FontAwesome6
+                  name="clock"
+                  size={18}
+                  color="#FF9500"
+                  iconStyle="solid"
+                  style={styles.menuIcon}
+                />
+                <Text style={styles.menuText}>My Pending Shops</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.menuItem}

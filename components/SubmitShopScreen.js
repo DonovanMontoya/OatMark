@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import { collection, addDoc } from "firebase/firestore";
-import { db } from "../services/firebase";
+import { db, auth } from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 
 const SubmitShopScreen = ({ onClose }) => {
@@ -59,6 +59,12 @@ const SubmitShopScreen = ({ onClose }) => {
       return;
     }
 
+    // Check if user is authenticated
+    if (!auth.currentUser) {
+      Alert.alert("Error", "You must be logged in to submit a shop");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -76,12 +82,12 @@ const SubmitShopScreen = ({ onClose }) => {
 
       const currentLocation = await Location.getCurrentPositionAsync({});
 
-      // Add shop to Firestore
+      // Add shop to Firestore pendingShops collection
       const finalUpcharge = isFree
         ? "Free"
         : `$${parseFloat(upCharge).toFixed(2)}`;
 
-      await addDoc(collection(db, "coffee_shops"), {
+      await addDoc(collection(db, "pendingShops"), {
         name: shopName.trim(),
         oatMilk: oatMilk.trim(),
         upCharge: finalUpcharge,
@@ -92,9 +98,11 @@ const SubmitShopScreen = ({ onClose }) => {
           longitude: currentLocation.coords.longitude,
         },
         createdAt: new Date(),
+        createdBy: auth.currentUser.uid,
+        status: "pending"
       });
 
-      Alert.alert("Success!", "Coffee shop submitted successfully!", [
+      Alert.alert("Success!", "Coffee shop submitted for review!", [
         { text: "OK", onPress: onClose },
       ]);
 
