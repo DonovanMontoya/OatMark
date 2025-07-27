@@ -22,6 +22,7 @@ import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
+import AdminScreen from "./components/AdminScreen";
 import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
 
 export default function HomeScreen() {
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPendingShops, setShowPendingShops] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   
   // Animation values
@@ -50,6 +52,10 @@ export default function HomeScreen() {
   
   const handlePendingShops = () => {
     setShowPendingShops(true);
+  };
+  
+  const handleAdminPanel = () => {
+    setShowAdminPanel(true);
   };
 
   const handleImageLoadStart = (shopId) => {
@@ -229,6 +235,7 @@ export default function HomeScreen() {
         onSubmitShop={handleSubmitShop}
         onSettings={handleSettings}
         onPendingShops={handlePendingShops}
+        onAdminPanel={handleAdminPanel}
       />
 
       {location ? (
@@ -559,6 +566,15 @@ export default function HomeScreen() {
         onRequestClose={() => setShowPendingShops(false)}
       >
         <PendingShopsScreen onClose={() => setShowPendingShops(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showAdminPanel}
+        onRequestClose={() => setShowAdminPanel(false)}
+      >
+        <AdminScreen onClose={() => setShowAdminPanel(false)} />
       </Modal>
     </View>
   );
