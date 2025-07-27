@@ -110,7 +110,7 @@ export default function HomeScreen() {
     ]).start(callback);
   };
   
-  // Pulse animation for the directions button
+  // Pulse animation for the 'directions' button
   const startButtonPulse = () => {
     // Reset to initial value
     buttonScale.setValue(1);
@@ -137,7 +137,7 @@ export default function HomeScreen() {
             useNativeDriver: true,
             easing: Easing.in(Easing.ease),
           }),
-          // Pause before next pulse
+          // Pause before the next pulse
           Animated.delay(1000),
         ]),
         { iterations: 3 } // Limit to 3 pulses
@@ -230,7 +230,6 @@ export default function HomeScreen() {
           ref={mapRef}
           style={styles.map}
           showsUserLocation
-          followsUserLocation
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
