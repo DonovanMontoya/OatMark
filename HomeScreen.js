@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  Animated,
+  ActivityIndicator,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -25,6 +27,7 @@ export default function HomeScreen() {
   const [selectedShop, setSelectedShop] = useState(null);
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [imageLoadingStates, setImageLoadingStates] = useState({});
 
   const handleSubmitShop = () => {
     setShowSubmitShop(true);
@@ -32,6 +35,14 @@ export default function HomeScreen() {
 
   const handleSettings = () => {
     setShowSettings(true);
+  };
+
+  const handleImageLoadStart = (shopId) => {
+    setImageLoadingStates((prev) => ({ ...prev, [shopId]: true }));
+  };
+
+  const handleImageLoadEnd = (shopId) => {
+    setImageLoadingStates((prev) => ({ ...prev, [shopId]: false }));
   };
 
   function getDistanceMeters(a, b) {
@@ -154,46 +165,119 @@ export default function HomeScreen() {
       <FlatList
         data={shops}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => {
-              if (mapRef.current) {
-                mapRef.current.animateToRegion(
-                  {
-                    latitude: item.location.latitude,
-                    longitude: item.location.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  },
-                  500,
-                );
-              }
-            }}
-          >
-            <View style={styles.card}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <View style={styles.cardText}>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.shopName}>{item.name}</Text>
-                  <Text style={styles.oatMilk}>{item.oatMilk}</Text>
-                  <Text style={styles.location}>
-                    {`${item.location.latitude.toFixed(
-                      6,
-                    )}, ${item.location.longitude.toFixed(6)}`}
-                  </Text>
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.flatListContainer}
+        renderItem={({ item }) => {
+          const scaleAnim = new Animated.Value(1);
+
+          const handlePressIn = () => {
+            Animated.spring(scaleAnim, {
+              toValue: 0.96,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          const handlePressOut = () => {
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          return (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={() => {
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion(
+                    {
+                      latitude: item.location.latitude,
+                      longitude: item.location.longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    },
+                    500,
+                  );
+                }
+              }}
+            >
+              <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
+                <View style={styles.card}>
+                  <View style={styles.cardImageContainer}>
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.image}
+                      onLoadStart={() => handleImageLoadStart(item.id)}
+                      onLoadEnd={() => handleImageLoadEnd(item.id)}
+                      onError={() => handleImageLoadEnd(item.id)}
+                    />
+                    {imageLoadingStates[item.id] && (
+                      <View style={styles.imageLoadingOverlay}>
+                        <ActivityIndicator size="small" color="#666" />
+                      </View>
+                    )}
+                    <View style={styles.imageOverlay}>
+                      <FontAwesome6
+                        name="store"
+                        size={16}
+                        color="white"
+                        iconStyle="solid"
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.shopName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <View style={styles.upchargeContainer}>
+                        <Text
+                          style={[
+                            styles.upchargeEmojiText,
+                            { color: getUpchargeColor(item.upCharge) },
+                          ]}
+                        >
+                          {getFormattedUpcharge(item.upCharge)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardDetails}>
+                      <View style={styles.oatMilkRow}>
+                        <FontAwesome6
+                          name="seedling"
+                          size={12}
+                          color="#4CAF50"
+                          iconStyle="solid"
+                        />
+                        <Text style={styles.oatMilk} numberOfLines={1}>
+                          {item.oatMilk}
+                        </Text>
+                      </View>
+                      <View style={styles.locationRow}>
+                        <FontAwesome6
+                          name="location-dot"
+                          size={12}
+                          color="#666"
+                          iconStyle="solid"
+                        />
+                        <Text style={styles.distanceText}>
+                          {location
+                            ? `${(
+                                getDistanceMeters(location, item.location) /
+                                1000
+                              ).toFixed(1)}km away`
+                            : "Location unavailable"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
-                <Text
-                  style={[
-                    styles.upchargeEmojiText,
-                    { color: getUpchargeColor(item.upCharge) },
-                  ]}
-                >
-                  {getFormattedUpcharge(item.upCharge)}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        }}
       />
       {selectedShop && (
         <View style={styles.selectedShopOverlay}>
