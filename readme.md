@@ -37,7 +37,10 @@ This is just getting started, and this project is meant to grow over time with u
 
 - [✔️] Set up project structure with Expo
 - [✔️] Add map screen with user location
-- [ ] Enable adding a coffee shop + oat milk brand
-- [ ] Display community reports on map pins
-- [ ] Sync reports to cloud storage
+- [✔️] Enable adding a coffee shop + oat milk brand
+- [✔️] Display community reports on map pins
+- [✔️] Sync reports to cloud storage
+- [ ] Input Sanitization
+- [ ] Validate user input
+- [ ] Input Validation
 - [ ] Launch MVP on TestFlight and Google Play
