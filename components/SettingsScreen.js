@@ -308,6 +308,7 @@ const getStyles = (colors) => StyleSheet.create({
   theSmallText: {
     fontSize: 13,
     color: colors.text,
+    paddingTop: 10,
     alignSelf: "center",
     textAlign: "center",
   },
