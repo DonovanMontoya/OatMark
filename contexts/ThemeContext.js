@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 
 // Define theme colors
@@ -91,18 +91,17 @@ export const ThemeProvider = ({ children }) => {
     setIsDark(prevIsDark => !prevIsDark);
   };
   
-  // Get current theme colors
+  // Determine current theme colors
   const colors = isDark ? darkTheme : lightTheme;
-  
-  // Context value
-  const themeContext = {
-    isDark,
-    colors,
-    toggleTheme,
-  };
-  
+
+  // Memoize context value to avoid unnecessary re-renders
+  const themeContextValue = useMemo(
+    () => ({ isDark, colors, toggleTheme }),
+    [isDark, colors]
+  );
+
   return (
-    <ThemeContext.Provider value={themeContext}>
+    <ThemeContext.Provider value={themeContextValue}>
       {children}
     </ThemeContext.Provider>
   );
