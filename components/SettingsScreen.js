@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,18 +6,35 @@ import {
   Switch,
   ScrollView,
   Alert,
+  StyleSheet,
 } from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import Constants from "expo-constants";
+import { useTheme } from "../contexts/ThemeContext";
 
 const SettingsScreen = ({ onClose }) => {
+  // Get theme context
+  const { isDark, toggleTheme, colors } = useTheme();
+  
   // noinspection JSUnusedLocalSymbols
   const [notifications, setNotifications] = useState(true);
   // noinspection JSUnusedLocalSymbols
   const [locationSharing, setLocationSharing] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  // Local state for dark mode toggle
+  const [darkMode, setDarkMode] = useState(isDark);
+  
+  // Sync local state with theme context
+  useEffect(() => {
+    setDarkMode(isDark);
+  }, [isDark]);
+  
+  // Handle dark mode toggle
+  const handleDarkModeToggle = (value) => {
+    setDarkMode(value);
+    toggleTheme();
+  };
 
   const handleLogout = async () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -39,8 +56,8 @@ const SettingsScreen = ({ onClose }) => {
 
   const handleAbout = () => {
     Alert.alert(
-      "About OatMark",
-      "OatMark helps you find coffee shops with oat milk options. Version " +
+      "App Information:",
+      "Version " +
         Constants.expoConfig.version,
       [{ text: "OK" }],
     );
@@ -54,11 +71,14 @@ const SettingsScreen = ({ onClose }) => {
     );
   };
 
+  // Generate styles based on the current theme
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid" />
+          <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid" />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -108,16 +128,17 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="moon"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
               />
-              <Text style={styles.settingText}>Dark Mode</Text>
+              <Text style={styles.settingText}>Dark Mode (W.I.P)</Text>
             </View>
             <Switch
               value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: "#767577", true: "#4285F4" }}
+              onValueChange={handleDarkModeToggle}
+              trackColor={{ false: "#767577", true: colors.primary }}
               thumbColor="#fff"
+              disabled={true}
             />
           </View>
         </View>
@@ -130,7 +151,7 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="user"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
               />
               <Text style={styles.settingText}>Profile</Text>
@@ -138,7 +159,7 @@ const SettingsScreen = ({ onClose }) => {
             <FontAwesome6
               name="chevron-right"
               size={16}
-              color="#ccc"
+              color={colors.tertiaryText}
               iconStyle="solid"
             />
           </TouchableOpacity>
@@ -148,17 +169,17 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="right-from-bracket"
                 size={18}
-                color="#cc0000"
+                color={colors.danger}
                 iconStyle="solid"
               />
-              <Text style={[styles.settingText, { color: "#cc0000" }]}>
+              <Text style={[styles.settingText, { color: colors.danger }]}>
                 Logout
               </Text>
             </View>
             <FontAwesome6
               name="chevron-right"
               size={16}
-              color="#ccc"
+              color={colors.tertiaryText}
               iconStyle="solid"
             />
           </TouchableOpacity>
@@ -172,7 +193,7 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="circle-question"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
               />
               <Text style={styles.settingText}>Help & Support</Text>
@@ -180,7 +201,7 @@ const SettingsScreen = ({ onClose }) => {
             <FontAwesome6
               name="chevron-right"
               size={16}
-              color="#ccc"
+              color={colors.tertiaryText}
               iconStyle="solid"
             />
           </TouchableOpacity>
@@ -190,7 +211,7 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="shield-halved"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
               />
               <Text style={styles.settingText}>Privacy Policy</Text>
@@ -198,7 +219,7 @@ const SettingsScreen = ({ onClose }) => {
             <FontAwesome6
               name="chevron-right"
               size={16}
-              color="#ccc"
+              color={colors.tertiaryText}
               iconStyle="solid"
             />
           </TouchableOpacity>
@@ -208,7 +229,7 @@ const SettingsScreen = ({ onClose }) => {
               <FontAwesome6
                 name="circle-info"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
               />
               <Text style={styles.settingText}>About</Text>
@@ -216,20 +237,25 @@ const SettingsScreen = ({ onClose }) => {
             <FontAwesome6
               name="chevron-right"
               size={16}
-              color="#ccc"
+              color={colors.tertiaryText}
               iconStyle="solid"
             />
           </TouchableOpacity>
+          <Text style={styles.theSmallText}>
+            OatMark Helps You Find Coffee Shops That Fit Your Vibe
+          </Text>
+          <Text style={styles.theSmallText}>{ "Version: " + Constants.expoConfig.version }</Text>
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = {
+// Create dynamic styles based on the theme
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -238,7 +264,7 @@ const styles = {
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: colors.border,
   },
   closeButton: {
     padding: 5,
@@ -247,7 +273,7 @@ const styles = {
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -259,7 +285,7 @@ const styles = {
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: colors.text,
     marginBottom: 15,
   },
   settingItem: {
@@ -268,7 +294,7 @@ const styles = {
     justifyContent: "space-between",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: colors.border,
   },
   settingLeft: {
     flexDirection: "row",
@@ -277,9 +303,16 @@ const styles = {
   },
   settingText: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     marginLeft: 15,
   },
-};
+  theSmallText: {
+    fontSize: 13,
+    color: colors.text,
+    paddingTop: 10,
+    alignSelf: "center",
+    textAlign: "center",
+  },
+});
 
 export default SettingsScreen;
