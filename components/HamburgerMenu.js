@@ -108,7 +108,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
               <FontAwesome6
                 name="plus"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
                 style={styles.menuIcon}
               />
@@ -139,7 +139,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
                 <FontAwesome6
                   name="shield"
                   size={18}
-                  color="#4285F4"
+                  color={colors.primary}
                   iconStyle="solid"
                   style={styles.menuIcon}
                 />
@@ -154,7 +154,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
               <FontAwesome6
                 name="gear"
                 size={18}
-                color="#333"
+                color={colors.icon}
                 iconStyle="solid"
                 style={styles.menuIcon}
               />
@@ -168,7 +168,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
               <FontAwesome6
                 name="right-from-bracket"
                 size={18}
-                color="#cc0000"
+                color={colors.danger}
                 iconStyle="solid"
                 style={styles.menuIcon}
               />
