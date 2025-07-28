@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,26 @@ import {
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import { getIdTokenResult } from 'firebase/auth';
 
-const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops }) => {
+
+const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel }) => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (auth.currentUser) {
+        try {
+          const tokenResult = await getIdTokenResult(auth.currentUser);
+          setIsAdmin(!!tokenResult.claims.admin);
+        } catch (error) {
+          console.error('Failed to fetch token:', error);
+        }
+      }
+    };
+    checkAdmin();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -35,11 +52,18 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops }) => {
       onSettings();
     }
   };
-  
+
   const handlePendingShops = () => {
     setIsMenuVisible(false);
     if (onPendingShops) {
       onPendingShops();
+    }
+  };
+
+  const handleAdminPanel = () => {
+    setIsMenuVisible(false);
+    if (onAdminPanel) {
+      onAdminPanel();
     }
   };
 
@@ -82,7 +106,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops }) => {
               />
               <Text style={styles.menuText}>Submit Shop</Text>
             </TouchableOpacity>
-            
+
             {auth.currentUser && (
               <TouchableOpacity
                 style={styles.menuItem}
@@ -96,6 +120,22 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops }) => {
                   style={styles.menuIcon}
                 />
                 <Text style={styles.menuText}>My Pending Shops</Text>
+              </TouchableOpacity>
+            )}
+
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleAdminPanel}
+              >
+                <FontAwesome6
+                  name="shield"
+                  size={18}
+                  color="#4285F4"
+                  iconStyle="solid"
+                  style={styles.menuIcon}
+                />
+                <Text style={styles.menuText}>Admin Panel</Text>
               </TouchableOpacity>
             )}
 

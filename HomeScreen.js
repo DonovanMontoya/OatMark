@@ -1,16 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   FlatList,
-  Image,
   Text,
   TouchableOpacity,
   View,
   Modal,
   Animated,
-  ActivityIndicator,
   Linking,
   Platform,
-  Easing,
+  Easing, Image,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -22,6 +20,7 @@ import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
+import AdminScreen from "./components/AdminScreen";
 import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
 
 export default function HomeScreen() {
@@ -32,7 +31,7 @@ export default function HomeScreen() {
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPendingShops, setShowPendingShops] = useState(false);
-  const [imageLoadingStates, setImageLoadingStates] = useState({});
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -51,14 +50,11 @@ export default function HomeScreen() {
   const handlePendingShops = () => {
     setShowPendingShops(true);
   };
-
-  const handleImageLoadStart = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: true }));
+  
+  const handleAdminPanel = () => {
+    setShowAdminPanel(true);
   };
 
-  const handleImageLoadEnd = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: false }));
-  };
   
   // Animation functions
   const animateCardIn = () => {
@@ -229,6 +225,7 @@ export default function HomeScreen() {
         onSubmitShop={handleSubmitShop}
         onSettings={handleSettings}
         onPendingShops={handlePendingShops}
+        onAdminPanel={handleAdminPanel}
       />
 
       {location ? (
@@ -342,18 +339,9 @@ export default function HomeScreen() {
               <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
                 <View style={styles.card}>
                   <View style={styles.cardImageContainer}>
-                    <Image
-                      source={{ uri: item.image }}
-                      style={styles.image}
-                      onLoadStart={() => handleImageLoadStart(item.id)}
-                      onLoadEnd={() => handleImageLoadEnd(item.id)}
-                      onError={() => handleImageLoadEnd(item.id)}
-                    />
-                    {imageLoadingStates[item.id] && (
-                      <View style={styles.imageLoadingOverlay}>
-                        <ActivityIndicator size="small" color="#666" />
-                      </View>
-                    )}
+                    <View style={styles.emojiContainer}>
+                      <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+                    </View>
                     <View style={styles.imageOverlay}>
                       <FontAwesome6
                         name="store"
@@ -381,12 +369,14 @@ export default function HomeScreen() {
                     </View>
                     <View style={styles.cardDetails}>
                       <View style={styles.oatMilkRow}>
-                        <FontAwesome6
-                          name="seedling"
-                          size={12}
-                          color="#4CAF50"
-                          iconStyle="solid"
-                        />
+                        {/*<FontAwesome6*/}
+                        {/*  name="seedling"*/}
+                        {/*  size={12}*/}
+                        {/*  color="#4CAF50"*/}
+                        {/*  iconStyle="solid"*/}
+                        {/*/>*/}
+                        <Image source={require('./assets/splash-icon.png')} style={{width: 30, height: 30}}/>
+
                         <Text style={styles.oatMilk} numberOfLines={1}>
                           {item.oatMilk}
                         </Text>
@@ -462,12 +452,13 @@ export default function HomeScreen() {
           <View style={styles.iosCardContent}>
             {/* Oat Milk Row */}
             <View style={styles.iosDetailRow}>
-              <FontAwesome6
-                name="seedling"
-                size={16}
-                color="#4CAF50"
-                iconStyle="solid"
-              />
+              {/*<FontAwesome6*/}
+              {/*  name="seedling"*/}
+              {/*  size={16}*/}
+              {/*  color="#4CAF50"*/}
+              {/*  iconStyle="solid"*/}
+              {/*/>*/}
+              <Image source={require('./assets/splash-icon.png')} style={{width: 30, height: 30, marginLeft: -5, marginRight: -6}}/>
               <Text style={styles.iosDetailText}>
                 <Text style={styles.iosDetailLabel}>Oat Milk: </Text>
                 {selectedShop.oatMilk}
@@ -559,6 +550,15 @@ export default function HomeScreen() {
         onRequestClose={() => setShowPendingShops(false)}
       >
         <PendingShopsScreen onClose={() => setShowPendingShops(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showAdminPanel}
+        onRequestClose={() => setShowAdminPanel(false)}
+      >
+        <AdminScreen onClose={() => setShowAdminPanel(false)} />
       </Modal>
     </View>
   );
