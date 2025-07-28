@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Image,
 } from "react-native";
 import { 
   collection, 
@@ -24,7 +23,6 @@ import { getIdTokenResult } from "firebase/auth";
 const AdminScreen = ({ onClose }) => {
   const [pendingShops, setPendingShops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -90,13 +88,6 @@ const AdminScreen = ({ onClose }) => {
     };
   }, []);
 
-  const handleImageLoadStart = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: true }));
-  };
-
-  const handleImageLoadEnd = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: false }));
-  };
 
   const handleApprove = async (shop) => {
     Alert.alert(
@@ -114,7 +105,7 @@ const AdminScreen = ({ onClose }) => {
                 name: shop.name,
                 oatMilk: shop.oatMilk,
                 upCharge: shop.upCharge,
-                image: shop.image,
+                emoji: shop.emoji || "☕",
                 location: shop.location,
                 createdAt: shop.createdAt || new Date(),
                 approvedAt: new Date(),
@@ -212,18 +203,9 @@ const AdminScreen = ({ onClose }) => {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardImageContainer}>
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.image}
-                  onLoadStart={() => handleImageLoadStart(item.id)}
-                  onLoadEnd={() => handleImageLoadEnd(item.id)}
-                  onError={() => handleImageLoadEnd(item.id)}
-                />
-                {imageLoadingStates[item.id] && (
-                  <View style={styles.imageLoadingOverlay}>
-                    <ActivityIndicator size="small" color="#666" />
-                  </View>
-                )}
+                <View style={styles.emojiContainer}>
+                  <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+                </View>
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>Pending</Text>
                 </View>
@@ -311,6 +293,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
+  },
+  emojiContainer: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#f8f8f8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiText: {
+    fontSize: 40,
   },
   header: {
     flexDirection: "row",

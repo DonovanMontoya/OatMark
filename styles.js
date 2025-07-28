@@ -45,6 +45,17 @@ export default StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#f0f0f0",
   },
+  emojiContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: "#f8f8f8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiText: {
+    fontSize: 40,
+  },
   imageOverlay: {
     position: "absolute",
     bottom: 4,
