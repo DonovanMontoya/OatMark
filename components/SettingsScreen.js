@@ -131,13 +131,14 @@ const SettingsScreen = ({ onClose }) => {
                 color={colors.icon}
                 iconStyle="solid"
               />
-              <Text style={styles.settingText}>Dark Mode</Text>
+              <Text style={styles.settingText}>Dark Mode (W.I.P)</Text>
             </View>
             <Switch
               value={darkMode}
               onValueChange={handleDarkModeToggle}
               trackColor={{ false: "#767577", true: colors.primary }}
               thumbColor="#fff"
+              disabled={true}
             />
           </View>
         </View>
