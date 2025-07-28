@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { View, Image, Text, TextInput, TouchableOpacity } from 'react-native';
-import styles from './styles';
 import { auth } from './services/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
+import { useTheme } from './contexts/ThemeContext';
+import { createLoginPageStyles } from './styles/ThemeStyles';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Get theme context
+  const { colors } = useTheme();
+  
+  // Create theme-aware styles
+  const styles = createLoginPageStyles(colors);
 
   const handleSignUp = async () => {
     try {

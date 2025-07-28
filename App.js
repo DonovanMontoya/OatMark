@@ -4,14 +4,36 @@ import {auth} from './services/firebase';
 import {onAuthStateChanged} from 'firebase/auth';
 import LoginPage from './LoginPage';
 import HomeScreen from './HomeScreen';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { createThemeStyles } from './styles/ThemeStyles';
+import { StatusBar, View } from 'react-native';
 
-export default function App() {
+// StatusBar manager component that uses theme context
+const StatusBarManager = () => {
+    const { isDark } = useTheme();
+    return <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />;
+};
+
+// Main app content that uses theme context
+const AppContent = () => {
     const [user, setUser] = useState(null);
+    const { colors } = useTheme();
+    const styles = createThemeStyles(colors);
 
     useEffect(() => onAuthStateChanged(auth, setUser), []);
 
-    if (!user) {
-        return <LoginPage />;
-    }
-    return <HomeScreen />;
+    return (
+        <View style={styles.container}>
+            <StatusBarManager />
+            {!user ? <LoginPage /> : <HomeScreen />}
+        </View>
+    );
+};
+
+export default function App() {
+    return (
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
+    );
 }
