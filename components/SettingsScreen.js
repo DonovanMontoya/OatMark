@@ -56,8 +56,8 @@ const SettingsScreen = ({ onClose }) => {
 
   const handleAbout = () => {
     Alert.alert(
-      "About OatMark",
-      "OatMark helps you find coffee shops with oat milk options. Version " +
+      "App Information:",
+      "Version " +
         Constants.expoConfig.version,
       [{ text: "OK" }],
     );
@@ -240,8 +240,10 @@ const SettingsScreen = ({ onClose }) => {
               iconStyle="solid"
             />
           </TouchableOpacity>
-          <Text style={styles.settingText}>OatMark helps you find coffee shops with oat milk options.
-            { " Version " + Constants.expoConfig.version } </Text>
+          <Text style={styles.theSmallText}>
+            OatMark Helps You Find Coffee Shops That Fit Your Vibe
+          </Text>
+          <Text style={styles.theSmallText}>{ "Version: " + Constants.expoConfig.version }</Text>
         </View>
       </ScrollView>
     </View>
@@ -302,6 +304,12 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginLeft: 15,
+  },
+  theSmallText: {
+    fontSize: 13,
+    color: colors.text,
+    alignSelf: "center",
+    textAlign: "center",
   },
 });
 
