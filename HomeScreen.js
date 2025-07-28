@@ -9,7 +9,6 @@ import {
   Linking,
   Platform,
   Easing, Image,
-  StyleSheet,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
