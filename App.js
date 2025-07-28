@@ -5,6 +5,7 @@ import {onAuthStateChanged} from 'firebase/auth';
 import LoginPage from './LoginPage';
 import HomeScreen from './HomeScreen';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { createThemeStyles } from './styles/ThemeStyles';
 import { StatusBar, View } from 'react-native';
 
 // StatusBar manager component that uses theme context
@@ -16,11 +17,13 @@ const StatusBarManager = () => {
 // Main app content that uses theme context
 const AppContent = () => {
     const [user, setUser] = useState(null);
-    
+    const { colors } = useTheme();
+    const styles = createThemeStyles(colors);
+
     useEffect(() => onAuthStateChanged(auth, setUser), []);
-    
+
     return (
-        <View style={{ flex: 1 }}>
+        <View style={styles.container}>
             <StatusBarManager />
             {!user ? <LoginPage /> : <HomeScreen />}
         </View>
