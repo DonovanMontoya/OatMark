@@ -13,13 +13,14 @@ import * as Location from "expo-location";
 import { collection, addDoc } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
+import EmojiSelector from "./EmojiSelector";
 
 const SubmitShopScreen = ({ onClose }) => {
   const [shopName, setShopName] = useState("");
   const [oatMilk, setOatMilk] = useState("");
   const [upCharge, setUpCharge] = useState("");
   const [isFree, setIsFree] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState("☕");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpChargeChange = (value) => {
@@ -91,8 +92,7 @@ const SubmitShopScreen = ({ onClose }) => {
         name: shopName.trim(),
         oatMilk: oatMilk.trim(),
         upCharge: finalUpcharge,
-        image:
-          imageUrl.trim() || "https://via.placeholder.com/60x60?text=Coffee",
+        emoji: selectedEmoji,
         location: {
           latitude: currentLocation.coords.latitude,
           longitude: currentLocation.coords.longitude,
@@ -110,7 +110,7 @@ const SubmitShopScreen = ({ onClose }) => {
       setShopName("");
       setOatMilk("");
       setUpCharge("");
-      setImageUrl("");
+      setSelectedEmoji("☕");
       setIsFree(false);
     } catch (error) {
       console.error("Error submitting shop:", error);
@@ -196,14 +196,10 @@ const SubmitShopScreen = ({ onClose }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Image URL (optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={imageUrl}
-            onChangeText={setImageUrl}
-            placeholder="https://example.com/image.jpg"
-            placeholderTextColor="#999"
-            keyboardType="url"
+          <Text style={styles.label}>Shop Emoji</Text>
+          <EmojiSelector
+            selectedEmoji={selectedEmoji}
+            onSelectEmoji={setSelectedEmoji}
           />
         </View>
 

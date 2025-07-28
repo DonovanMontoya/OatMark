@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Image,
 } from "react-native";
 import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
@@ -16,7 +15,6 @@ import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 const PendingShopsScreen = ({ onClose }) => {
   const [pendingShops, setPendingShops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [imageLoadingStates, setImageLoadingStates] = useState({});
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -45,13 +43,6 @@ const PendingShopsScreen = ({ onClose }) => {
     return () => unsubscribe();
   }, []);
 
-  const handleImageLoadStart = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: true }));
-  };
-
-  const handleImageLoadEnd = (shopId) => {
-    setImageLoadingStates((prev) => ({ ...prev, [shopId]: false }));
-  };
 
   const handleDelete = (shopId) => {
     Alert.alert(
@@ -108,18 +99,9 @@ const PendingShopsScreen = ({ onClose }) => {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardImageContainer}>
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.image}
-                  onLoadStart={() => handleImageLoadStart(item.id)}
-                  onLoadEnd={() => handleImageLoadEnd(item.id)}
-                  onError={() => handleImageLoadEnd(item.id)}
-                />
-                {imageLoadingStates[item.id] && (
-                  <View style={styles.imageLoadingOverlay}>
-                    <ActivityIndicator size="small" color="#666" />
-                  </View>
-                )}
+                <View style={styles.emojiContainer}>
+                  <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+                </View>
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>Pending</Text>
                 </View>
@@ -182,6 +164,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
+  },
+  emojiContainer: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#f8f8f8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiText: {
+    fontSize: 40,
   },
   header: {
     flexDirection: "row",
