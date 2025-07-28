@@ -476,8 +476,10 @@ export default function HomeScreen() {
           ref={mapRef}
           style={styles.map}
           showsUserLocation
-          provider={PROVIDER_GOOGLE}
-          customMapStyle={isDark ? darkMapStyle : []}
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          customMapStyle={
+            Platform.OS === 'android' && isDark ? darkMapStyle : []
+          }
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
