@@ -75,13 +75,13 @@ const ThemeContext = createContext({
 
 // Create the provider component
 export const ThemeProvider = ({ children }) => {
-  // Get device color scheme
+  // Get the device color scheme
   const deviceColorScheme = useColorScheme();
   
   // Initialize theme based on device preference
   const [isDark, setIsDark] = useState(deviceColorScheme === 'dark');
   
-  // Update theme if device preference changes
+  // Update the theme if device preference changes
   useEffect(() => {
     setIsDark(deviceColorScheme === 'dark');
   }, [deviceColorScheme]);

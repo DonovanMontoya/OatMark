@@ -458,3 +458,136 @@ export const createHomeScreenStyles = (colors) => {
     },
   });
 };
+
+/**
+ * Creates theme-aware styles for the HamburgerMenu component
+ * @param {Object} colors - Theme colors from ThemeContext
+ * @returns {Object} StyleSheet object with theme-aware styles for HamburgerMenu
+ */
+export const createHamburgerMenuStyles = (colors) => {
+  return StyleSheet.create({
+    hamburgerButton: {
+      position: 'absolute',
+      top: 50,
+      left: 20,
+      backgroundColor: colors.locationButton,
+      padding: 12,
+      borderRadius: 8,
+      zIndex: 1000,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.modalBackground,
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
+    },
+    menuContainer: {
+      backgroundColor: colors.menuBackground,
+      marginTop: 100,
+      marginLeft: 20,
+      borderRadius: 12,
+      paddingVertical: 8,
+      minWidth: 180,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    logoutMenuItem: {
+      borderBottomWidth: 0,
+    },
+    menuIcon: {
+      marginRight: 15,
+      width: 20,
+    },
+    menuText: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    logoutText: {
+      color: colors.danger,
+    },
+  });
+};
+
+/**
+ * Creates theme-aware styles for the LoginPage component
+ * @param {Object} colors - Theme colors from ThemeContext
+ * @returns {Object} StyleSheet object with theme-aware styles for LoginPage
+ */
+export const createLoginPageStyles = (colors) => {
+  return StyleSheet.create({
+    authContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      backgroundColor: colors.background,
+    },
+    authLogo: {
+      width: 120,
+      height: 120,
+      marginBottom: 20,
+      resizeMode: 'contain',
+    },
+    authTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: colors.text,
+    },
+    authSubtitle: {
+      fontSize: 16,
+      color: colors.secondaryText,
+      marginBottom: 20,
+    },
+    input: {
+      width: '100%',
+      height: 44,
+      paddingHorizontal: 12,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      marginBottom: 12,
+      fontSize: 16,
+      backgroundColor: colors.inputBackground,
+      color: colors.text,
+    },
+    authButton: {
+      width: '100%',
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginBottom: 10,
+      alignItems: 'center',
+    },
+    authButtonSecondary: {
+      width: '100%',
+      backgroundColor: colors.isDark ? colors.cardBackground : '#999',
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginBottom: 10,
+      alignItems: 'center',
+    },
+    authButtonText: {
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 16,
+    },
+  });
+};

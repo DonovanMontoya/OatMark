@@ -9,11 +9,19 @@ import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { getIdTokenResult } from 'firebase/auth';
+import { useTheme } from '../contexts/ThemeContext';
+import { createHamburgerMenuStyles } from '../styles/ThemeStyles';
 
 
 const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel }) => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Get theme context
+  const { colors } = useTheme();
+  
+  // Create theme-aware styles
+  const styles = createHamburgerMenuStyles(colors);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -76,7 +84,7 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
         <FontAwesome6
           name="bars"
           size={20}
-          color="white"
+          color={colors.locationButtonText}
           iconStyle="solid"
         />
       </TouchableOpacity>
@@ -171,65 +179,6 @@ const HamburgerMenu = ({ onSubmitShop, onSettings, onPendingShops, onAdminPanel 
       </Modal>
     </>
   );
-};
-
-const styles = {
-  hamburgerButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 8,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  menuContainer: {
-    backgroundColor: 'white',
-    marginTop: 100,
-    marginLeft: 20,
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 180,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  logoutMenuItem: {
-    borderBottomWidth: 0,
-  },
-  menuIcon: {
-    marginRight: 15,
-    width: 20,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  logoutText: {
-    color: '#cc0000',
-  },
 };
 
 export default HamburgerMenu;

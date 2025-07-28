@@ -71,7 +71,7 @@ const SettingsScreen = ({ onClose }) => {
     );
   };
 
-  // Generate styles based on current theme
+  // Generate styles based on the current theme
   const styles = getStyles(colors);
 
   return (
@@ -248,7 +248,7 @@ const SettingsScreen = ({ onClose }) => {
   );
 };
 
-// Create dynamic styles based on theme
+// Create dynamic styles based on the theme
 const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
