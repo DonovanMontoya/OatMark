@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { 
   collection, 
@@ -19,6 +20,7 @@ import {
 import { db, auth } from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { getIdTokenResult } from "firebase/auth";
+import MapView, { Marker } from "react-native-maps";
 
 const AdminScreen = ({ onClose }) => {
   const [pendingShops, setPendingShops] = useState([]);
@@ -202,36 +204,64 @@ const AdminScreen = ({ onClose }) => {
           contentContainerStyle={styles.listContainer}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.cardImageContainer}>
-                <View style={styles.emojiContainer}>
-                  <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardImageContainer}>
+                  <View style={styles.emojiContainer}>
+                    <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+                  </View>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>Pending</Text>
+                  </View>
                 </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>Pending</Text>
+                <View style={styles.cardHeaderInfo}>
+                  <Text style={styles.shopName}>{item.name}</Text>
+                  <View style={styles.detailRow}>
+                    <FontAwesome6
+                      name="seedling"
+                      size={12}
+                      color="#4CAF50"
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.detailText}>{item.oatMilk}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <FontAwesome6
+                      name="money-bill"
+                      size={12}
+                      color="#666"
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.detailText}>
+                      Upcharge: {item.upCharge}
+                    </Text>
+                  </View>
                 </View>
               </View>
+              
+              {item.location && (
+                <View style={styles.mapContainer}>
+                  <MapView
+                    style={styles.map}
+                    initialRegion={{
+                      latitude: item.location.latitude,
+                      longitude: item.location.longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    }}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: item.location.latitude,
+                        longitude: item.location.longitude,
+                      }}
+                      title={item.name}
+                    />
+                  </MapView>
+                </View>
+              )}
               <View style={styles.cardContent}>
-                <Text style={styles.shopName}>{item.name}</Text>
-                <View style={styles.detailRow}>
-                  <FontAwesome6
-                    name="seedling"
-                    size={12}
-                    color="#4CAF50"
-                    iconStyle="solid"
-                  />
-                  <Text style={styles.detailText}>{item.oatMilk}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <FontAwesome6
-                    name="money-bill"
-                    size={12}
-                    color="#666"
-                    iconStyle="solid"
-                  />
-                  <Text style={styles.detailText}>
-                    Upcharge: {item.upCharge}
-                  </Text>
-                </View>
                 <View style={styles.detailRow}>
                   <FontAwesome6
                     name="calendar"
@@ -254,6 +284,19 @@ const AdminScreen = ({ onClose }) => {
                     By: {item.createdBy?.substring(0, 8)}...
                   </Text>
                 </View>
+                {item.location && (
+                  <View style={styles.detailRow}>
+                    <FontAwesome6
+                      name="location-dot"
+                      size={12}
+                      color="#666"
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.detailText}>
+                      Location: {item.location.latitude.toFixed(6)}, {item.location.longitude.toFixed(6)}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={styles.approveButton}
@@ -293,6 +336,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
+  },
+  mapContainer: {
+    width: '100%',
+    height: 180,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+    overflow: 'hidden',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
   },
   emojiContainer: {
     width: 100,
@@ -356,7 +411,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: "column",
     backgroundColor: "white",
     borderRadius: 12,
     marginBottom: 16,
@@ -368,6 +423,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
     overflow: "hidden",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    padding: 12,
+  },
+  cardHeaderInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: "center",
   },
   cardImageContainer: {
     position: "relative",
@@ -405,7 +469,8 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: 12,
+    padding: 16,
+    paddingTop: 12,
   },
   shopName: {
     fontSize: 16,
