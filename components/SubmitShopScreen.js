@@ -9,18 +9,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import * as Location from "expo-location";
 import { collection, addDoc } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import EmojiSelector from "./EmojiSelector";
-import MapView, { Marker, Circle, Polygon } from "react-native-maps";
+import MapView, { Circle, Polygon } from "react-native-maps";
 import { 
   getDistanceMeters, 
-  getDestinationPoint, 
-  calculateSquareCorners, 
+  calculateSquareCorners,
   isPointInSquare, 
   getNearestPointOnSquare 
 } from "../utils/GeoUtils";
