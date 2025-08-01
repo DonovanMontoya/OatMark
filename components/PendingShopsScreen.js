@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
