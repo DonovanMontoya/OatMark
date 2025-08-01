@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import { 
   collection, 
@@ -18,6 +17,7 @@ import {
   onSnapshot
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
+import { openInMaps, searchYelp } from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { getIdTokenResult } from "firebase/auth";
 import MapView, { Marker } from "react-native-maps";
@@ -26,6 +26,7 @@ const AdminScreen = ({ onClose }) => {
   const [pendingShops, setPendingShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  
 
   useEffect(() => {
     // Check if the current user is an admin and load pending shops if so
@@ -259,6 +260,32 @@ const AdminScreen = ({ onClose }) => {
                       title={item.name}
                     />
                   </MapView>
+                  <View style={styles.mapButtonsContainer}>
+                    <TouchableOpacity
+                      style={styles.mapButton}
+                      onPress={() => openInMaps(item)}
+                    >
+                      <FontAwesome6
+                        name="map-location-dot"
+                        size={14}
+                        color="#4285F4"
+                        iconStyle="solid"
+                      />
+                      <Text style={styles.mapButtonText}>Open in Maps</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.mapButton}
+                      onPress={() => searchYelp(item)}
+                    >
+                      <FontAwesome6
+                        name="magnifying-glass"
+                        size={14}
+                        color="#D32323"
+                        iconStyle="solid"
+                      />
+                      <Text style={styles.mapButtonText}>Search on Yelp</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
               <View style={styles.cardContent}>
@@ -339,7 +366,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     width: '100%',
-    height: 180,
+    height: 220,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#f0f0f0',
@@ -347,7 +374,28 @@ const styles = StyleSheet.create({
   },
   map: {
     width: '100%',
-    height: '100%',
+    height: 180,
+  },
+  mapButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    backgroundColor: '#f8f8f8',
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  mapButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   emojiContainer: {
     width: 100,
