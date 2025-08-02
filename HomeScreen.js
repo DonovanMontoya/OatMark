@@ -1,854 +1,1062 @@
-import React, {useEffect, useRef, useState} from "react";
-import {Animated, Easing, FlatList, Image, Modal, Platform, Text, TouchableOpacity, View,} from "react-native";
-import MapView, {Marker, PROVIDER_GOOGLE} from "react-native-maps";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+  Alert,
+} from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {auth, db} from "./services/firebase";
-import {collection, doc, onSnapshot, updateDoc} from "firebase/firestore";
-import {getIdTokenResult} from "firebase/auth";
+import { auth, db } from "./services/firebase";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
+import { getIdTokenResult } from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
-import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
-import {getDirections} from "./utils/MapLinks";
-import {getDistanceMeters} from "./utils/GeoUtils";
-import {useTheme} from "./contexts/ThemeContext";
-import {createHomeScreenStyles} from "./styles/ThemeStyles";
+import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
+import { getDirections } from "./utils/MapLinks";
+import { getDistanceMeters } from "./utils/GeoUtils";
+import { useTheme } from "./contexts/ThemeContext";
+import { createHomeScreenStyles } from "./styles/ThemeStyles";
 
 export default function HomeScreen() {
-    // Get theme context
-    const {isDark, colors} = useTheme();
+  // Get theme context
+  const { isDark, colors } = useTheme();
 
-    // Create theme-aware styles
-    const styles = createHomeScreenStyles(colors);
+  // Create theme-aware styles
+  const styles = createHomeScreenStyles(colors);
 
-    // Dark mode map style
-    const darkMapStyle = [
+  // Dark mode map style
+  const darkMapStyle = [
+    {
+      elementType: "geometry",
+      stylers: [
         {
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#1d2c4d"
-                }
-            ]
+          color: "#1d2c4d",
         },
+      ],
+    },
+    {
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#8ec3b9"
-                }
-            ]
+          color: "#8ec3b9",
         },
+      ],
+    },
+    {
+      elementType: "labels.text.stroke",
+      stylers: [
         {
-            "elementType": "labels.text.stroke",
-            "stylers": [
-                {
-                    "color": "#1a3646"
-                }
-            ]
+          color: "#1a3646",
         },
+      ],
+    },
+    {
+      featureType: "administrative.country",
+      elementType: "geometry.stroke",
+      stylers: [
         {
-            "featureType": "administrative.country",
-            "elementType": "geometry.stroke",
-            "stylers": [
-                {
-                    "color": "#4b6878"
-                }
-            ]
+          color: "#4b6878",
         },
+      ],
+    },
+    {
+      featureType: "administrative.land_parcel",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "administrative.land_parcel",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#64779e"
-                }
-            ]
+          color: "#64779e",
         },
+      ],
+    },
+    {
+      featureType: "administrative.province",
+      elementType: "geometry.stroke",
+      stylers: [
         {
-            "featureType": "administrative.province",
-            "elementType": "geometry.stroke",
-            "stylers": [
-                {
-                    "color": "#4b6878"
-                }
-            ]
+          color: "#4b6878",
         },
+      ],
+    },
+    {
+      featureType: "landscape.man_made",
+      elementType: "geometry.stroke",
+      stylers: [
         {
-            "featureType": "landscape.man_made",
-            "elementType": "geometry.stroke",
-            "stylers": [
-                {
-                    "color": "#334e87"
-                }
-            ]
+          color: "#334e87",
         },
+      ],
+    },
+    {
+      featureType: "landscape.natural",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "landscape.natural",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#023e58"
-                }
-            ]
+          color: "#023e58",
         },
+      ],
+    },
+    {
+      featureType: "poi",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "poi",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#283d6a"
-                }
-            ]
+          color: "#283d6a",
         },
+      ],
+    },
+    {
+      featureType: "poi",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "poi",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#6f9ba5"
-                }
-            ]
+          color: "#6f9ba5",
         },
+      ],
+    },
+    {
+      featureType: "poi",
+      elementType: "labels.text.stroke",
+      stylers: [
         {
-            "featureType": "poi",
-            "elementType": "labels.text.stroke",
-            "stylers": [
-                {
-                    "color": "#1d2c4d"
-                }
-            ]
+          color: "#1d2c4d",
         },
+      ],
+    },
+    {
+      featureType: "poi.park",
+      elementType: "geometry.fill",
+      stylers: [
         {
-            "featureType": "poi.park",
-            "elementType": "geometry.fill",
-            "stylers": [
-                {
-                    "color": "#023e58"
-                }
-            ]
+          color: "#023e58",
         },
+      ],
+    },
+    {
+      featureType: "poi.park",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "poi.park",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#3C7680"
-                }
-            ]
+          color: "#3C7680",
         },
+      ],
+    },
+    {
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "road",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#304a7d"
-                }
-            ]
+          color: "#304a7d",
         },
+      ],
+    },
+    {
+      featureType: "road",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "road",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#98a5be"
-                }
-            ]
+          color: "#98a5be",
         },
+      ],
+    },
+    {
+      featureType: "road",
+      elementType: "labels.text.stroke",
+      stylers: [
         {
-            "featureType": "road",
-            "elementType": "labels.text.stroke",
-            "stylers": [
-                {
-                    "color": "#1d2c4d"
-                }
-            ]
+          color: "#1d2c4d",
         },
+      ],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "road.highway",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#2c6675"
-                }
-            ]
+          color: "#2c6675",
         },
+      ],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry.stroke",
+      stylers: [
         {
-            "featureType": "road.highway",
-            "elementType": "geometry.stroke",
-            "stylers": [
-                {
-                    "color": "#255763"
-                }
-            ]
+          color: "#255763",
         },
+      ],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "road.highway",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#b0d5ce"
-                }
-            ]
+          color: "#b0d5ce",
         },
+      ],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "labels.text.stroke",
+      stylers: [
         {
-            "featureType": "road.highway",
-            "elementType": "labels.text.stroke",
-            "stylers": [
-                {
-                    "color": "#023e58"
-                }
-            ]
+          color: "#023e58",
         },
+      ],
+    },
+    {
+      featureType: "transit",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "transit",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#98a5be"
-                }
-            ]
+          color: "#98a5be",
         },
+      ],
+    },
+    {
+      featureType: "transit",
+      elementType: "labels.text.stroke",
+      stylers: [
         {
-            "featureType": "transit",
-            "elementType": "labels.text.stroke",
-            "stylers": [
-                {
-                    "color": "#1d2c4d"
-                }
-            ]
+          color: "#1d2c4d",
         },
+      ],
+    },
+    {
+      featureType: "transit.line",
+      elementType: "geometry.fill",
+      stylers: [
         {
-            "featureType": "transit.line",
-            "elementType": "geometry.fill",
-            "stylers": [
-                {
-                    "color": "#283d6a"
-                }
-            ]
+          color: "#283d6a",
         },
+      ],
+    },
+    {
+      featureType: "transit.station",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "transit.station",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#3a4762"
-                }
-            ]
+          color: "#3a4762",
         },
+      ],
+    },
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [
         {
-            "featureType": "water",
-            "elementType": "geometry",
-            "stylers": [
-                {
-                    "color": "#0e1626"
-                }
-            ]
+          color: "#0e1626",
         },
+      ],
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.fill",
+      stylers: [
         {
-            "featureType": "water",
-            "elementType": "labels.text.fill",
-            "stylers": [
-                {
-                    "color": "#4e6d70"
-                }
-            ]
-        }
-    ];
+          color: "#4e6d70",
+        },
+      ],
+    },
+  ];
 
-    const [location, setLocation] = useState(null);
-    const [shops, setShops] = useState([]);
-    const mapRef = useRef(null);
-    const [selectedShop, setSelectedShop] = useState(null);
-    const [showSubmitShop, setShowSubmitShop] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [showPendingShops, setShowPendingShops] = useState(false);
-    const [showAdminPanel, setShowAdminPanel] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [shops, setShops] = useState([]);
+  const mapRef = useRef(null);
+  const [selectedShop, setSelectedShop] = useState(null);
+  const [showSubmitShop, setShowSubmitShop] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPendingShops, setShowPendingShops] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
+  const [favorites, setFavorites] = useState([]);
 
-    // Animation values
-    const cardOpacity = useRef(new Animated.Value(0)).current;
-    const cardTranslateY = useRef(new Animated.Value(100)).current;
-    const cardScale = useRef(new Animated.Value(0.9)).current;
-    const buttonScale = useRef(new Animated.Value(1)).current;
+  // Animation values
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(100)).current;
+  const cardScale = useRef(new Animated.Value(0.9)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
-    const handleSubmitShop = () => {
-        setShowSubmitShop(true);
-    };
+  const handleSubmitShop = () => {
+    setShowSubmitShop(true);
+  };
 
-    const handleSettings = () => {
-        setShowSettings(true);
-    };
+  const handleSettings = () => {
+    setShowSettings(true);
+  };
 
-    const handlePendingShops = () => {
-        setShowPendingShops(true);
-    };
+  const handlePendingShops = () => {
+    setShowPendingShops(true);
+  };
 
-    const handleAdminPanel = () => {
-        setShowAdminPanel(true);
-    };
+  const handleAdminPanel = () => {
+    setShowAdminPanel(true);
+  };
 
+  // Animation functions
+  const animateCardIn = () => {
+    // Reset animation values
+    cardOpacity.setValue(0);
+    cardTranslateY.setValue(100);
+    cardScale.setValue(0.9);
 
-    // Animation functions
-    const animateCardIn = () => {
-        // Reset animation values
-        cardOpacity.setValue(0);
-        cardTranslateY.setValue(100);
-        cardScale.setValue(0.9);
+    // Run animations in parallel
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.5)),
+      }),
+      Animated.timing(cardScale, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }),
+    ]).start(() => {
+      // Start the button pulse animation after the card appears
+      startButtonPulse();
+    });
+  };
 
-        // Run animations in parallel
-        Animated.parallel([
-            Animated.timing(cardOpacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-                easing: Easing.out(Easing.ease),
-            }),
-            Animated.timing(cardTranslateY, {
-                toValue: 0,
-                duration: 350,
-                useNativeDriver: true,
-                easing: Easing.out(Easing.back(1.5)),
-            }),
-            Animated.timing(cardScale, {
-                toValue: 1,
-                duration: 350,
-                useNativeDriver: true,
-                easing: Easing.out(Easing.ease),
-            }),
-        ]).start(() => {
-            // Start the button pulse animation after the card appears
-            startButtonPulse();
-        });
-    };
+  const animateCardOut = (callback) => {
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: 50,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+      Animated.timing(cardScale, {
+        toValue: 0.95,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }),
+    ]).start(callback);
+  };
 
-    const animateCardOut = (callback) => {
-        Animated.parallel([
-            Animated.timing(cardOpacity, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-                easing: Easing.in(Easing.ease),
-            }),
-            Animated.timing(cardTranslateY, {
-                toValue: 50,
-                duration: 250,
-                useNativeDriver: true,
-                easing: Easing.in(Easing.ease),
-            }),
-            Animated.timing(cardScale, {
-                toValue: 0.95,
-                duration: 250,
-                useNativeDriver: true,
-                easing: Easing.in(Easing.ease),
-            }),
-        ]).start(callback);
-    };
+  // Pulse animation for the 'directions' button
+  const startButtonPulse = () => {
+    // Reset to initial value
+    buttonScale.setValue(1);
 
-    // Pulse animation for the 'directions' button
-    const startButtonPulse = () => {
-        // Reset to initial value
-        buttonScale.setValue(1);
-
-        // Create a sequence of animations
+    // Create a sequence of animations
+    Animated.sequence([
+      // Wait a moment before starting
+      Animated.delay(1000),
+      // Create a loop
+      Animated.loop(
+        // Define the sequence for one pulse
         Animated.sequence([
-            // Wait a moment before starting
-            Animated.delay(1000),
-            // Create a loop
-            Animated.loop(
-                // Define the sequence for one pulse
-                Animated.sequence([
-                    // Scale up
-                    Animated.timing(buttonScale, {
-                        toValue: 1.08,
-                        duration: 800,
-                        useNativeDriver: true,
-                        easing: Easing.out(Easing.ease),
-                    }),
-                    // Scale back down
-                    Animated.timing(buttonScale, {
-                        toValue: 1,
-                        duration: 800,
-                        useNativeDriver: true,
-                        easing: Easing.in(Easing.ease),
-                    }),
-                    // Pause before the next pulse
-                    Animated.delay(1000),
-                ]),
-                {iterations: 3} // Limit to 3 pulses
-            ),
-        ]).start();
-    };
+          // Scale up
+          Animated.timing(buttonScale, {
+            toValue: 1.08,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.ease),
+          }),
+          // Scale back down
+          Animated.timing(buttonScale, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.ease),
+          }),
+          // Pause before the next pulse
+          Animated.delay(1000),
+        ]),
+        { iterations: 3 }, // Limit to 3 pulses
+      ),
+    ]).start();
+  };
 
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.error("Permission to access location was denied");
+        return;
+      }
 
-    useEffect(() => {
-        (async () => {
-            let {status} = await Location.requestForegroundPermissionsAsync();
-            if (status !== "granted") {
-                console.error("Permission to access location was denied");
-                return;
-            }
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation.coords);
+    })();
+  }, []);
 
-            const currentLocation = await Location.getCurrentPositionAsync({});
-            setLocation(currentLocation.coords);
-        })();
-    }, []);
-
-    useEffect(() => {
-        return onSnapshot(collection(db, "coffee_shops"), (querySnapshot) => {
-            const shopsData = querySnapshot.docs.map((doc) => {
-                const data = doc.data();
-                const geo = data.location;
-                return {
-                    id: doc.id,
-                    ...data,
-                    location: {latitude: geo.latitude, longitude: geo.longitude},
-                };
-            });
-
-            if (location) {
-                shopsData.sort(
-                    (a, b) =>
-                        getDistanceMeters(location, a.location) -
-                        getDistanceMeters(location, b.location),
-                );
-            }
-
-            setShops(shopsData);
-        });
-    }, [location]);
-
-    // Check if the current user is an admin
-    useEffect(() => {
-        if (!auth.currentUser) {
-            setIsAdmin(false);
-            return;
-        }
-
-        const checkAdminStatus = async () => {
-            try {
-                const tokenResult = await getIdTokenResult(auth.currentUser);
-                const adminStatus = !!tokenResult.claims.admin;
-                setIsAdmin(adminStatus);
-            } catch (error) {
-                console.error("Failed to fetch admin status:", error);
-                setIsAdmin(false);
-            }
+  useEffect(() => {
+    return onSnapshot(collection(db, "coffee_shops"), (querySnapshot) => {
+      const shopsData = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        const geo = data.location;
+        return {
+          id: doc.id,
+          ...data,
+          location: { latitude: geo.latitude, longitude: geo.longitude },
         };
+      });
 
-        checkAdminStatus();
-    }, []);
-
-    // Handle shop location update
-    const handleShopLocationUpdate = (updatedShop) => {
-        // Update the shop in the local state
-        const updatedShops = shops.map(shop => 
-            shop.id === updatedShop.id ? updatedShop : shop
+      if (location) {
+        shopsData.sort(
+          (a, b) =>
+            getDistanceMeters(location, a.location) -
+            getDistanceMeters(location, b.location),
         );
-        setShops(updatedShops);
-        
-        // Update the selected shop if it's the one being edited
-        if (selectedShop && selectedShop.id === updatedShop.id) {
-            setSelectedShop(updatedShop);
-        }
+      }
+
+      setShops(shopsData);
+    });
+  }, [location]);
+
+  // Check if the current user is an admin
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const checkAdminStatus = async () => {
+      try {
+        const tokenResult = await getIdTokenResult(auth.currentUser);
+        const adminStatus = !!tokenResult.claims.admin;
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error("Failed to fetch admin status:", error);
+        setIsAdmin(false);
+      }
     };
 
-    return (
-        <View style={styles.container}>
-            <HamburgerMenu
-                onSubmitShop={handleSubmitShop}
-                onSettings={handleSettings}
-                onPendingShops={handlePendingShops}
-                onAdminPanel={handleAdminPanel}
-            />
+    checkAdminStatus();
+  }, []);
 
-            {location ? (
-                <MapView
-                    showsPointsOfInterest
-                    ref={mapRef}
-                    style={styles.map}
-                    showsUserLocation
-                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-                    customMapStyle={
-                        Platform.OS === 'android' && isDark ? darkMapStyle : []
-                    }
-                    initialRegion={{
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                    }}
-                    onPress={(e) => {
-                        const tapped = e.nativeEvent.coordinate;
-                        const nearby = shops.find((shop) => {
-                            const distance = getDistanceMeters(tapped, shop.location);
-                            return distance < 100;
-                        });
-                        setSelectedShop(nearby || null);
-                    }}
-                >
-                    <TouchableOpacity
-                        style={styles.locationButton}
-                        onPress={() => {
-                            if (mapRef.current) {
-                                mapRef.current.animateToRegion(
-                                    {
-                                        latitude: location.latitude,
-                                        longitude: location.longitude,
-                                        latitudeDelta: 0.01,
-                                        longitudeDelta: 0.01,
-                                    },
-                                    500,
-                                );
-                            }
-                        }}
-                    >
-                        <FontAwesome6
-                            name="location-arrow"
-                            size={20}
-                            color={colors.locationButtonText}
-                            iconStyle="solid"
-                        />
-                    </TouchableOpacity>
-                    {shops.map((shop) => (
-                        <Marker
-                            key={shop.id}
-                            coordinate={{
-                                latitude: shop.location.latitude,
-                                longitude: shop.location.longitude,
-                            }}
-                            title={shop.name}
-                            description={`Oat Milk: ${shop.oatMilk}`}
-                        />
-                    ))}
-                </MapView>
-            ) : (
-                <Text style={styles.label}>Fetching location...</Text>
-            )}
-            <Text style={styles.label}>Welcome to OatMark</Text>
-            <FlatList
-                data={shops}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.flatListContainer}
-                renderItem={({item}) => {
-                    const scaleAnim = new Animated.Value(1);
-
-                    const handlePressIn = () => {
-                        Animated.spring(scaleAnim, {
-                            toValue: 0.96,
-                            useNativeDriver: true,
-                        }).start();
-                    };
-
-                    const handlePressOut = () => {
-                        Animated.spring(scaleAnim, {
-                            toValue: 1,
-                            useNativeDriver: true,
-                        }).start();
-                    };
-
-                    return (
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPressIn={handlePressIn}
-                            onPressOut={handlePressOut}
-                            onPress={() => {
-                                // Set the selected shop
-                                setSelectedShop(item);
-
-                                // Start entrance animation
-                                animateCardIn();
-
-                                // Animate map to the shop's location
-                                if (mapRef.current) {
-                                    mapRef.current.animateToRegion(
-                                        {
-                                            latitude: item.location.latitude,
-                                            longitude: item.location.longitude,
-                                            latitudeDelta: 0.01,
-                                            longitudeDelta: 0.01,
-                                        },
-                                        500,
-                                    );
-                                }
-                            }}
-                        >
-                            <Animated.View style={[{transform: [{scale: scaleAnim}]}]}>
-                                <View style={styles.card}>
-                                    <View style={styles.cardImageContainer}>
-                                        <View style={styles.emojiContainer}>
-                                            <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
-                                        </View>
-                                        <View style={styles.imageOverlay}>
-                                            <FontAwesome6
-                                                name="store"
-                                                size={16}
-                                                color="white"
-                                                iconStyle="solid"
-                                            />
-                                        </View>
-                                    </View>
-                                    <View style={styles.cardContent}>
-                                        <View style={styles.cardHeader}>
-                                            <Text style={styles.shopName} numberOfLines={1}>
-                                                {item.name}
-                                            </Text>
-                                            <View style={styles.upchargeContainer}>
-                                                <Text
-                                                    style={[
-                                                        styles.upchargeEmojiText,
-                                                        {color: getUpchargeColor(item.upCharge)},
-                                                    ]}
-                                                >
-                                                    {getFormattedUpcharge(item.upCharge)}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.cardDetails}>
-                                            <View style={styles.oatMilkRow}>
-                                                {/*<FontAwesome6*/}
-                                                {/*  name="seedling"*/}
-                                                {/*  size={12}*/}
-                                                {/*  color="#4CAF50"*/}
-                                                {/*  iconStyle="solid"*/}
-                                                {/*/>*/}
-                                                <Image source={require('./assets/splash-icon.png')}
-                                                       style={{width: 30, height: 30}}/>
-
-                                                <Text style={styles.oatMilk} numberOfLines={1}>
-                                                    {item.oatMilk}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.locationRow}>
-                                                <FontAwesome6
-                                                    name="location-dot"
-                                                    size={12}
-                                                    color="#666"
-                                                    iconStyle="solid"
-                                                />
-                                                <Text style={styles.distanceText}>
-                                                    {location
-                                                        ? `${(
-                                                            getDistanceMeters(location, item.location) /
-                                                            1000
-                                                        ).toFixed(1)}km away`
-                                                        : "Location unavailable"}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </View>
-                            </Animated.View>
-                        </TouchableOpacity>
-                    );
-                }}
-            />
-            {selectedShop && (
-                <Animated.View
-                    style={[
-                        styles.selectedShopOverlay,
-                        {
-                            opacity: cardOpacity,
-                            transform: [
-                                {translateY: cardTranslateY},
-                                {scale: cardScale}
-                            ]
-                        }
-                    ]}
-                >
-                    {/* Header with shop name and close button */}
-                    <View style={styles.iosCardHeader}>
-                        <View style={styles.shopIconContainer}>
-                            <FontAwesome6
-                                name="store"
-                                size={20}
-                                color="#007AFF"
-                                iconStyle="solid"
-                            />
-                        </View>
-                        <Text style={styles.iosShopName}>{selectedShop.name}</Text>
-                        <TouchableOpacity
-                            style={styles.iosCloseButton}
-                            onPress={() => {
-                                // Run exit animation and then set selectedShop to null
-                                animateCardOut(() => setSelectedShop(null));
-                            }}
-                        >
-                            <FontAwesome6
-                                name="xmark"
-                                size={16}
-                                color="#8E8E93"
-                                iconStyle="solid"
-                            />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Divider */}
-                    <View style={styles.iosDivider}/>
-
-                    {/* Shop details */}
-                    <View style={styles.iosCardContent}>
-                        {/* Oat Milk Row */}
-                        <View style={styles.iosDetailRow}>
-                            {/*<FontAwesome6*/}
-                            {/*  name="seedling"*/}
-                            {/*  size={16}*/}
-                            {/*  color="#4CAF50"*/}
-                            {/*  iconStyle="solid"*/}
-                            {/*/>*/}
-                            <Image source={require('./assets/splash-icon.png')}
-                                   style={{width: 30, height: 30, marginLeft: -5, marginRight: -6}}/>
-                            <Text style={styles.iosDetailText}>
-                                <Text style={styles.iosDetailLabel}>Oat Milk: </Text>
-                                {selectedShop.oatMilk}
-                            </Text>
-                        </View>
-
-                        {/* Upcharge Row */}
-                        <View style={styles.iosDetailRow}>
-                            <FontAwesome6
-                                name="money-bill"
-                                size={16}
-                                color="#8E8E93"
-                                iconStyle="solid"
-                            />
-                            <Text style={styles.iosDetailText}>
-                                <Text style={styles.iosDetailLabel}>Upcharge: </Text>
-                                <Text style={{color: getUpchargeColor(selectedShop.upCharge)}}>
-                                    {getFormattedUpcharge(selectedShop.upCharge)}
-                                </Text>
-                            </Text>
-                        </View>
-
-                        {/* Distance Row */}
-                        {location && (
-                            <View style={styles.iosDetailRow}>
-                                <FontAwesome6
-                                    name="location-dot"
-                                    size={16}
-                                    color="#FF9500"
-                                    iconStyle="solid"
-                                />
-                                <Text style={styles.iosDetailText}>
-                                    <Text style={styles.iosDetailLabel}>Distance: </Text>
-                                    {(getDistanceMeters(location, selectedShop.location) / 1000).toFixed(1)}km away
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Directions Button */}
-                    <TouchableOpacity
-                        style={styles.iosDirectionsButton}
-                        onPress={() => getDirections(selectedShop)}
-                        activeOpacity={0.7}
-                    >
-                        <Animated.View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                transform: [{scale: buttonScale}]
-                            }}
-                        >
-                            <FontAwesome6
-                                name="route"
-                                size={16}
-                                color="#FFFFFF"
-                                iconStyle="solid"
-                                style={styles.iosButtonIcon}
-                            />
-                            <Text style={styles.iosDirectionsButtonText}>Get Directions</Text>
-                        </Animated.View>
-                    </TouchableOpacity>
-
-                    {/* Adjust Pin Button (Admin Only) */}
-                    {isAdmin && (
-                        <TouchableOpacity
-                            style={[styles.iosDirectionsButton, { marginTop: 10, backgroundColor: '#FF9500' }]}
-                            onPress={() => {
-                                setShowAdjustPinModal(true);
-                            }}
-                            activeOpacity={0.7}
-                        >
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    justifyContent: "center"
-                                }}
-                            >
-                                <FontAwesome6
-                                    name="location-crosshairs"
-                                    size={16}
-                                    color="#FFFFFF"
-                                    iconStyle="solid"
-                                    style={styles.iosButtonIcon}
-                                />
-                                <Text style={styles.iosDirectionsButtonText}>Adjust Pin Location</Text>
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                </Animated.View>
-            )}
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={showSubmitShop}
-                onRequestClose={() => setShowSubmitShop(false)}
-            >
-                <SubmitShopScreen onClose={() => setShowSubmitShop(false)}/>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={showSettings}
-                onRequestClose={() => setShowSettings(false)}
-            >
-                <SettingsScreen onClose={() => setShowSettings(false)}/>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={showPendingShops}
-                onRequestClose={() => setShowPendingShops(false)}
-            >
-                <PendingShopsScreen onClose={() => setShowPendingShops(false)}/>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={showAdminPanel}
-                onRequestClose={() => setShowAdminPanel(false)}
-            >
-                <AdminScreen onClose={() => setShowAdminPanel(false)}/>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={showAdjustPinModal}
-                onRequestClose={() => setShowAdjustPinModal(false)}
-            >
-                {selectedShop && (
-                    <AdjustPinModal
-                        shop={selectedShop}
-                        collection="coffee_shops"
-                        onClose={() => setShowAdjustPinModal(false)}
-                        onSave={handleShopLocationUpdate}
-                    />
-                )}
-            </Modal>
-        </View>
+  // Handle shop location update
+  const handleShopLocationUpdate = (updatedShop) => {
+    // Update the shop in the local state
+    const updatedShops = shops.map((shop) =>
+      shop.id === updatedShop.id ? updatedShop : shop,
     );
+    setShops(updatedShops);
+
+    // Update the selected shop if it's the one being edited
+    if (selectedShop && selectedShop.id === updatedShop.id) {
+      setSelectedShop(updatedShop);
+    }
+  };
+
+  // Create user document if it doesn't exist
+  const createUserDocument = async (userId) => {
+    try {
+      const userRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          favorites: [],
+          createdAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error("Error creating user document:", error);
+    }
+  };
+
+  // Load user favorites
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setFavorites([]);
+      return;
+    }
+
+    // Create user document if needed
+    createUserDocument(auth.currentUser.uid);
+
+    const unsubscribe = onSnapshot(
+      doc(db, "users", auth.currentUser.uid),
+      (doc) => {
+        if (doc.exists()) {
+          const userData = doc.data();
+          setFavorites(userData.favorites || []);
+        } else {
+          setFavorites([]);
+        }
+      },
+      (error) => {
+        console.error("Error loading favorites:", error);
+        setFavorites([]);
+      },
+    );
+
+    return unsubscribe;
+  }, [auth.currentUser]);
+
+  // Toggle favorite status
+  const toggleFavorite = async (shopId) => {
+    if (!auth.currentUser) {
+      Alert.alert("Error", "You must be logged in to save favorites");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const isFavorite = favorites.includes(shopId);
+
+      // Optimistic update for immediate feedback
+      if (isFavorite) {
+        setFavorites((prev) => prev.filter((id) => id !== shopId));
+        await updateDoc(userRef, {
+          favorites: arrayRemove(shopId),
+        });
+      } else {
+        setFavorites((prev) => [...prev, shopId]);
+        await updateDoc(userRef, {
+          favorites: arrayUnion(shopId),
+        });
+      }
+
+      // Add haptic feedback (if available)
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    } catch (error) {
+      console.error("Error updating favorites:", error);
+      // Revert optimistic update on error
+      if (isFavorite) {
+        setFavorites((prev) => [...prev, shopId]);
+      } else {
+        setFavorites((prev) => prev.filter((id) => id !== shopId));
+      }
+      Alert.alert("Error", "Failed to update favorites");
+    }
+  };
+
+  // Check if a shop is favorited
+  const isFavorite = (shopId) => {
+    return favorites.includes(shopId);
+  };
+
+  return (
+    <View style={styles.container}>
+      <HamburgerMenu
+        onSubmitShop={handleSubmitShop}
+        onSettings={handleSettings}
+        onPendingShops={handlePendingShops}
+        onAdminPanel={handleAdminPanel}
+      />
+
+      {location ? (
+        <MapView
+          showsPointsOfInterest
+          ref={mapRef}
+          style={styles.map}
+          showsUserLocation
+          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+          customMapStyle={
+            Platform.OS === "android" && isDark ? darkMapStyle : []
+          }
+          initialRegion={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          onPress={(e) => {
+            const tapped = e.nativeEvent.coordinate;
+            const nearby = shops.find((shop) => {
+              const distance = getDistanceMeters(tapped, shop.location);
+              return distance < 100;
+            });
+            setSelectedShop(nearby || null);
+          }}
+        >
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={() => {
+              if (mapRef.current) {
+                mapRef.current.animateToRegion(
+                  {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  },
+                  500,
+                );
+              }
+            }}
+          >
+            <FontAwesome6
+              name="location-arrow"
+              size={20}
+              color={colors.locationButtonText}
+              iconStyle="solid"
+            />
+          </TouchableOpacity>
+          {shops.map((shop) => (
+            <Marker
+              key={shop.id}
+              coordinate={{
+                latitude: shop.location.latitude,
+                longitude: shop.location.longitude,
+              }}
+              title={shop.name}
+              description={`Oat Milk: ${shop.oatMilk}`}
+            />
+          ))}
+        </MapView>
+      ) : (
+        <Text style={styles.label}>Fetching location...</Text>
+      )}
+      <Text style={styles.label}>Welcome to OatMark</Text>
+      <FlatList
+        data={shops}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.flatListContainer}
+        renderItem={({ item }) => {
+          const scaleAnim = new Animated.Value(1);
+
+          const handlePressIn = () => {
+            Animated.spring(scaleAnim, {
+              toValue: 0.96,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          const handlePressOut = () => {
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          return (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={() => {
+                // Set the selected shop
+                setSelectedShop(item);
+
+                // Start entrance animation
+                animateCardIn();
+
+                // Animate map to the shop's location
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion(
+                    {
+                      latitude: item.location.latitude,
+                      longitude: item.location.longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    },
+                    500,
+                  );
+                }
+              }}
+            >
+              <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
+                <View style={styles.card}>
+                  <View style={styles.cardImageContainer}>
+                    <View style={styles.emojiContainer}>
+                      <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
+                    </View>
+                    <View style={styles.imageOverlay}>
+                      <FontAwesome6
+                        name="store"
+                        size={16}
+                        color="white"
+                        iconStyle="solid"
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.shopName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <View style={styles.upchargeContainer}>
+                        <Text
+                          style={[
+                            styles.upchargeEmojiText,
+                            { color: getUpchargeColor(item.upCharge) },
+                          ]}
+                        >
+                          {getFormattedUpcharge(item.upCharge)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardDetails}>
+                      <View style={styles.oatMilkRow}>
+                        {/*<FontAwesome6*/}
+                        {/*  name="seedling"*/}
+                        {/*  size={12}*/}
+                        {/*  color="#4CAF50"*/}
+                        {/*  iconStyle="solid"*/}
+                        {/*/>*/}
+                        <Image
+                          source={require("./assets/splash-icon.png")}
+                          style={{ width: 30, height: 30 }}
+                        />
+
+                        <Text style={styles.oatMilk} numberOfLines={1}>
+                          {item.oatMilk}
+                        </Text>
+                      </View>
+                      <View style={styles.locationRow}>
+                        <FontAwesome6
+                          name="location-dot"
+                          size={12}
+                          color="#666"
+                          iconStyle="solid"
+                        />
+                        <Text style={styles.distanceText}>
+                          {location
+                            ? `${(
+                                getDistanceMeters(location, item.location) /
+                                1000
+                              ).toFixed(1)}km away`
+                            : "Location unavailable"}
+                        </Text>
+                        {isFavorite(item.id) && (
+                          <FontAwesome6
+                            name="heart"
+                            size={12}
+                            color="#FF6B6B"
+                            iconStyle="solid"
+                            style={{ marginLeft: "auto", opacity: 0.8 }}
+                          />
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        }}
+      />
+      {selectedShop && (
+        <Animated.View
+          style={[
+            styles.selectedShopOverlay,
+            {
+              opacity: cardOpacity,
+              transform: [{ translateY: cardTranslateY }, { scale: cardScale }],
+            },
+          ]}
+        >
+          {/* Header with shop name and close button */}
+          <View style={styles.iosCardHeader}>
+            <Animated.View
+              style={[
+                styles.shopIconContainer,
+                {
+                  transform: [
+                    {
+                      rotate: cardScale.interpolate({
+                        inputRange: [0.9, 1],
+                        outputRange: ["-5deg", "0deg"],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.shopEmojiLarge}>
+                {selectedShop.emoji || "☕"}
+              </Text>
+            </Animated.View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.iosShopName}>{selectedShop.name}</Text>
+              <View style={styles.subtitleRow}>
+                <Text style={styles.shopSubtitle}>Coffee Shop</Text>
+                {isAdmin && (
+                  <TouchableOpacity
+                    style={styles.adminAdjustButton}
+                    onPress={() => {
+                      setShowAdjustPinModal(true);
+                    }}
+                    activeOpacity={0.6}
+                  >
+                    <FontAwesome6
+                      name="location-crosshairs"
+                      size={10}
+                      color="#666"
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.adminAdjustButtonText}>Adjust Pin</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.iosCloseButton}
+              onPress={() => {
+                // Run exit animation and then set selectedShop to null
+                animateCardOut(() => setSelectedShop(null));
+              }}
+            >
+              <FontAwesome6
+                name="xmark"
+                size={16}
+                color="#8E8E93"
+                iconStyle="solid"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.iosDivider} />
+
+          {/* Shop details */}
+          <View style={styles.iosCardContent}>
+            {/* Oat Milk Row */}
+            <View style={styles.iosDetailRow}>
+              {/*<FontAwesome6*/}
+              {/*  name="seedling"*/}
+              {/*  size={16}*/}
+              {/*  color="#4CAF50"*/}
+              {/*  iconStyle="solid"*/}
+              {/*/>*/}
+              <Image
+                source={require("./assets/splash-icon.png")}
+                style={{
+                  width: 30,
+                  height: 30,
+                  marginLeft: -5,
+                  marginRight: -6,
+                }}
+              />
+              <Text style={styles.iosDetailText}>
+                <Text style={styles.iosDetailLabel}>Oat Milk: </Text>
+                {selectedShop.oatMilk}
+              </Text>
+            </View>
+
+            {/* Upcharge Row */}
+            <View style={styles.iosDetailRow}>
+              <FontAwesome6
+                name="money-bill"
+                size={16}
+                color="#8E8E93"
+                iconStyle="solid"
+              />
+              <Text style={styles.iosDetailText}>
+                <Text style={styles.iosDetailLabel}>Upcharge: </Text>
+                <Text
+                  style={{ color: getUpchargeColor(selectedShop.upCharge) }}
+                >
+                  {getFormattedUpcharge(selectedShop.upCharge)}
+                </Text>
+              </Text>
+            </View>
+
+            {/* Distance Row */}
+            {location && (
+              <View style={styles.iosDetailRow}>
+                <FontAwesome6
+                  name="location-dot"
+                  size={16}
+                  color="#FF9500"
+                  iconStyle="solid"
+                />
+                <Text style={styles.iosDetailText}>
+                  <Text style={styles.iosDetailLabel}>Distance: </Text>
+                  {(
+                    getDistanceMeters(location, selectedShop.location) / 1000
+                  ).toFixed(1)}
+                  km away
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={styles.iosDirectionsButton}
+              onPress={() => getDirections(selectedShop)}
+              activeOpacity={0.7}
+            >
+              <Animated.View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transform: [{ scale: buttonScale }],
+                }}
+              >
+                <FontAwesome6
+                  name="route"
+                  size={18}
+                  color="#FFFFFF"
+                  iconStyle="solid"
+                  style={styles.iosButtonIcon}
+                />
+                <Text style={styles.iosDirectionsButtonText}>
+                  Get Directions
+                </Text>
+                <FontAwesome6
+                  name="arrow-right"
+                  size={14}
+                  color="#FFFFFF"
+                  iconStyle="solid"
+                  style={{ marginLeft: 8 }}
+                />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Secondary Action Buttons */}
+            <View style={styles.secondaryButtonsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.secondaryButton,
+                  isFavorite(selectedShop.id) && styles.favoriteButtonActive,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  // Quick animation feedback
+                  const scaleAnim = new Animated.Value(1);
+                  Animated.sequence([
+                    Animated.spring(scaleAnim, {
+                      toValue: 1.2,
+                      duration: 100,
+                      useNativeDriver: true,
+                    }),
+                    Animated.spring(scaleAnim, {
+                      toValue: 1,
+                      duration: 150,
+                      useNativeDriver: true,
+                    }),
+                  ]).start();
+
+                  toggleFavorite(selectedShop.id);
+                }}
+              >
+                <Animated.View style={{ transform: [{ scale: 1 }] }}>
+                  <FontAwesome6
+                    name={isFavorite(selectedShop.id) ? "heart" : "heart"}
+                    size={16}
+                    color={isFavorite(selectedShop.id) ? "#FF6B6B" : "#999"}
+                    iconStyle={
+                      isFavorite(selectedShop.id) ? "solid" : "regular"
+                    }
+                  />
+                </Animated.View>
+                <Text
+                  style={[
+                    styles.secondaryButtonText,
+                    isFavorite(selectedShop.id) &&
+                      styles.favoriteButtonTextActive,
+                  ]}
+                >
+                  {isFavorite(selectedShop.id) ? "Saved" : "Save"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                activeOpacity={0.7}
+              >
+                <FontAwesome6
+                  name="share"
+                  size={16}
+                  color="#4CAF50"
+                  iconStyle="solid"
+                />
+                <Text style={styles.secondaryButtonText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      )}
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showSubmitShop}
+        onRequestClose={() => setShowSubmitShop(false)}
+      >
+        <SubmitShopScreen onClose={() => setShowSubmitShop(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showSettings}
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <SettingsScreen onClose={() => setShowSettings(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showPendingShops}
+        onRequestClose={() => setShowPendingShops(false)}
+      >
+        <PendingShopsScreen onClose={() => setShowPendingShops(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showAdminPanel}
+        onRequestClose={() => setShowAdminPanel(false)}
+      >
+        <AdminScreen onClose={() => setShowAdminPanel(false)} />
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showAdjustPinModal}
+        onRequestClose={() => setShowAdjustPinModal(false)}
+      >
+        {selectedShop && (
+          <AdjustPinModal
+            shop={selectedShop}
+            collection="coffee_shops"
+            onClose={() => setShowAdjustPinModal(false)}
+            onSave={handleShopLocationUpdate}
+          />
+        )}
+      </Modal>
+    </View>
+  );
 }
