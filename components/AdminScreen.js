@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from "react";
-import {ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
+import {ActivityIndicator, Alert, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {addDoc, collection, deleteDoc, doc, onSnapshot, query} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import {getIdTokenResult} from "firebase/auth";
-import MapView, {Marker} from "react-native-maps";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 import AdjustPinModal from "./AdjustPinModal";
 
 const AdminScreen = ({onClose}) => {
@@ -215,6 +215,7 @@ const AdminScreen = ({onClose}) => {
                 {item.location && (<View style={styles.mapContainer}>
                     <MapView
                         style={styles.map}
+                        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
                         initialRegion={{
                             latitude: item.location.latitude,
                             longitude: item.location.longitude,
@@ -224,6 +225,14 @@ const AdminScreen = ({onClose}) => {
                         scrollEnabled={false}
                         zoomEnabled={false}
                     >
+                        {Platform.OS === 'android' && (
+                            <UrlTile
+                                urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                maximumZ={19}
+                                tileSize={256}
+                                flipY={false}
+                            />
+                        )}
                         <Marker
                             coordinate={{
                                 latitude: item.location.latitude, longitude: item.location.longitude,

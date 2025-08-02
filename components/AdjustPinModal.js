@@ -1,9 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Alert, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
+import {Alert, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {doc, updateDoc} from "firebase/firestore";
 import {db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import MapView from "react-native-maps";
+import MapView, { UrlTile } from "react-native-maps";
 
 const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) => {
     // State variables
@@ -111,6 +111,7 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
                         <MapView
                             ref={mapRef}
                             style={styles.map}
+                            mapType={Platform.OS === 'android' ? 'none' : 'standard'}
                             initialRegion={{
                                 latitude: mapCenter.latitude,
                                 longitude: mapCenter.longitude,
@@ -119,12 +120,25 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
                             }}
                             onRegionChangeComplete={onRegionChangeComplete}
                             onRegionChange={onRegionChangeStart}
-                        />
+                        >
+                            {Platform.OS === 'android' && (
+                                <UrlTile
+                                    urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    maximumZ={19}
+                                    tileSize={256}
+                                    flipY={false}
+                                />
+                            )}
+                        </MapView>
 
                         <View style={styles.coordinatesContainer}>
                             <Text style={styles.coordinatesText}>
-                                {isMapDragging ? "Dragging map..." :
-                                    `Latitude: ${mapCenter.latitude.toFixed(6)}, Longitude: ${mapCenter.longitude.toFixed(6)}`}
+                                {isMapDragging
+                                    ? "Dragging map..."
+                                    : "Latitude: " +
+                                      mapCenter.latitude.toFixed(6) +
+                                      ", Longitude: " +
+                                      mapCenter.longitude.toFixed(6)}
                             </Text>
                         </View>
                     </View>
