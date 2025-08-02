@@ -354,47 +354,237 @@ export const createHomeScreenStyles = (colors) => {
       fontWeight: "500",
       letterSpacing: 0.3,
     },
-    actionButtonsContainer: {
-      paddingHorizontal: 20,
-      paddingBottom: 25,
+    closeButtonTop: {
+      position: "absolute",
+      top: 50,
+      right: 20,
+      zIndex: 20,
     },
-    secondaryButtonsContainer: {
+    closeButtonBackground: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.isDark
+        ? "rgba(30, 30, 30, 0.8)"
+        : "rgba(255, 255, 255, 0.95)",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 10,
+      backdropFilter: "blur(10px)",
+      borderWidth: 1,
+      borderColor: colors.isDark
+        ? "rgba(255, 255, 255, 0.2)"
+        : "rgba(0, 0, 0, 0.05)",
+      // Add a subtle hover/press effect with transform
+      transform: [{ scale: 1 }],
+    },
+    adminFloatingButton: {
+      position: "absolute",
+      top: 50,
+      left: 20,
+      zIndex: 20,
+    },
+    adminFloatingBackground: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.isDark
+        ? "rgba(30, 30, 30, 0.8)"
+        : "rgba(255, 255, 255, 0.95)",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#FF9500",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 10,
+      backdropFilter: "blur(10px)",
+      borderWidth: 2,
+      borderColor: colors.isDark
+        ? "rgba(255, 149, 0, 0.6)"
+        : "rgba(255, 149, 0, 0.5)",
+      // Add a subtle glow effect for the admin button
+      // Note: This is simulated with multiple shadows since RN doesn't support box-shadow spread
+      // The actual glow effect will be more visible in the app
+      transform: [{ scale: 1 }],
+    },
+    // shopInfoCard and shopInfoContent styles removed - merged into bottomSection
+    bottomSection: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 20, // Higher than shopInfoCard's z-index (15)
+      backgroundColor: colors.isDark
+        ? "rgba(30, 51, 86, 0.98)"
+        : "rgba(255, 255, 255, 0.98)",
+      borderTopLeftRadius: 32,
+      borderTopRightRadius: 32,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -10 },
+      shadowOpacity: 0.2,
+      shadowRadius: 24,
+      elevation: 24,
+      backdropFilter: "blur(20px)",
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.isDark
+        ? "rgba(74, 140, 255, 0.3)"
+        : "rgba(0, 122, 255, 0.1)",
+    },
+    bottomContent: {
+      paddingHorizontal: 24,
+      paddingTop: 36, // Increased from 28 to create more space
+      paddingBottom: 44,
+    },
+    shopNameSection: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 15,
-      gap: 15,
+      alignItems: "center",
+      marginBottom: 20,
     },
-    secondaryButton: {
+    bottomEmojiContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.isDark
+        ? "rgba(74, 140, 255, 0.2)"
+        : "rgba(255, 255, 255, 0.95)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 15,
+      shadowColor: colors.isDark ? "#4A8CFF" : "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 6,
+      borderWidth: 2,
+      borderColor: colors.isDark ? "#4A8CFF" : "#007AFF",
+    },
+    bottomEmoji: {
+      fontSize: 24,
+      textShadowColor: "rgba(0, 0, 0, 0.1)",
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
+    },
+    shopNameTextContainer: {
+      flex: 1,
+    },
+    bottomShopName: {
+      fontSize: 26,
+      fontWeight: "800",
+      color: colors.text,
+      marginBottom: 4,
+      letterSpacing: -0.5,
+      // Add text shadow for better readability in both light and dark modes
+      textShadowColor: colors.isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    bottomSubtitle: {
+      fontSize: 15,
+      color: colors.secondaryText,
+      fontWeight: "500",
+      letterSpacing: 0.2,
+      opacity: 0.9,
+    },
+    quickStats: {
+      flexDirection: "row",
+      backgroundColor: colors.isDark
+        ? "rgba(74, 140, 255, 0.1)"
+        : "rgba(247, 250, 252, 1)",
+      borderRadius: 20,
+      padding: 20,
+      marginTop: 16,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: colors.isDark ? "#4A8CFF" : "#E2E8F0",
+    },
+    statItem: {
+      flex: 1,
+      alignItems: "center",
+    },
+    statIcon: {
+      width: 20,
+      height: 20,
+      marginBottom: 8,
+      tintColor: colors.isDark ? "#4CAF50" : "#2E7D32",
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.secondaryText,
+      fontWeight: "500",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    statValue: {
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    statDivider: {
+      width: 1,
+      backgroundColor: colors.isDark ? "#4A8CFF" : "#E2E8F0",
+      marginHorizontal: 15,
+    },
+    actionButtons: {
+      gap: 12,
+      marginTop: 20,
+    },
+    primaryActionButton: {
+      backgroundColor: colors.isDark ? "#4A8CFF" : "#007AFF",
+      paddingVertical: 14,
+      borderRadius: 18,
+      shadowColor: colors.isDark ? "#4A8CFF" : "#007AFF",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    primaryButtonText: {
+      color: "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "700",
+      marginHorizontal: 10,
+      textShadowColor: "rgba(0, 0, 0, 0.2)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    secondaryActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 8,
+    },
+    secondaryActionButton: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.isDark ? "rgba(74, 140, 255, 0.15)" : "#F8F9FA",
-      paddingVertical: 12,
-      borderRadius: 16,
+      backgroundColor: colors.isDark
+        ? "rgba(74, 140, 255, 0.1)"
+        : "rgba(247, 250, 252, 1)",
+      paddingVertical: 10,
+      borderRadius: 14,
       borderWidth: 1,
-      borderColor: colors.isDark ? "#4A8CFF" : "#E9ECEF",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      borderColor: colors.isDark ? "#4A8CFF" : "#E2E8F0",
+    },
+    favoriteActive: {
+      backgroundColor: colors.isDark
+        ? "rgba(255, 107, 107, 0.2)"
+        : "rgba(255, 235, 235, 1)",
+      borderColor: "#FF6B6B",
     },
     secondaryButtonText: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: "600",
-      color: colors.text,
-      marginLeft: 8,
+      color: colors.secondaryText,
+      marginLeft: 6,
       letterSpacing: 0.2,
-    },
-    favoriteButtonActive: {
-      backgroundColor: colors.isDark ? "rgba(255, 107, 107, 0.2)" : "#FFE8E8",
-      borderColor: colors.isDark ? "#FF6B6B" : "#FFB3B3",
-      transform: [{ scale: 1.02 }],
-    },
-    favoriteButtonTextActive: {
-      color: "#FF6B6B",
-      fontWeight: "700",
     },
     locationButton: {
       position: "absolute",
@@ -411,161 +601,65 @@ export const createHomeScreenStyles = (colors) => {
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: colors.overlayBackground,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 8,
+      backgroundColor: "transparent",
       zIndex: 1000,
-      borderRadius: 20,
       overflow: "hidden",
     },
-    iosCardHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingTop: 50,
-      paddingBottom: 20,
-      backgroundColor: colors.isDark
-        ? "linear-gradient(135deg, rgba(30, 51, 86, 0.95), rgba(74, 140, 255, 0.1))"
-        : "linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(74, 140, 255, 0.05))",
-      borderBottomWidth: 2,
-      borderBottomColor: colors.isDark ? "#4A8CFF" : "#E8F4FD",
+    overlayMapContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "70%",
+      zIndex: 1,
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
+      overflow: "hidden",
       shadowColor: colors.isDark ? "#4A8CFF" : "#007AFF",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    iosShopName: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: colors.text,
-      letterSpacing: -0.3,
-      textShadowColor: colors.isDark
-        ? "rgba(74, 140, 255, 0.3)"
-        : "rgba(0, 122, 255, 0.1)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3,
-      marginBottom: 2,
-    },
-    iosCloseButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.isDark ? colors.cardBackground : "#F2F2F7",
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    iosDivider: {
-      height: 1,
-      backgroundColor: colors.divider,
-      marginHorizontal: 20,
-      marginBottom: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 1,
-    },
-    iosCardContent: {
-      flex: 1,
-      paddingHorizontal: 20,
-      paddingVertical: 20,
-      backgroundColor: colors.isDark
-        ? "rgba(30, 51, 86, 0.8)"
-        : "rgba(255, 255, 255, 0.8)",
-      borderBottomLeftRadius: 20,
-      borderBottomRightRadius: 20,
-    },
-    iosDetailRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 16,
-      backgroundColor: colors.isDark
-        ? "rgba(22, 42, 69, 0.7)"
-        : "rgba(249, 249, 251, 0.7)",
-      padding: 12,
-      borderRadius: 12,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    iosDetailText: {
-      fontSize: 17,
-      color: colors.text,
-      marginLeft: 16,
-      flex: 1,
-    },
-    iosDetailLabel: {
-      fontWeight: "600",
-      color: colors.secondaryText,
-      letterSpacing: -0.2,
-    },
-    iosDirectionsButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: colors.isDark ? "#4A8CFF" : "#007AFF",
-      paddingVertical: 18,
-      borderRadius: 25,
-      shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.4,
       shadowRadius: 12,
-      elevation: 12,
+      elevation: 10,
+    },
+    overlayMap: {
+      width: "100%",
+      height: "100%",
+    },
+    mapBorderOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       borderWidth: 2,
-      borderColor: colors.isDark ? "#74A3FF" : "#4A90E2",
-      transform: [{ scale: 1 }],
-    },
-    iosButtonIcon: {
-      marginRight: 12,
-      textShadowColor: "rgba(0, 0, 0, 0.3)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3,
-    },
-    iosDirectionsButtonText: {
-      color: "#FFFFFF",
-      fontSize: 18,
-      fontWeight: "800",
-      letterSpacing: 0.5,
-      textShadowColor: "rgba(0, 0, 0, 0.3)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3,
-    },
-    adminAdjustButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.isDark
-        ? "rgba(255, 149, 0, 0.1)"
-        : "rgba(255, 149, 0, 0.05)",
-      paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 8,
-      borderWidth: 1,
       borderColor: colors.isDark
-        ? "rgba(255, 149, 0, 0.3)"
-        : "rgba(255, 149, 0, 0.2)",
-      opacity: 0.6,
-      marginLeft: 8,
+        ? "rgba(74, 140, 255, 0.4)"
+        : "rgba(0, 122, 255, 0.3)",
+      borderRadius: 0,
+      pointerEvents: "none",
     },
-    adminAdjustButtonText: {
-      fontSize: 9,
-      fontWeight: "500",
-      color: "#666",
-      marginLeft: 3,
-      letterSpacing: 0.2,
+    mapOverlayGradient: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 180,
+      backgroundColor: "transparent",
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
+      pointerEvents: "none",
+      // Note: We can't use actual gradients in plain RN styles
+      // This creates a layered effect that simulates a gradient
+      shadowColor: colors.isDark ? "#1E3356" : "#FFFFFF",
+      shadowOffset: { width: 0, height: -30 },
+      shadowOpacity: colors.isDark ? 0.95 : 0.9,
+      shadowRadius: 30,
+      elevation: 10,
+      // Add a subtle border at the bottom for definition
+      borderBottomWidth: 1,
+      borderBottomColor: colors.isDark 
+        ? "rgba(74, 140, 255, 0.3)" 
+        : "rgba(0, 122, 255, 0.2)",
     },
   });
 };

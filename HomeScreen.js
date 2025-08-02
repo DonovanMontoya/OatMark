@@ -283,6 +283,7 @@ export default function HomeScreen() {
   const [location, setLocation] = useState(null);
   const [shops, setShops] = useState([]);
   const mapRef = useRef(null);
+  const overlayMapRef = useRef(null);
   const [selectedShop, setSelectedShop] = useState(null);
   const [showSubmitShop, setShowSubmitShop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -297,6 +298,7 @@ export default function HomeScreen() {
   const cardTranslateY = useRef(new Animated.Value(100)).current;
   const cardScale = useRef(new Animated.Value(0.9)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const adminButtonScale = useRef(new Animated.Value(1)).current;
 
   const handleSubmitShop = () => {
     setShowSubmitShop(true);
@@ -315,32 +317,56 @@ export default function HomeScreen() {
   };
 
   // Animation functions
-  const animateCardIn = () => {
+  const animateCardIn = (shop) => {
     // Reset animation values
     cardOpacity.setValue(0);
     cardTranslateY.setValue(100);
     cardScale.setValue(0.9);
 
-    // Run animations in parallel
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
-      }),
-      Animated.timing(cardTranslateY, {
-        toValue: 0,
-        duration: 350,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.5)),
-      }),
-      Animated.timing(cardScale, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
-      }),
+    // Animate main map to zoom into the selected shop with smoother transition
+    if (mapRef.current && shop) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: shop.location.latitude,
+          longitude: shop.location.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        },
+        500, // Increased duration for smoother map animation
+      );
+    }
+
+    // Create a staggered animation sequence for a more polished feel
+    Animated.sequence([
+      // Short delay before starting animations
+      Animated.delay(50),
+      
+      // Run animations in parallel with improved timing and easing
+      Animated.parallel([
+        // Fade in animation
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 400, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Cubic bezier for smoother fade
+        }),
+        
+        // Slide up animation with bounce effect
+        Animated.timing(cardTranslateY, {
+          toValue: 0,
+          duration: 500, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(1.7)), // Enhanced bounce effect
+        }),
+        
+        // Scale animation
+        Animated.timing(cardScale, {
+          toValue: 1,
+          duration: 450, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.bezier(0.175, 0.885, 0.32, 1.275), // Custom easing for pop effect
+        }),
+      ]),
     ]).start(() => {
       // Start the button pulse animation after the card appears
       startButtonPulse();
@@ -348,25 +374,63 @@ export default function HomeScreen() {
   };
 
   const animateCardOut = (callback) => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.ease),
-      }),
-      Animated.timing(cardTranslateY, {
-        toValue: 50,
-        duration: 250,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.ease),
-      }),
-      Animated.timing(cardScale, {
-        toValue: 0.95,
-        duration: 250,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.ease),
-      }),
+    // Animate main map back to normal view with smoother transition
+    if (mapRef.current && location) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        450, // Increased duration for smoother map transition
+      );
+    }
+
+    // Create a more sophisticated exit animation sequence
+    Animated.sequence([
+      // First animate scale and opacity slightly to signal the exit is starting
+      Animated.parallel([
+        Animated.timing(cardScale, {
+          toValue: 0.98,
+          duration: 150,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.quad),
+        }),
+        Animated.timing(cardOpacity, {
+          toValue: 0.9,
+          duration: 150,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.quad),
+        }),
+      ]),
+      
+      // Then complete the exit animation
+      Animated.parallel([
+        // Fade out animation
+        Animated.timing(cardOpacity, {
+          toValue: 0,
+          duration: 300, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Material Design standard easing
+        }),
+        
+        // Slide down animation
+        Animated.timing(cardTranslateY, {
+          toValue: 60, // Increased distance
+          duration: 350, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Material Design standard easing
+        }),
+        
+        // Scale animation
+        Animated.timing(cardScale, {
+          toValue: 0.92, // Slightly more scale down
+          duration: 350, // Increased duration
+          useNativeDriver: true,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Material Design standard easing
+        }),
+      ]),
     ]).start(callback);
   };
 
@@ -404,6 +468,27 @@ export default function HomeScreen() {
       ),
     ]).start();
   };
+
+  // Pulse animation for admin button
+  const startAdminButtonPulse = () => {
+    if (!isAdmin) return;
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(adminButtonScale, {
+          toValue: 1.1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(adminButtonScale, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  };
+
 
   useEffect(() => {
     (async () => {
@@ -462,6 +547,13 @@ export default function HomeScreen() {
 
     checkAdminStatus();
   }, []);
+
+  // Start admin button pulse when admin status changes
+  useEffect(() => {
+    if (isAdmin && selectedShop) {
+      startAdminButtonPulse();
+    }
+  }, [isAdmin, selectedShop]);
 
   // Handle shop location update
   const handleShopLocationUpdate = (updatedShop) => {
@@ -673,9 +765,9 @@ export default function HomeScreen() {
                 setSelectedShop(item);
 
                 // Start entrance animation
-                animateCardIn();
+                animateCardIn(item);
 
-                // Animate map to the shop's location
+                // First animate to normal view, then the overlay will zoom in
                 if (mapRef.current) {
                   mapRef.current.animateToRegion(
                     {
@@ -684,7 +776,7 @@ export default function HomeScreen() {
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     },
-                    500,
+                    300,
                   );
                 }
               }}
@@ -780,229 +872,283 @@ export default function HomeScreen() {
             },
           ]}
         >
-          {/* Header with shop name and close button */}
-          <View style={styles.iosCardHeader}>
+          {/* Background Map View */}
+          <View style={styles.overlayMapContainer}>
+            <MapView
+              ref={overlayMapRef}
+              style={styles.overlayMap}
+              showsUserLocation
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+              customMapStyle={
+                Platform.OS === "android" && isDark ? darkMapStyle : []
+              }
+              region={{
+                latitude: selectedShop.location.latitude,
+                longitude: selectedShop.location.longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={true}
+              pitchEnabled={true}
+            >
+              <Marker
+                coordinate={{
+                  latitude: selectedShop.location.latitude,
+                  longitude: selectedShop.location.longitude,
+                }}
+                title={selectedShop.name}
+                description={`Oat Milk: ${selectedShop.oatMilk}`}
+              />
+            </MapView>
+
+            {/* Map Border Overlay */}
+            <View style={styles.mapBorderOverlay} />
+
+            {/* Map Gradient Overlay */}
             <Animated.View
               style={[
-                styles.shopIconContainer,
+                styles.mapOverlayGradient,
                 {
-                  transform: [
-                    {
-                      rotate: cardScale.interpolate({
-                        inputRange: [0.9, 1],
-                        outputRange: ["-5deg", "0deg"],
-                      }),
-                    },
-                  ],
+                  opacity: cardOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 1],
+                  }),
                 },
               ]}
-            >
-              <Text style={styles.shopEmojiLarge}>
-                {selectedShop.emoji || "☕"}
-              </Text>
-            </Animated.View>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.iosShopName}>{selectedShop.name}</Text>
-              <View style={styles.subtitleRow}>
-                <Text style={styles.shopSubtitle}>Coffee Shop</Text>
-                {isAdmin && (
-                  <TouchableOpacity
-                    style={styles.adminAdjustButton}
-                    onPress={() => {
-                      setShowAdjustPinModal(true);
-                    }}
-                    activeOpacity={0.6}
-                  >
-                    <FontAwesome6
-                      name="location-crosshairs"
-                      size={10}
-                      color="#666"
-                      iconStyle="solid"
-                    />
-                    <Text style={styles.adminAdjustButtonText}>Adjust Pin</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.iosCloseButton}
-              onPress={() => {
-                // Run exit animation and then set selectedShop to null
-                animateCardOut(() => setSelectedShop(null));
-              }}
-            >
+            />
+
+          </View>
+
+          {/* Close Button - Top Right */}
+          <TouchableOpacity
+            style={styles.closeButtonTop}
+            onPress={() => {
+              animateCardOut(() => setSelectedShop(null));
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.closeButtonBackground}>
               <FontAwesome6
                 name="xmark"
                 size={16}
-                color="#8E8E93"
+                color={colors.text}
                 iconStyle="solid"
               />
-            </TouchableOpacity>
-          </View>
-
-          {/* Divider */}
-          <View style={styles.iosDivider} />
-
-          {/* Shop details */}
-          <View style={styles.iosCardContent}>
-            {/* Oat Milk Row */}
-            <View style={styles.iosDetailRow}>
-              {/*<FontAwesome6*/}
-              {/*  name="seedling"*/}
-              {/*  size={16}*/}
-              {/*  color="#4CAF50"*/}
-              {/*  iconStyle="solid"*/}
-              {/*/>*/}
-              <Image
-                source={require("./assets/splash-icon.png")}
-                style={{
-                  width: 30,
-                  height: 30,
-                  marginLeft: -5,
-                  marginRight: -6,
-                }}
-              />
-              <Text style={styles.iosDetailText}>
-                <Text style={styles.iosDetailLabel}>Oat Milk: </Text>
-                {selectedShop.oatMilk}
-              </Text>
             </View>
+          </TouchableOpacity>
 
-            {/* Upcharge Row */}
-            <View style={styles.iosDetailRow}>
-              <FontAwesome6
-                name="money-bill"
-                size={16}
-                color="#8E8E93"
-                iconStyle="solid"
-              />
-              <Text style={styles.iosDetailText}>
-                <Text style={styles.iosDetailLabel}>Upcharge: </Text>
-                <Text
-                  style={{ color: getUpchargeColor(selectedShop.upCharge) }}
-                >
-                  {getFormattedUpcharge(selectedShop.upCharge)}
-                </Text>
-              </Text>
-            </View>
-
-            {/* Distance Row */}
-            {location && (
-              <View style={styles.iosDetailRow}>
+          {/* Admin Adjust Pin Button - Top Left */}
+          {isAdmin && (
+            <Animated.View
+              style={[
+                styles.adminFloatingButton,
+                {
+                  transform: [{ scale: adminButtonScale }],
+                },
+              ]}
+            >
+              <TouchableOpacity
+                onPress={() => setShowAdjustPinModal(true)}
+                activeOpacity={0.8}
+                style={styles.adminFloatingBackground}
+              >
                 <FontAwesome6
-                  name="location-dot"
+                  name="location-crosshairs"
                   size={16}
                   color="#FF9500"
                   iconStyle="solid"
                 />
-                <Text style={styles.iosDetailText}>
-                  <Text style={styles.iosDetailLabel}>Distance: </Text>
-                  {(
-                    getDistanceMeters(location, selectedShop.location) / 1000
-                  ).toFixed(1)}
-                  km away
-                </Text>
-              </View>
-            )}
-          </View>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={styles.iosDirectionsButton}
-              onPress={() => getDirections(selectedShop)}
-              activeOpacity={0.7}
-            >
-              <Animated.View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transform: [{ scale: buttonScale }],
-                }}
-              >
-                <FontAwesome6
-                  name="route"
-                  size={18}
-                  color="#FFFFFF"
-                  iconStyle="solid"
-                  style={styles.iosButtonIcon}
-                />
-                <Text style={styles.iosDirectionsButtonText}>
-                  Get Directions
-                </Text>
-                <FontAwesome6
-                  name="arrow-right"
-                  size={14}
-                  color="#FFFFFF"
-                  iconStyle="solid"
-                  style={{ marginLeft: 8 }}
-                />
-              </Animated.View>
-            </TouchableOpacity>
-
-            {/* Secondary Action Buttons */}
-            <View style={styles.secondaryButtonsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.secondaryButton,
-                  isFavorite(selectedShop.id) && styles.favoriteButtonActive,
-                ]}
-                activeOpacity={0.7}
-                onPress={() => {
-                  // Quick animation feedback
-                  const scaleAnim = new Animated.Value(1);
-                  Animated.sequence([
-                    Animated.spring(scaleAnim, {
-                      toValue: 1.2,
-                      duration: 100,
-                      useNativeDriver: true,
+          {/* Bottom Card with Shop Info and Actions */}
+          <Animated.View
+            style={[
+              styles.bottomSection,
+              {
+                transform: [
+                  {
+                    translateY: cardTranslateY.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [0, 100],
+                      extrapolate: "clamp",
                     }),
-                    Animated.spring(scaleAnim, {
-                      toValue: 1,
-                      duration: 150,
-                      useNativeDriver: true,
-                    }),
-                  ]).start();
-
-                  toggleFavorite(selectedShop.id);
-                }}
-              >
-                <Animated.View style={{ transform: [{ scale: 1 }] }}>
-                  <FontAwesome6
-                    name={isFavorite(selectedShop.id) ? "heart" : "heart"}
-                    size={16}
-                    color={isFavorite(selectedShop.id) ? "#FF6B6B" : "#999"}
-                    iconStyle={
-                      isFavorite(selectedShop.id) ? "solid" : "regular"
-                    }
-                  />
-                </Animated.View>
-                <Text
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.bottomContent}>
+              {/* Shop Name and Info */}
+              <View style={styles.shopNameSection}>
+                <Animated.View
                   style={[
-                    styles.secondaryButtonText,
-                    isFavorite(selectedShop.id) &&
-                      styles.favoriteButtonTextActive,
+                    styles.bottomEmojiContainer,
+                    {
+                      transform: [
+                        {
+                          rotate: cardScale.interpolate({
+                            inputRange: [0.9, 1],
+                            outputRange: ["-5deg", "0deg"],
+                          }),
+                        },
+                        {
+                          scale: cardScale.interpolate({
+                            inputRange: [0.9, 1],
+                            outputRange: [0.9, 1],
+                          }),
+                        },
+                      ],
+                    },
                   ]}
                 >
-                  {isFavorite(selectedShop.id) ? "Saved" : "Save"}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.bottomEmoji}>
+                    {selectedShop.emoji || "☕"}
+                  </Text>
+                </Animated.View>
 
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                activeOpacity={0.7}
-              >
-                <FontAwesome6
-                  name="share"
-                  size={16}
-                  color="#4CAF50"
-                  iconStyle="solid"
-                />
-                <Text style={styles.secondaryButtonText}>Share</Text>
-              </TouchableOpacity>
+                <View style={styles.shopNameTextContainer}>
+                  <Text style={styles.bottomShopName}>{selectedShop.name}</Text>
+                  <Text style={styles.bottomSubtitle}>Coffee Shop</Text>
+                </View>
+              </View>
+
+              {/* Quick Stats */}
+              <View style={styles.quickStats}>
+                <View style={styles.statItem}>
+                  <Image
+                    source={require("./assets/splash-icon.png")}
+                    style={styles.statIcon}
+                  />
+                  <Text style={styles.statLabel}>Oat Milk</Text>
+                  <Text style={styles.statValue}>{selectedShop.oatMilk}</Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <FontAwesome6
+                    name="money-bill"
+                    size={16}
+                    color={getUpchargeColor(selectedShop.upCharge)}
+                    iconStyle="solid"
+                  />
+                  <Text style={styles.statLabel}>Upcharge</Text>
+                  <Text
+                    style={[
+                      styles.statValue,
+                      { color: getUpchargeColor(selectedShop.upCharge) },
+                    ]}
+                  >
+                    {getFormattedUpcharge(selectedShop.upCharge)}
+                  </Text>
+                </View>
+
+                {location && (
+                  <>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                      <FontAwesome6
+                        name="location-dot"
+                        size={16}
+                        color="#FF9500"
+                        iconStyle="solid"
+                      />
+                      <Text style={styles.statLabel}>Distance</Text>
+                      <Text style={styles.statValue}>
+                        {(
+                          getDistanceMeters(location, selectedShop.location) /
+                          1000
+                        ).toFixed(1)}
+                        km
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.primaryActionButton}
+                  onPress={() => getDirections(selectedShop)}
+                  activeOpacity={0.8}
+                >
+                  <Animated.View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transform: [{ scale: buttonScale }],
+                    }}
+                  >
+                    <FontAwesome6
+                      name="route"
+                      size={16}
+                      color="#FFFFFF"
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.primaryButtonText}>Get Directions</Text>
+                    <FontAwesome6
+                      name="arrow-right"
+                      size={12}
+                      color="#FFFFFF"
+                      iconStyle="solid"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Animated.View>
+                </TouchableOpacity>
+
+                <View style={styles.secondaryActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.secondaryActionButton,
+                      isFavorite(selectedShop.id) && styles.favoriteActive,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => toggleFavorite(selectedShop.id)}
+                  >
+                    <FontAwesome6
+                      name="heart"
+                      size={14}
+                      color={
+                        isFavorite(selectedShop.id)
+                          ? "#FF6B6B"
+                          : colors.secondaryText
+                      }
+                      iconStyle={
+                        isFavorite(selectedShop.id) ? "solid" : "regular"
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.secondaryButtonText,
+                        isFavorite(selectedShop.id) && { color: "#FF6B6B" },
+                      ]}
+                    >
+                      {isFavorite(selectedShop.id) ? "Saved" : "Save"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.secondaryActionButton}
+                    activeOpacity={0.8}
+                  >
+                    <FontAwesome6
+                      name="share"
+                      size={14}
+                      color={colors.secondaryText}
+                      iconStyle="solid"
+                    />
+                    <Text style={styles.secondaryButtonText}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
+          </Animated.View>
         </Animated.View>
       )}
 
