@@ -6,7 +6,6 @@ import {
   View,
   Modal,
   Animated,
-  Linking,
   Platform,
   Easing, Image,
 } from "react-native";
@@ -21,6 +20,8 @@ import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
 import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
+import { getDirections } from "./utils/MapLinks";
+import { getDistanceMeters } from "./utils/GeoUtils";
 import { useTheme } from "./contexts/ThemeContext";
 import { createHomeScreenStyles } from "./styles/ThemeStyles";
 
@@ -389,40 +390,6 @@ export default function HomeScreen() {
     ]).start();
   };
   
-  const getDirections = (shop) => {
-    if (!shop || !shop.location) return;
-    
-    const { latitude, longitude } = shop.location;
-    const label = encodeURIComponent(shop.name);
-    const url = Platform.select({
-      ios: `maps:0,0?q=${label}@${latitude},${longitude}`,
-      android: `geo:0,0?q=${latitude},${longitude}(${label})`,
-      default: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}&query_place_id=${label}`,
-    });
-    
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          const browserUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-          return Linking.openURL(browserUrl);
-        }
-      })
-      .catch((err) => console.error('An error occurred', err));
-  };
-
-  function getDistanceMeters(a, b) {
-    const R = 6371000; // Radius of Earth in meters
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const dLat = toRad(b.latitude - a.latitude);
-    const lat1 = toRad(a.latitude);
-    const lat2 = toRad(b.longitude);
-    const aVal =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLat / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
-  }
 
   useEffect(() => {
     (async () => {
