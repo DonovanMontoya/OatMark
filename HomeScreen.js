@@ -3,13 +3,15 @@ import {Animated, Easing, FlatList, Image, Modal, Platform, Text, TouchableOpaci
 import MapView, {Marker, PROVIDER_GOOGLE} from "react-native-maps";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {db} from "./services/firebase";
-import {collection, onSnapshot} from "firebase/firestore";
+import {auth, db} from "./services/firebase";
+import {collection, doc, onSnapshot, updateDoc} from "firebase/firestore";
+import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
+import AdjustPinModal from "./components/AdjustPinModal";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
@@ -266,6 +268,8 @@ export default function HomeScreen() {
     const [showSettings, setShowSettings] = useState(false);
     const [showPendingShops, setShowPendingShops] = useState(false);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
 
     // Animation values
     const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -418,6 +422,41 @@ export default function HomeScreen() {
             setShops(shopsData);
         });
     }, [location]);
+
+    // Check if the current user is an admin
+    useEffect(() => {
+        if (!auth.currentUser) {
+            setIsAdmin(false);
+            return;
+        }
+
+        const checkAdminStatus = async () => {
+            try {
+                const tokenResult = await getIdTokenResult(auth.currentUser);
+                const adminStatus = !!tokenResult.claims.admin;
+                setIsAdmin(adminStatus);
+            } catch (error) {
+                console.error("Failed to fetch admin status:", error);
+                setIsAdmin(false);
+            }
+        };
+
+        checkAdminStatus();
+    }, []);
+
+    // Handle shop location update
+    const handleShopLocationUpdate = (updatedShop) => {
+        // Update the shop in the local state
+        const updatedShops = shops.map(shop => 
+            shop.id === updatedShop.id ? updatedShop : shop
+        );
+        setShops(updatedShops);
+        
+        // Update the selected shop if it's the one being edited
+        if (selectedShop && selectedShop.id === updatedShop.id) {
+            setSelectedShop(updatedShop);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -728,6 +767,34 @@ export default function HomeScreen() {
                             <Text style={styles.iosDirectionsButtonText}>Get Directions</Text>
                         </Animated.View>
                     </TouchableOpacity>
+
+                    {/* Adjust Pin Button (Admin Only) */}
+                    {isAdmin && (
+                        <TouchableOpacity
+                            style={[styles.iosDirectionsButton, { marginTop: 10, backgroundColor: '#FF9500' }]}
+                            onPress={() => {
+                                setShowAdjustPinModal(true);
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "center"
+                                }}
+                            >
+                                <FontAwesome6
+                                    name="location-crosshairs"
+                                    size={16}
+                                    color="#FFFFFF"
+                                    iconStyle="solid"
+                                    style={styles.iosButtonIcon}
+                                />
+                                <Text style={styles.iosDirectionsButtonText}>Adjust Pin Location</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
                 </Animated.View>
             )}
 
@@ -765,6 +832,22 @@ export default function HomeScreen() {
                 onRequestClose={() => setShowAdminPanel(false)}
             >
                 <AdminScreen onClose={() => setShowAdminPanel(false)}/>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                transparent={false}
+                visible={showAdjustPinModal}
+                onRequestClose={() => setShowAdjustPinModal(false)}
+            >
+                {selectedShop && (
+                    <AdjustPinModal
+                        shop={selectedShop}
+                        collection="coffee_shops"
+                        onClose={() => setShowAdjustPinModal(false)}
+                        onSave={handleShopLocationUpdate}
+                    />
+                )}
             </Modal>
         </View>
     );
