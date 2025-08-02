@@ -1,16 +1,19 @@
 import React, {useEffect, useState} from "react";
-import {ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
+import {ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {addDoc, collection, deleteDoc, doc, onSnapshot, query} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import {getIdTokenResult} from "firebase/auth";
 import MapView, {Marker} from "react-native-maps";
+import AdjustPinModal from "./AdjustPinModal";
 
 const AdminScreen = ({onClose}) => {
     const [pendingShops, setPendingShops] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
+    const [selectedShop, setSelectedShop] = useState(null);
 
 
     useEffect(() => {
@@ -142,6 +145,15 @@ const AdminScreen = ({onClose}) => {
         </View>);
     }
 
+    // Handle shop location update
+    const handleShopLocationUpdate = (updatedShop) => {
+        // Update the shop in the local state
+        const updatedShops = pendingShops.map(shop =>
+            shop.id === updatedShop.id ? updatedShop : shop
+        );
+        setPendingShops(updatedShops);
+    };
+
     return (<View style={styles.container}>
         <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -244,6 +256,21 @@ const AdminScreen = ({onClose}) => {
                             />
                             <Text style={styles.mapButtonText}>Search on Yelp</Text>
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.mapButton}
+                            onPress={() => {
+                                setSelectedShop(item);
+                                setShowAdjustPinModal(true);
+                            }}
+                        >
+                            <FontAwesome6
+                                name="location-crosshairs"
+                                size={14}
+                                color="#FF9500"
+                                iconStyle="solid"
+                            />
+                            <Text style={styles.mapButtonText}>Adjust Pin</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>)}
                 <View style={styles.cardContent}>
@@ -309,6 +336,22 @@ const AdminScreen = ({onClose}) => {
                 </View>
             </View>)}
         />)}
+
+        {/* Adjust Pin Modal */}
+        <Modal
+            animationType="slide"
+            transparent={false}
+            visible={showAdjustPinModal}
+            onRequestClose={() => setShowAdjustPinModal(false)}
+        >
+            {selectedShop && (
+                <AdjustPinModal
+                    shop={selectedShop}
+                    onClose={() => setShowAdjustPinModal(false)}
+                    onSave={handleShopLocationUpdate}
+                />
+            )}
+        </Modal>
     </View>);
 };
 
