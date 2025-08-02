@@ -11,7 +11,7 @@ import {
   View,
   Alert,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { auth, db } from "./services/firebase";
@@ -674,11 +674,10 @@ export default function HomeScreen() {
           showsPointsOfInterest
           ref={mapRef}
           style={styles.map}
+          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
           showsUserLocation
           provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-          customMapStyle={
-            Platform.OS === "android" && isDark ? darkMapStyle : []
-          }
+          customMapStyle={Platform.OS === "android" && isDark ? darkMapStyle : []}
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
@@ -694,6 +693,14 @@ export default function HomeScreen() {
             setSelectedShop(nearby || null);
           }}
         >
+          {Platform.OS === 'android' && (
+            <UrlTile
+              urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              tileSize={256}
+              flipY={false}
+            />
+          )}
           <TouchableOpacity
             style={styles.locationButton}
             onPress={() => {

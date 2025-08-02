@@ -15,7 +15,7 @@ import {addDoc, collection} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import EmojiSelector from "./EmojiSelector";
-import MapView, {Circle, Polygon} from "react-native-maps";
+import MapView, { Circle, Polygon, UrlTile } from "react-native-maps";
 import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare} from "../utils/GeoUtils";
 
 const SubmitShopScreen = ({onClose}) => {
@@ -346,6 +346,7 @@ const SubmitShopScreen = ({onClose}) => {
                             <MapView
                                 ref={mapRef}
                                 style={styles.map}
+                                mapType={Platform.OS === 'android' ? 'none' : 'standard'}
                                 initialRegion={{
                                     latitude: userLocation.latitude,
                                     longitude: userLocation.longitude,
@@ -355,6 +356,14 @@ const SubmitShopScreen = ({onClose}) => {
                                 onRegionChangeComplete={onRegionChangeComplete}
                                 onRegionChange={onRegionChangeStart}
                             >
+                                {Platform.OS === 'android' && (
+                                    <UrlTile
+                                        urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        maximumZ={19}
+                                        tileSize={256}
+                                        flipY={false}
+                                    />
+                                )}
                                 {/* User's position marker as a dot with higher z-index */}
                                 <Circle
                                     center={userLocation}

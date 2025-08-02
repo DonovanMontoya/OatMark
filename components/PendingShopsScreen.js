@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from "react";
-import {ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
+import {ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {collection, deleteDoc, doc, onSnapshot, query, where} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import MapView, {Marker} from "react-native-maps";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 
 const PendingShopsScreen = ({onClose}) => {
     const [pendingShops, setPendingShops] = useState([]);
@@ -131,6 +131,7 @@ const PendingShopsScreen = ({onClose}) => {
                                 <View style={styles.mapContainer}>
                                     <MapView
                                         style={styles.map}
+                                        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
                                         initialRegion={{
                                             latitude: item.location.latitude,
                                             longitude: item.location.longitude,
@@ -140,6 +141,14 @@ const PendingShopsScreen = ({onClose}) => {
                                         scrollEnabled={false}
                                         zoomEnabled={false}
                                     >
+                                        {Platform.OS === 'android' && (
+                                            <UrlTile
+                                                urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                maximumZ={19}
+                                                tileSize={256}
+                                                flipY={false}
+                                            />
+                                        )}
                                         <Marker
                                             coordinate={{
                                                 latitude: item.location.latitude,
