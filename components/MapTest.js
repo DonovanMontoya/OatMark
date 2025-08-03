@@ -6,7 +6,7 @@ import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 const MapTest = () => {
     const mapRef = useRef(null);
     const [isDark, setIsDark] = useState(false);
-    const [userLocation, setUserLocation] = useState({
+    const [userLocation] = useState({
         latitude: 37.7749,
         longitude: -122.4194,
     });
@@ -53,7 +53,7 @@ const MapTest = () => {
         <View style={styles.container}>
             <Text style={styles.title}>Free Map Test</Text>
 
-            {/* Map Container with proper structure to avoid child parent error */}
+            {/* Map Container with a proper structure to avoid child parent error */}
             <View style={styles.mapWrapper}>
                 <FreeMapView
                     ref={mapRef}

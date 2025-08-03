@@ -1,43 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Easing,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  Text,
-  TouchableOpacity,
-  View,
-  Alert,
-} from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, UrlTile } from "react-native-maps";
+import React, {useEffect, useRef, useState} from "react";
+import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Text, TouchableOpacity, View,} from "react-native";
+import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./components/FreeMapView";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import { auth, db } from "./services/firebase";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  setDoc,
-  getDoc,
-} from "firebase/firestore";
-import { getIdTokenResult } from "firebase/auth";
+import {auth, db} from "./services/firebase";
+import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc,} from "firebase/firestore";
+import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
-import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
-import { getDirections } from "./utils/MapLinks";
-import { getDistanceMeters } from "./utils/GeoUtils";
-import { useTheme } from "./contexts/ThemeContext";
-import { createHomeScreenStyles } from "./styles/ThemeStyles";
+import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
+import {getDirections} from "./utils/MapLinks";
+import {getDistanceMeters} from "./utils/GeoUtils";
+import {useTheme} from "./contexts/ThemeContext";
+import {createHomeScreenStyles} from "./styles/ThemeStyles";
 
 export default function HomeScreen() {
   // Get theme context
@@ -593,26 +573,24 @@ export default function HomeScreen() {
       return;
     }
 
-    // Create user document if needed
+    // Create the user document if needed
     createUserDocument(auth.currentUser.uid);
 
-    const unsubscribe = onSnapshot(
-      doc(db, "users", auth.currentUser.uid),
-      (doc) => {
-        if (doc.exists()) {
-          const userData = doc.data();
-          setFavorites(userData.favorites || []);
-        } else {
+    return onSnapshot(
+        doc(db, "users", auth.currentUser.uid),
+        (doc) => {
+          if (doc.exists()) {
+            const userData = doc.data();
+            setFavorites(userData.favorites || []);
+          } else {
+            setFavorites([]);
+          }
+        },
+        (error) => {
+          console.error("Error loading favorites:", error);
           setFavorites([]);
-        }
-      },
-      (error) => {
-        console.error("Error loading favorites:", error);
-        setFavorites([]);
-      },
+        },
     );
-
-    return unsubscribe;
   }, [auth.currentUser]);
 
   // Toggle favorite status
