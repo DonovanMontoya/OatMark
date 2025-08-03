@@ -3,9 +3,15 @@ import {Alert, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-
 import {doc, updateDoc} from "firebase/firestore";
 import {db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import MapView, { UrlTile } from "react-native-maps";
+import MapView from "react-native-maps";
+import FreeMapView from "./FreeMapView";
 
-const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) => {
+const AdjustPinModal = ({
+                            shop,
+                            onClose,
+                            onSave,
+                            collection = "pendingShops",
+                        }) => {
     // State variables
     const [mapCenter, setMapCenter] = useState(null);
     const [isMapDragging, setIsMapDragging] = useState(false);
@@ -19,7 +25,7 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
         if (shop && shop.location) {
             setMapCenter({
                 latitude: shop.location.latitude,
-                longitude: shop.location.longitude
+                longitude: shop.location.longitude,
             });
         }
     }, [shop]);
@@ -36,7 +42,7 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
         // Update map center
         setMapCenter({
             latitude: region.latitude,
-            longitude: region.longitude
+            longitude: region.longitude,
         });
     };
 
@@ -55,8 +61,8 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
             await updateDoc(shopRef, {
                 location: {
                     latitude: mapCenter.latitude,
-                    longitude: mapCenter.longitude
-                }
+                    longitude: mapCenter.longitude,
+                },
             });
 
             // Create the updated shop object
@@ -64,8 +70,8 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
                 ...shop,
                 location: {
                     latitude: mapCenter.latitude,
-                    longitude: mapCenter.longitude
-                }
+                    longitude: mapCenter.longitude,
+                },
             };
 
             // Call onSave callback with updated shop
@@ -108,37 +114,43 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
                                 style={styles.fixedPin}
                             />
                         </View>
-                        <MapView
-                            ref={mapRef}
-                            style={styles.map}
-                            mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-                            initialRegion={{
-                                latitude: mapCenter.latitude,
-                                longitude: mapCenter.longitude,
-                                latitudeDelta: 0.005,
-                                longitudeDelta: 0.005,
-                            }}
-                            onRegionChangeComplete={onRegionChangeComplete}
-                            onRegionChange={onRegionChangeStart}
-                        >
-                            {Platform.OS === 'android' && (
-                                <UrlTile
-                                    urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    maximumZ={19}
-                                    tileSize={256}
-                                    flipY={false}
-                                />
-                            )}
-                        </MapView>
+                        {Platform.OS === "android" ? (
+                            <FreeMapView
+                                ref={mapRef}
+                                style={styles.map}
+                                onRegionChangeComplete={onRegionChangeComplete}
+                                onRegionChange={onRegionChangeStart}
+                                initialRegion={{
+                                    latitude: mapCenter.latitude,
+                                    longitude: mapCenter.longitude,
+                                    latitudeDelta: 0.01,
+                                    longitudeDelta: 0.01,
+                                }}
+                            />
+                        ) : (
+                            <MapView
+                                ref={mapRef}
+                                style={styles.map}
+                                mapType="standard"
+                                onRegionChangeComplete={onRegionChangeComplete}
+                                onRegionChange={onRegionChangeStart}
+                                initialRegion={{
+                                    latitude: mapCenter.latitude,
+                                    longitude: mapCenter.longitude,
+                                    latitudeDelta: 0.01,
+                                    longitudeDelta: 0.01,
+                                }}
+                            />
+                        )}
 
                         <View style={styles.coordinatesContainer}>
                             <Text style={styles.coordinatesText}>
                                 {isMapDragging
                                     ? "Dragging map..."
                                     : "Latitude: " +
-                                      mapCenter.latitude.toFixed(6) +
-                                      ", Longitude: " +
-                                      mapCenter.longitude.toFixed(6)}
+                                    mapCenter.latitude.toFixed(6) +
+                                    ", Longitude: " +
+                                    mapCenter.longitude.toFixed(6)}
                             </Text>
                         </View>
                     </View>
@@ -149,10 +161,7 @@ const AdjustPinModal = ({shop, onClose, onSave, collection = "pendingShops"}) =>
                 )}
 
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={onClose}
-                    >
+                    <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
 

@@ -1,22 +1,23 @@
 import React, {useEffect, useRef, useState} from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import * as Location from "expo-location";
 import {addDoc, collection} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import EmojiSelector from "./EmojiSelector";
-import MapView, { Circle, Polygon, UrlTile } from "react-native-maps";
-import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare} from "../utils/GeoUtils";
+import MapView, {Circle, Polygon} from "react-native-maps";
+import FreeMapView from "./FreeMapView";
+import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare,} from "../utils/GeoUtils";
 
 const SubmitShopScreen = ({onClose}) => {
     const [shopName, setShopName] = useState("");
@@ -29,7 +30,8 @@ const SubmitShopScreen = ({onClose}) => {
     // Location state variables
     const [userLocation, setUserLocation] = useState(null);
     const [mapCenter, setMapCenter] = useState(null);
-    const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+    const [locationPermissionGranted, setLocationPermissionGranted] =
+        useState(false);
     const [distanceFromUser, setDistanceFromUser] = useState(0);
     const [isLoadingLocation, setIsLoadingLocation] = useState(true);
     const [isMapDragging, setIsMapDragging] = useState(false);
@@ -49,11 +51,11 @@ const SubmitShopScreen = ({onClose}) => {
                 // Request location permission
                 const {status} = await Location.requestForegroundPermissionsAsync();
 
-                if (status !== 'granted') {
+                if (status !== "granted") {
                     setLocationPermissionGranted(false);
                     Alert.alert(
                         "Permission Denied",
-                        "Location permission is required to submit a shop."
+                        "Location permission is required to submit a shop.",
                     );
                     setIsLoadingLocation(false);
                     return;
@@ -63,7 +65,7 @@ const SubmitShopScreen = ({onClose}) => {
 
                 // Get current location
                 const location = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.Highest
+                    accuracy: Location.Accuracy.Highest,
                 });
 
                 const userCoords = {
@@ -76,10 +78,7 @@ const SubmitShopScreen = ({onClose}) => {
                 setIsLoadingLocation(false);
             } catch (error) {
                 console.error("Error getting location:", error);
-                Alert.alert(
-                    "Error",
-                    "Failed to get your location. Please try again."
-                );
+                Alert.alert("Error", "Failed to get your location. Please try again.");
                 setIsLoadingLocation(false);
             }
         };
@@ -99,12 +98,16 @@ const SubmitShopScreen = ({onClose}) => {
         // Get the center of the map
         const newCenter = {
             latitude: region.latitude,
-            longitude: region.longitude
+            longitude: region.longitude,
         };
 
         if (userLocation) {
             // Check if the new center is within the square boundary
-            const isWithinBoundary = isPointInSquare(newCenter, userLocation, MAX_DISTANCE_METERS);
+            const isWithinBoundary = isPointInSquare(
+                newCenter,
+                userLocation,
+                MAX_DISTANCE_METERS,
+            );
 
             // Calculate distance from user location to map center (for display purposes)
             const distance = getDistanceMeters(userLocation, newCenter);
@@ -113,14 +116,18 @@ const SubmitShopScreen = ({onClose}) => {
             // If outside the square boundary, reset map to the nearest point on the boundary
             if (!isWithinBoundary) {
                 // Get the nearest point on the square boundary
-                const boundaryPoint = getNearestPointOnSquare(newCenter, userLocation, MAX_DISTANCE_METERS);
+                const boundaryPoint = getNearestPointOnSquare(
+                    newCenter,
+                    userLocation,
+                    MAX_DISTANCE_METERS,
+                );
 
                 // Create the region object for animation
                 const boundaryLocation = {
                     latitude: boundaryPoint.latitude,
                     longitude: boundaryPoint.longitude,
                     latitudeDelta: region.latitudeDelta,
-                    longitudeDelta: region.longitudeDelta
+                    longitudeDelta: region.longitudeDelta,
                 };
 
                 // Animate map to boundary with a longer duration for smoother transition
@@ -213,7 +220,7 @@ const SubmitShopScreen = ({onClose}) => {
                 distanceFromUser: distanceFromUser,
                 createdAt: new Date(),
                 createdBy: auth.currentUser.uid,
-                status: "pending"
+                status: "pending",
             });
 
             Alert.alert("Success!", "Coffee shop submitted for review!", [
@@ -320,8 +327,8 @@ const SubmitShopScreen = ({onClose}) => {
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Location</Text>
                     <Text style={styles.mapInstructions}>
-                        Drag the map to position the pin at the shop location (within a 200-foot square around your
-                        position)
+                        Drag the map to position the pin at the shop location (within a
+                        200-foot square around your position)
                     </Text>
 
                     {isLoadingLocation ? (
@@ -343,51 +350,84 @@ const SubmitShopScreen = ({onClose}) => {
                                     style={styles.fixedPin}
                                 />
                             </View>
-                            <MapView
-                                ref={mapRef}
-                                style={styles.map}
-                                mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-                                initialRegion={{
-                                    latitude: userLocation.latitude,
-                                    longitude: userLocation.longitude,
-                                    latitudeDelta: 0.002,
-                                    longitudeDelta: 0.002,
-                                }}
-                                onRegionChangeComplete={onRegionChangeComplete}
-                                onRegionChange={onRegionChangeStart}
-                            >
-                                {Platform.OS === 'android' && (
-                                    <UrlTile
-                                        urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                        maximumZ={19}
-                                        tileSize={256}
-                                        flipY={false}
+                            {Platform.OS === "android" ? (
+                                <FreeMapView
+                                    ref={mapRef}
+                                    style={styles.map}
+                                    initialRegion={{
+                                        latitude: userLocation.latitude,
+                                        longitude: userLocation.longitude,
+                                        latitudeDelta: 0.002,
+                                        longitudeDelta: 0.002,
+                                    }}
+                                    onRegionChangeComplete={onRegionChangeComplete}
+                                    onRegionChange={onRegionChangeStart}
+                                >
+                                    {/* User's position marker as a dot with higher z-index */}
+                                    <Circle
+                                        center={userLocation}
+                                        radius={10}
+                                        strokeWidth={3}
+                                        strokeColor="white"
+                                        fillColor="#4285F4"
+                                        zIndex={20}
                                     />
-                                )}
-                                {/* User's position marker as a dot with higher z-index */}
-                                <Circle
-                                    center={userLocation}
-                                    radius={10}
-                                    strokeWidth={3}
-                                    strokeColor="white"
-                                    fillColor="#4285F4"
-                                    zIndex={20}
-                                />
 
-                                {/* Square showing the 200-foot boundary */}
-                                <Polygon
-                                    coordinates={calculateSquareCorners(userLocation, MAX_DISTANCE_METERS)}
-                                    strokeWidth={2}
-                                    strokeColor="rgba(66, 133, 244, 0.7)"
-                                    fillColor="rgba(66, 133, 244, 0.1)"
-                                    zIndex={5}
-                                />
-                            </MapView>
+                                    {/* Square showing the 200-foot boundary */}
+                                    <Polygon
+                                        coordinates={calculateSquareCorners(
+                                            userLocation,
+                                            MAX_DISTANCE_METERS,
+                                        )}
+                                        strokeWidth={2}
+                                        strokeColor="rgba(66, 133, 244, 0.7)"
+                                        fillColor="rgba(66, 133, 244, 0.1)"
+                                        zIndex={5}
+                                    />
+                                </FreeMapView>
+                            ) : (
+                                <MapView
+                                    ref={mapRef}
+                                    style={styles.map}
+                                    mapType="standard"
+                                    initialRegion={{
+                                        latitude: userLocation.latitude,
+                                        longitude: userLocation.longitude,
+                                        latitudeDelta: 0.002,
+                                        longitudeDelta: 0.002,
+                                    }}
+                                    onRegionChangeComplete={onRegionChangeComplete}
+                                    onRegionChange={onRegionChangeStart}
+                                >
+                                    {/* User's position marker as a dot with higher z-index */}
+                                    <Circle
+                                        center={userLocation}
+                                        radius={10}
+                                        strokeWidth={3}
+                                        strokeColor="white"
+                                        fillColor="#4285F4"
+                                        zIndex={20}
+                                    />
+
+                                    {/* Square showing the 200-foot boundary */}
+                                    <Polygon
+                                        coordinates={calculateSquareCorners(
+                                            userLocation,
+                                            MAX_DISTANCE_METERS,
+                                        )}
+                                        strokeWidth={2}
+                                        strokeColor="rgba(66, 133, 244, 0.7)"
+                                        fillColor="rgba(66, 133, 244, 0.1)"
+                                        zIndex={5}
+                                    />
+                                </MapView>
+                            )}
 
                             <View style={styles.distanceContainer}>
                                 <Text style={styles.distanceText}>
-                                    {isMapDragging ? "Dragging map..." :
-                                        distanceFromUser > 0
+                                    {isMapDragging
+                                        ? "Dragging map..."
+                                        : distanceFromUser > 0
                                             ? `Distance: ${Math.round(distanceFromUser * 3.28084)} feet from your location (square boundary)`
                                             : "Pin is at your current location"}
                                 </Text>
@@ -544,64 +584,64 @@ const styles = StyleSheet.create({
     mapContainer: {
         height: 300,
         borderRadius: 8,
-        overflow: 'hidden',
+        overflow: "hidden",
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: "#ddd",
         marginBottom: 10,
-        position: 'relative',
+        position: "relative",
     },
     map: {
-        width: '100%',
-        height: '100%',
+        width: "100%",
+        height: "100%",
     },
     mapPlaceholder: {
         height: 200,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: "#f9f9f9",
         borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: "#ddd",
     },
     loadingText: {
         fontSize: 16,
-        color: '#666',
+        color: "#666",
     },
     errorText: {
         fontSize: 16,
-        color: '#cc0000',
+        color: "#cc0000",
     },
     mapInstructions: {
         fontSize: 14,
-        color: '#666',
+        color: "#666",
         marginBottom: 10,
-        fontStyle: 'italic',
+        fontStyle: "italic",
     },
     // Fixed pin styles
     fixedPinContainer: {
-        position: 'absolute',
+        position: "absolute",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         zIndex: 15, // Lower than user location dot (20) but higher than other map elements
-        pointerEvents: 'none', // Allow touches to pass through to the map
+        pointerEvents: "none", // Allow touches to pass through to the map
     },
     fixedPin: {
         marginBottom: 36, // Offset to account for the pin's anchor point
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.3,
         shadowRadius: 2,
     },
     distanceContainer: {
-        position: 'absolute',
+        position: "absolute",
         bottom: 10,
         left: 10,
         right: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 4,
@@ -609,8 +649,8 @@ const styles = StyleSheet.create({
     },
     distanceText: {
         fontSize: 12,
-        color: '#333',
-        textAlign: 'center',
+        color: "#333",
+        textAlign: "center",
     },
 });
 

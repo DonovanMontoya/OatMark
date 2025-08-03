@@ -1,15 +1,15 @@
 import React, {useEffect, useState} from "react";
 import {ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
-import {collection, deleteDoc, doc, onSnapshot, query, where} from "firebase/firestore";
+import {collection, deleteDoc, doc, onSnapshot, query, where,} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import MapView, { Marker, UrlTile } from "react-native-maps";
+import MapView, {Marker} from "react-native-maps";
+import FreeMapView from "./FreeMapView";
 
 const PendingShopsScreen = ({onClose}) => {
     const [pendingShops, setPendingShops] = useState([]);
     const [loading, setLoading] = useState(true);
-
 
     useEffect(() => {
         if (!auth.currentUser) {
@@ -20,24 +20,27 @@ const PendingShopsScreen = ({onClose}) => {
         // Query pendingShops collection for shops created by the current user
         const q = query(
             collection(db, "pendingShops"),
-            where("createdBy", "==", auth.currentUser.uid)
+            where("createdBy", "==", auth.currentUser.uid),
         );
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const shops = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setPendingShops(shops);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching pending shops:", error);
-            setLoading(false);
-        });
+        const unsubscribe = onSnapshot(
+            q,
+            (querySnapshot) => {
+                const shops = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+                setPendingShops(shops);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Error fetching pending shops:", error);
+                setLoading(false);
+            },
+        );
 
         return () => unsubscribe();
     }, []);
-
 
     const handleDelete = (shopId) => {
         Alert.alert(
@@ -58,7 +61,7 @@ const PendingShopsScreen = ({onClose}) => {
                         }
                     },
                 },
-            ]
+            ],
         );
     };
 
@@ -129,34 +132,50 @@ const PendingShopsScreen = ({onClose}) => {
 
                             {item.location && (
                                 <View style={styles.mapContainer}>
-                                    <MapView
-                                        style={styles.map}
-                                        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-                                        initialRegion={{
-                                            latitude: item.location.latitude,
-                                            longitude: item.location.longitude,
-                                            latitudeDelta: 0.01,
-                                            longitudeDelta: 0.01,
-                                        }}
-                                        scrollEnabled={false}
-                                        zoomEnabled={false}
-                                    >
-                                        {Platform.OS === 'android' && (
-                                            <UrlTile
-                                                urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                maximumZ={19}
-                                                tileSize={256}
-                                                flipY={false}
-                                            />
-                                        )}
-                                        <Marker
-                                            coordinate={{
+                                    {Platform.OS === "android" ? (
+                                        <FreeMapView
+                                            style={styles.map}
+                                            initialRegion={{
                                                 latitude: item.location.latitude,
                                                 longitude: item.location.longitude,
+                                                latitudeDelta: 0.01,
+                                                longitudeDelta: 0.01,
                                             }}
-                                            title={item.name}
+                                            scrollEnabled={false}
+                                            zoomEnabled={false}
+                                            markers={[
+                                                {
+                                                    key: item.id,
+                                                    coordinate: {
+                                                        latitude: item.location.latitude,
+                                                        longitude: item.location.longitude,
+                                                    },
+                                                    title: item.name,
+                                                },
+                                            ]}
                                         />
-                                    </MapView>
+                                    ) : (
+                                        <MapView
+                                            style={styles.map}
+                                            mapType="standard"
+                                            initialRegion={{
+                                                latitude: item.location.latitude,
+                                                longitude: item.location.longitude,
+                                                latitudeDelta: 0.01,
+                                                longitudeDelta: 0.01,
+                                            }}
+                                            scrollEnabled={false}
+                                            zoomEnabled={false}
+                                        >
+                                            <Marker
+                                                coordinate={{
+                                                    latitude: item.location.latitude,
+                                                    longitude: item.location.longitude,
+                                                }}
+                                                title={item.name}
+                                            />
+                                        </MapView>
+                                    )}
                                     <View style={styles.mapButtonsContainer}>
                                         <TouchableOpacity
                                             style={styles.mapButton}
@@ -195,7 +214,8 @@ const PendingShopsScreen = ({onClose}) => {
                                         iconStyle="solid"
                                     />
                                     <Text style={styles.detailText}>
-                                        Submitted: {item.createdAt?.toDate().toLocaleDateString() || "Unknown"}
+                                        Submitted:{" "}
+                                        {item.createdAt?.toDate().toLocaleDateString() || "Unknown"}
                                     </Text>
                                 </View>
                                 {item.location && (
@@ -207,7 +227,8 @@ const PendingShopsScreen = ({onClose}) => {
                                             iconStyle="solid"
                                         />
                                         <Text style={styles.detailText}>
-                                            Location: {item.location.latitude.toFixed(6)}, {item.location.longitude.toFixed(6)}
+                                            Location: {item.location.latitude.toFixed(6)},{" "}
+                                            {item.location.longitude.toFixed(6)}
                                         </Text>
                                     </View>
                                 )}
@@ -238,36 +259,36 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
     },
     mapContainer: {
-        width: '100%',
+        width: "100%",
         height: 220,
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: '#f0f0f0',
-        overflow: 'hidden',
+        borderColor: "#f0f0f0",
+        overflow: "hidden",
     },
     map: {
-        width: '100%',
+        width: "100%",
         height: 180,
     },
     mapButtonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
+        flexDirection: "row",
+        justifyContent: "space-around",
         paddingVertical: 8,
-        backgroundColor: '#f8f8f8',
+        backgroundColor: "#f8f8f8",
     },
     mapButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 6,
-        backgroundColor: 'white',
+        backgroundColor: "white",
         borderWidth: 1,
-        borderColor: '#e0e0e0',
+        borderColor: "#e0e0e0",
     },
     mapButtonText: {
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: "600",
         marginLeft: 6,
     },
     emojiContainer: {

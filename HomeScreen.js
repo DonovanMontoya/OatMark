@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, UrlTile } from "react-native-maps";
+import FreeMapView from "./components/FreeMapView";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { auth, db } from "./services/firebase";
@@ -340,7 +341,7 @@ export default function HomeScreen() {
     Animated.sequence([
       // Short delay before starting animations
       Animated.delay(50),
-      
+
       // Run animations in parallel with improved timing and easing
       Animated.parallel([
         // Fade in animation
@@ -350,7 +351,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Cubic bezier for smoother fade
         }),
-        
+
         // Slide up animation with bounce effect
         Animated.timing(cardTranslateY, {
           toValue: 0,
@@ -358,7 +359,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
           easing: Easing.out(Easing.back(1.7)), // Enhanced bounce effect
         }),
-        
+
         // Scale animation
         Animated.timing(cardScale, {
           toValue: 1,
@@ -404,7 +405,7 @@ export default function HomeScreen() {
           easing: Easing.out(Easing.quad),
         }),
       ]),
-      
+
       // Then complete the exit animation
       Animated.parallel([
         // Fade out animation
@@ -414,7 +415,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
           easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Material Design standard easing
         }),
-        
+
         // Slide down animation
         Animated.timing(cardTranslateY, {
           toValue: 60, // Increased distance
@@ -422,7 +423,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
           easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Material Design standard easing
         }),
-        
+
         // Scale animation
         Animated.timing(cardScale, {
           toValue: 0.92, // Slightly more scale down
@@ -488,7 +489,6 @@ export default function HomeScreen() {
       ]),
     ).start();
   };
-
 
   useEffect(() => {
     (async () => {
@@ -670,37 +670,76 @@ export default function HomeScreen() {
       />
 
       {location ? (
-        <MapView
-          showsPointsOfInterest
-          ref={mapRef}
-          style={styles.map}
-          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-          showsUserLocation
-          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-          customMapStyle={Platform.OS === "android" && isDark ? darkMapStyle : []}
-          initialRegion={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          onPress={(e) => {
-            const tapped = e.nativeEvent.coordinate;
-            const nearby = shops.find((shop) => {
-              const distance = getDistanceMeters(tapped, shop.location);
-              return distance < 100;
-            });
-            setSelectedShop(nearby || null);
-          }}
-        >
-          {Platform.OS === 'android' && (
-            <UrlTile
-              urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              maximumZ={19}
-              tileSize={256}
-              flipY={false}
+        <View style={styles.mapWrapper}>
+          {Platform.OS === "android" ? (
+            // Use FreeMapView for Android - completely free, no API key needed
+            <FreeMapView
+              ref={mapRef}
+              style={styles.map}
+              initialRegion={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={(e) => {
+                const tapped = e.nativeEvent.coordinate;
+                const nearby = shops.find((shop) => {
+                  const distance = getDistanceMeters(tapped, shop.location);
+                  return distance < 100;
+                });
+                setSelectedShop(nearby || null);
+              }}
+              showsUserLocation
+              isDark={isDark}
+              markers={shops.map((shop) => ({
+                key: shop.id,
+                coordinate: {
+                  latitude: shop.location.latitude,
+                  longitude: shop.location.longitude,
+                },
+                title: shop.name,
+                description: `Oat Milk: ${shop.oatMilk}`,
+              }))}
             />
+          ) : (
+            // Use react-native-maps for iOS with Apple Maps
+            <MapView
+              showsPointsOfInterest
+              ref={mapRef}
+              style={styles.map}
+              mapType="standard"
+              showsUserLocation
+              initialRegion={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={(e) => {
+                const tapped = e.nativeEvent.coordinate;
+                const nearby = shops.find((shop) => {
+                  const distance = getDistanceMeters(tapped, shop.location);
+                  return distance < 100;
+                });
+                setSelectedShop(nearby || null);
+              }}
+            >
+              {shops.map((shop) => (
+                <Marker
+                  key={shop.id}
+                  coordinate={{
+                    latitude: shop.location.latitude,
+                    longitude: shop.location.longitude,
+                  }}
+                  title={shop.name}
+                  description={`Oat Milk: ${shop.oatMilk}`}
+                />
+              ))}
+            </MapView>
           )}
+
+          {/* Location button positioned absolutely outside MapView */}
           <TouchableOpacity
             style={styles.locationButton}
             onPress={() => {
@@ -724,18 +763,7 @@ export default function HomeScreen() {
               iconStyle="solid"
             />
           </TouchableOpacity>
-          {shops.map((shop) => (
-            <Marker
-              key={shop.id}
-              coordinate={{
-                latitude: shop.location.latitude,
-                longitude: shop.location.longitude,
-              }}
-              title={shop.name}
-              description={`Oat Milk: ${shop.oatMilk}`}
-            />
-          ))}
-        </MapView>
+        </View>
       ) : (
         <Text style={styles.label}>Fetching location...</Text>
       )}
@@ -881,34 +909,60 @@ export default function HomeScreen() {
         >
           {/* Background Map View */}
           <View style={styles.overlayMapContainer}>
-            <MapView
-              ref={overlayMapRef}
-              style={styles.overlayMap}
-              showsUserLocation
-              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-              customMapStyle={
-                Platform.OS === "android" && isDark ? darkMapStyle : []
-              }
-              region={{
-                latitude: selectedShop.location.latitude,
-                longitude: selectedShop.location.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              rotateEnabled={true}
-              pitchEnabled={true}
-            >
-              <Marker
-                coordinate={{
+            {Platform.OS === "android" ? (
+              <FreeMapView
+                ref={overlayMapRef}
+                style={styles.overlayMap}
+                region={{
                   latitude: selectedShop.location.latitude,
                   longitude: selectedShop.location.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
                 }}
-                title={selectedShop.name}
-                description={`Oat Milk: ${selectedShop.oatMilk}`}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={true}
+                pitchEnabled={true}
+                showsUserLocation
+                isDark={isDark}
+                markers={[
+                  {
+                    key: selectedShop.id,
+                    coordinate: {
+                      latitude: selectedShop.location.latitude,
+                      longitude: selectedShop.location.longitude,
+                    },
+                    title: selectedShop.name,
+                    description: `Oat Milk: ${selectedShop.oatMilk}`,
+                  },
+                ]}
               />
-            </MapView>
+            ) : (
+              <MapView
+                ref={overlayMapRef}
+                style={styles.overlayMap}
+                showsUserLocation
+                region={{
+                  latitude: selectedShop.location.latitude,
+                  longitude: selectedShop.location.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={true}
+                pitchEnabled={true}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: selectedShop.location.latitude,
+                    longitude: selectedShop.location.longitude,
+                  }}
+                  title={selectedShop.name}
+                  description={`Oat Milk: ${selectedShop.oatMilk}`}
+                />
+              </MapView>
+            )}
 
             {/* Map Border Overlay */}
             <View style={styles.mapBorderOverlay} />
@@ -925,7 +979,6 @@ export default function HomeScreen() {
                 },
               ]}
             />
-
           </View>
 
           {/* Close Button - Top Right */}
