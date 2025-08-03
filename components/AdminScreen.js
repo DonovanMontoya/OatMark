@@ -10,11 +10,13 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import {addDoc, collection, deleteDoc, doc, onSnapshot, query,} from "firebase/firestore";
+import {addDoc, collection, deleteDoc, doc, onSnapshot, query, runTransaction} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import {getIdTokenResult} from "firebase/auth";
+import {handleError, showSuccess, showDestructiveConfirmation} from "../utils/ErrorUtils";
+import {isValidLocation} from "../utils/ValidationUtils";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import AdjustPinModal from "./AdjustPinModal";
@@ -106,29 +108,56 @@ const AdminScreen = ({onClose}) => {
                     text: "Approve",
                     style: "default",
                     onPress: async () => {
+                        // Validate shop data before approval
+                        if (!shop.name?.trim() || !shop.oatMilk?.trim() || !shop.upCharge) {
+                            handleError(
+                                { message: "Invalid shop data" }, 
+                                "Shop data is incomplete and cannot be approved"
+                            );
+                            return;
+                        }
+
+                        if (!isValidLocation(shop.location)) {
+                            handleError(
+                                { message: "Invalid location data" }, 
+                                "Shop location is invalid and cannot be approved"
+                            );
+                            return;
+                        }
+
                         try {
-                            // 1. Add to the coffee_shops collection
-                            await addDoc(collection(db, "coffee_shops"), {
-                                name: shop.name,
-                                oatMilk: shop.oatMilk,
-                                upCharge: shop.upCharge,
-                                emoji: shop.emoji || "☕",
-                                location: shop.location,
-                                createdAt: shop.createdAt || new Date(),
-                                approvedAt: new Date(),
-                                approvedBy: auth.currentUser.uid,
+                            // Use transaction to ensure atomic operation
+                            await runTransaction(db, async (transaction) => {
+                                // Create new shop document
+                                const newShopRef = doc(collection(db, "coffee_shops"));
+                                const shopData = {
+                                    name: shop.name.trim(),
+                                    oatMilk: shop.oatMilk.trim(),
+                                    upCharge: shop.upCharge,
+                                    emoji: shop.emoji || "☕",
+                                    location: shop.location,
+                                    createdAt: shop.createdAt || new Date(),
+                                    approvedAt: new Date(),
+                                    approvedBy: auth.currentUser.uid,
+                                };
+                                transaction.set(newShopRef, shopData);
+
+                                // Delete from pending shops
+                                const pendingShopRef = doc(db, "pendingShops", shop.id);
+                                transaction.delete(pendingShopRef);
                             });
 
-                            // 2. Delete it from the pendingShops collection
-                            await deleteDoc(doc(db, "pendingShops", shop.id));
-
-                            Alert.alert(
+                            showSuccess(
                                 "Success",
-                                "Shop approved and published successfully",
+                                "Shop approved and published successfully"
                             );
                         } catch (error) {
-                            console.error("Error approving shop:", error);
-                            Alert.alert("Error", "Failed to approve shop");
+                            handleError(
+                                error, 
+                                "Failed to approve shop. Please try again.", 
+                                true, 
+                                { action: "approving shop", shopId: shop.id }
+                            );
                         }
                     },
                 },
@@ -137,28 +166,24 @@ const AdminScreen = ({onClose}) => {
     };
 
     const handleReject = (shopId) => {
-        Alert.alert(
+        showDestructiveConfirmation(
             "Reject Submission",
-            "Are you sure you want to reject this shop submission?",
-            [
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Reject",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteDoc(doc(db, "pendingShops", shopId));
-                            Alert.alert("Success", "Shop submission rejected and deleted");
-                        } catch (error) {
-                            console.error("Error rejecting shop:", error);
-                            Alert.alert("Error", "Failed to reject shop submission");
-                        }
-                    },
-                },
-            ],
+            "Are you sure you want to reject this shop submission? This action cannot be undone.",
+            async () => {
+                try {
+                    await deleteDoc(doc(db, "pendingShops", shopId));
+                    showSuccess("Success", "Shop submission rejected and deleted");
+                } catch (error) {
+                    handleError(
+                        error, 
+                        "Failed to reject shop submission. Please try again.", 
+                        true, 
+                        { action: "rejecting shop", shopId }
+                    );
+                }
+            },
+            null,
+            "Reject"
         );
     };
 

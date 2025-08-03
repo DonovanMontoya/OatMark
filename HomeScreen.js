@@ -1,43 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Easing,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  Text,
-  TouchableOpacity,
-  View,
-  Alert,
-} from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, UrlTile } from "react-native-maps";
+import React, {useEffect, useRef, useState} from "react";
+import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Text, TouchableOpacity, View,} from "react-native";
+import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./components/FreeMapView";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import { auth, db } from "./services/firebase";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  setDoc,
-  getDoc,
-} from "firebase/firestore";
-import { getIdTokenResult } from "firebase/auth";
+import {auth, db} from "./services/firebase";
+import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc,} from "firebase/firestore";
+import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
-import { getFormattedUpcharge, getUpchargeColor } from "./utils/upchargeEmojis";
-import { getDirections } from "./utils/MapLinks";
-import { getDistanceMeters } from "./utils/GeoUtils";
-import { useTheme } from "./contexts/ThemeContext";
-import { createHomeScreenStyles } from "./styles/ThemeStyles";
+import ShopCard from "./components/ShopCard";
+import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
+import {getDirections} from "./utils/MapLinks";
+import {getDistanceMeters} from "./utils/GeoUtils";
+import {useTheme} from "./contexts/ThemeContext";
+import {createHomeScreenStyles} from "./styles/ThemeStyles";
+import {isValidLocation} from "./utils/ValidationUtils";
+import {handleError, handleLocationError} from "./utils/ErrorUtils";
 
 export default function HomeScreen() {
   // Get theme context
@@ -300,6 +283,22 @@ export default function HomeScreen() {
   const cardScale = useRef(new Animated.Value(0.9)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   const adminButtonScale = useRef(new Animated.Value(1)).current;
+  
+  // Store animation references for cleanup
+  const animationRefs = useRef([]);
+
+  // Cleanup animations on unmount
+  useEffect(() => {
+    return () => {
+      // Stop all running animations
+      animationRefs.current.forEach(animation => {
+        if (animation && typeof animation.stop === 'function') {
+          animation.stop();
+        }
+      });
+      animationRefs.current = [];
+    };
+  }, []);
 
   const handleSubmitShop = () => {
     setShowSubmitShop(true);
@@ -338,7 +337,7 @@ export default function HomeScreen() {
     }
 
     // Create a staggered animation sequence for a more polished feel
-    Animated.sequence([
+    const animation = Animated.sequence([
       // Short delay before starting animations
       Animated.delay(50),
 
@@ -368,7 +367,17 @@ export default function HomeScreen() {
           easing: Easing.bezier(0.175, 0.885, 0.32, 1.275), // Custom easing for pop effect
         }),
       ]),
-    ]).start(() => {
+    ]);
+
+    // Store animation reference for cleanup
+    animationRefs.current.push(animation);
+    
+    animation.start(() => {
+      // Remove from refs when complete
+      const index = animationRefs.current.indexOf(animation);
+      if (index > -1) {
+        animationRefs.current.splice(index, 1);
+      }
       // Start the button pulse animation after the card appears
       startButtonPulse();
     });
@@ -492,14 +501,38 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.error("Permission to access location was denied");
-        return;
-      }
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          handleLocationError(
+            { code: 1 }, // Permission denied code
+            "requesting location permission"
+          );
+          return;
+        }
 
-      const currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation(currentLocation.coords);
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          timeout: 10000,
+        });
+        
+        const coords = {
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        };
+
+        // Validate the location before setting it
+        if (isValidLocation(coords)) {
+          setLocation(coords);
+        } else {
+          handleLocationError(
+            { code: 2 }, // Position unavailable code
+            "validating location coordinates"
+          );
+        }
+      } catch (error) {
+        handleLocationError(error, "getting current location");
+      }
     })();
   }, []);
 
@@ -508,12 +541,24 @@ export default function HomeScreen() {
       const shopsData = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         const geo = data.location;
+        
+        // Validate location data from Firebase
+        const location = { 
+          latitude: geo?.latitude, 
+          longitude: geo?.longitude 
+        };
+        
+        if (!isValidLocation(location)) {
+          console.warn(`Invalid location data for shop ${doc.id}:`, location);
+          return null; // Filter out invalid shops
+        }
+        
         return {
           id: doc.id,
           ...data,
-          location: { latitude: geo.latitude, longitude: geo.longitude },
+          location,
         };
-      });
+      }).filter(Boolean); // Remove null entries
 
       if (location) {
         shopsData.sort(
@@ -593,26 +638,24 @@ export default function HomeScreen() {
       return;
     }
 
-    // Create user document if needed
+    // Create the user document if needed
     createUserDocument(auth.currentUser.uid);
 
-    const unsubscribe = onSnapshot(
-      doc(db, "users", auth.currentUser.uid),
-      (doc) => {
-        if (doc.exists()) {
-          const userData = doc.data();
-          setFavorites(userData.favorites || []);
-        } else {
+    return onSnapshot(
+        doc(db, "users", auth.currentUser.uid),
+        (doc) => {
+          if (doc.exists()) {
+            const userData = doc.data();
+            setFavorites(userData.favorites || []);
+          } else {
+            setFavorites([]);
+          }
+        },
+        (error) => {
+          console.error("Error loading favorites:", error);
           setFavorites([]);
-        }
-      },
-      (error) => {
-        console.error("Error loading favorites:", error);
-        setFavorites([]);
-      },
+        },
     );
-
-    return unsubscribe;
   }, [auth.currentUser]);
 
   // Toggle favorite status
@@ -773,129 +816,34 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.flatListContainer}
-        renderItem={({ item }) => {
-          const scaleAnim = new Animated.Value(1);
+        renderItem={({ item }) => (
+          <ShopCard
+            item={item}
+            location={location}
+            isFavorite={isFavorite(item.id)}
+            styles={styles}
+            onPress={(shop) => {
+              // Set the selected shop
+              setSelectedShop(shop);
 
-          const handlePressIn = () => {
-            Animated.spring(scaleAnim, {
-              toValue: 0.96,
-              useNativeDriver: true,
-            }).start();
-          };
+              // Start entrance animation
+              animateCardIn(shop);
 
-          const handlePressOut = () => {
-            Animated.spring(scaleAnim, {
-              toValue: 1,
-              useNativeDriver: true,
-            }).start();
-          };
-
-          return (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-              onPress={() => {
-                // Set the selected shop
-                setSelectedShop(item);
-
-                // Start entrance animation
-                animateCardIn(item);
-
-                // First animate to normal view, then the overlay will zoom in
-                if (mapRef.current) {
-                  mapRef.current.animateToRegion(
-                    {
-                      latitude: item.location.latitude,
-                      longitude: item.location.longitude,
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
-                    },
-                    300,
-                  );
-                }
-              }}
-            >
-              <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
-                <View style={styles.card}>
-                  <View style={styles.cardImageContainer}>
-                    <View style={styles.emojiContainer}>
-                      <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
-                    </View>
-                    <View style={styles.imageOverlay}>
-                      <FontAwesome6
-                        name="store"
-                        size={16}
-                        color="white"
-                        iconStyle="solid"
-                      />
-                    </View>
-                  </View>
-                  <View style={styles.cardContent}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.shopName} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <View style={styles.upchargeContainer}>
-                        <Text
-                          style={[
-                            styles.upchargeEmojiText,
-                            { color: getUpchargeColor(item.upCharge) },
-                          ]}
-                        >
-                          {getFormattedUpcharge(item.upCharge)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.cardDetails}>
-                      <View style={styles.oatMilkRow}>
-                        {/*<FontAwesome6*/}
-                        {/*  name="seedling"*/}
-                        {/*  size={12}*/}
-                        {/*  color="#4CAF50"*/}
-                        {/*  iconStyle="solid"*/}
-                        {/*/>*/}
-                        <Image
-                          source={require("./assets/splash-icon.png")}
-                          style={{ width: 30, height: 30 }}
-                        />
-
-                        <Text style={styles.oatMilk} numberOfLines={1}>
-                          {item.oatMilk}
-                        </Text>
-                      </View>
-                      <View style={styles.locationRow}>
-                        <FontAwesome6
-                          name="location-dot"
-                          size={12}
-                          color="#666"
-                          iconStyle="solid"
-                        />
-                        <Text style={styles.distanceText}>
-                          {location
-                            ? `${(
-                                getDistanceMeters(location, item.location) /
-                                1000
-                              ).toFixed(1)}km away`
-                            : "Location unavailable"}
-                        </Text>
-                        {isFavorite(item.id) && (
-                          <FontAwesome6
-                            name="heart"
-                            size={12}
-                            color="#FF6B6B"
-                            iconStyle="solid"
-                            style={{ marginLeft: "auto", opacity: 0.8 }}
-                          />
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </Animated.View>
-            </TouchableOpacity>
-          );
-        }}
+              // First animate to normal view, then the overlay will zoom in
+              if (mapRef.current) {
+                mapRef.current.animateToRegion(
+                  {
+                    latitude: shop.location.latitude,
+                    longitude: shop.location.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  },
+                  300,
+                );
+              }
+            }}
+          />
+        )}
       />
       {selectedShop && (
         <Animated.View

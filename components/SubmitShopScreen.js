@@ -18,6 +18,8 @@ import EmojiSelector from "./EmojiSelector";
 import MapView, {Circle, Polygon} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare,} from "../utils/GeoUtils";
+import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji, isValidLocation} from "../utils/ValidationUtils";
+import {handleError, handleLocationError, showSuccess} from "../utils/ErrorUtils";
 
 const SubmitShopScreen = ({onClose}) => {
     const [shopName, setShopName] = useState("");
@@ -77,8 +79,7 @@ const SubmitShopScreen = ({onClose}) => {
                 setMapCenter(userCoords); // Initialize map center at user's location
                 setIsLoadingLocation(false);
             } catch (error) {
-                console.error("Error getting location:", error);
-                Alert.alert("Error", "Failed to get your location. Please try again.");
+                handleLocationError(error, "getting user location");
                 setIsLoadingLocation(false);
             }
         };
@@ -178,36 +179,51 @@ const SubmitShopScreen = ({onClose}) => {
     };
 
     const handleSubmit = async () => {
-        if (!shopName.trim() || !oatMilk.trim() || (!isFree && !upCharge.trim())) {
-            Alert.alert("Error", "Please fill in all required fields");
+        // Validate shop name
+        const shopNameValidation = validateShopName(shopName);
+        if (!shopNameValidation.isValid) {
+            handleError({ message: shopNameValidation.message }, shopNameValidation.message);
             return;
         }
+
+        // Validate oat milk
+        const oatMilkValidation = validateOatMilk(oatMilk);
+        if (!oatMilkValidation.isValid) {
+            handleError({ message: oatMilkValidation.message }, oatMilkValidation.message);
+            return;
+        }
+
+        // Validate upcharge
+        const upchargeValidation = validateUpcharge(upCharge, isFree);
+        if (!upchargeValidation.isValid) {
+            handleError({ message: upchargeValidation.message }, upchargeValidation.message);
+            return;
+        }
+
+        // Validate emoji
+        const emojiValidation = validateEmoji(selectedEmoji);
 
         // Check if user is authenticated
         if (!auth.currentUser) {
-            Alert.alert("Error", "You must be logged in to submit a shop");
+            handleError({ code: 'firestore/unauthenticated' }, "You must be logged in to submit a shop");
             return;
         }
 
-        // Check if we have location data
-        if (!userLocation || !mapCenter) {
-            Alert.alert("Error", "Location data is required to submit a shop");
+        // Validate location data
+        if (!userLocation || !mapCenter || !isValidLocation(userLocation) || !isValidLocation(mapCenter)) {
+            handleError({ message: "Invalid location data" }, "Location data is required to submit a shop");
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            // Add shop to Firestore pendingShops collection
-            const finalUpcharge = isFree
-                ? "Free"
-                : `$${parseFloat(upCharge).toFixed(2)}`;
-
-            await addDoc(collection(db, "pendingShops"), {
-                name: shopName.trim(),
-                oatMilk: oatMilk.trim(),
-                upCharge: finalUpcharge,
-                emoji: selectedEmoji,
+            // Create sanitized shop data
+            const shopData = {
+                name: shopNameValidation.sanitized,
+                oatMilk: oatMilkValidation.sanitized,
+                upCharge: upchargeValidation.sanitized,
+                emoji: emojiValidation.sanitized,
                 location: {
                     latitude: mapCenter.latitude,
                     longitude: mapCenter.longitude,
@@ -221,11 +237,12 @@ const SubmitShopScreen = ({onClose}) => {
                 createdAt: new Date(),
                 createdBy: auth.currentUser.uid,
                 status: "pending",
-            });
+            };
 
-            Alert.alert("Success!", "Coffee shop submitted for review!", [
-                {text: "OK", onPress: onClose},
-            ]);
+            // Add shop to Firestore pendingShops collection
+            await addDoc(collection(db, "pendingShops"), shopData);
+
+            showSuccess("Success!", "Coffee shop submitted for review!", onClose);
 
             // Reset form
             setShopName("");
@@ -234,8 +251,7 @@ const SubmitShopScreen = ({onClose}) => {
             setSelectedEmoji("☕");
             setIsFree(false);
         } catch (error) {
-            console.error("Error submitting shop:", error);
-            Alert.alert("Error", "Failed to submit coffee shop. Please try again.");
+            handleError(error, "Failed to submit coffee shop. Please try again.", true, { action: "submitting shop" });
         } finally {
             setIsSubmitting(false);
         }
