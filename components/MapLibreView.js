@@ -203,8 +203,8 @@ export const MapLibreRasterView = forwardRef(
                     id: "raster-tiles-layer",
                     type: "raster",
                     source: "raster-tiles",
-                    minzoom: 0,
-                    maxzoom: 19,
+                    minZoom: 0,
+                    maxZoom: 19,
                 },
             ],
         };

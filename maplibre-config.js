@@ -44,23 +44,3 @@ export const mapLibreConfig = {
 };
 
 // Custom style JSON for full control (optional)
-export const customMapStyle = {
-    version: 8,
-    sources: {
-        'osm-tiles': {
-            type: 'raster',
-            tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors'
-        }
-    },
-    layers: [
-        {
-            id: 'osm-tiles-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            minzoom: 0,
-            maxzoom: 19
-        }
-    ]
-};
