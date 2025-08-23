@@ -1,101 +1,73 @@
 import React, {useEffect, useState} from "react";
+import PropTypes from "prop-types";
 import {
     ActivityIndicator,
     Alert,
     FlatList,
     Modal,
-    Platform,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
-import {addDoc, collection, deleteDoc, doc, onSnapshot, query, runTransaction} from "firebase/firestore";
+import {collection, deleteDoc, doc, onSnapshot, query, runTransaction} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
-import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {getIdTokenResult} from "firebase/auth";
 import {handleError, showSuccess, showDestructiveConfirmation} from "../utils/ErrorUtils";
-import {isValidLocation} from "../utils/ValidationUtils";
-import MapView, {Marker} from "react-native-maps";
-import FreeMapView from "./FreeMapView";
+import {isValidLocation, validateShopName, validateOatMilk, validateUpcharge, validateEmoji} from "../utils/ValidationUtils";
+import {useAdminStatus} from "../hooks/useAdminStatus";
 import AdjustPinModal from "./AdjustPinModal";
+import PendingShopCard from "./PendingShopCard";
+import {createThemeStyles} from "../styles/ThemeStyles";
+import {useTheme} from "../contexts/ThemeContext";
 
 const AdminScreen = ({onClose}) => {
     const [pendingShops, setPendingShops] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const {isAdmin, isLoading: adminLoading} = useAdminStatus();
+    const {colors} = useTheme();
+    const commonStyles = createThemeStyles(colors);
     const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
     const [selectedShop, setSelectedShop] = useState(null);
+    const [processingItems, setProcessingItems] = useState(new Set());
 
     useEffect(() => {
-        // Check if the current user is an admin and load pending shops if so
-        if (!auth.currentUser) {
+        if (adminLoading) return;
+        
+        if (!auth.currentUser || !isAdmin) {
             setLoading(false);
             return;
         }
 
-        const checkAdminAndLoad = async () => {
-            try {
-                const tokenResult = await getIdTokenResult(auth.currentUser);
-                const isAdmin = !!tokenResult.claims.admin;
-                setIsAdmin(isAdmin);
-
-                if (!isAdmin) {
-                    setLoading(false);
-                    return;
-                }
-
-                // Fetch live updates to the pendingShops collection
-                const q = query(collection(db, "pendingShops"));
-                const unsubscribe = onSnapshot(
-                    q,
-                    (querySnapshot) => {
-                        const shops = querySnapshot.docs.map((doc) => ({
-                            id: doc.id,
-                            ...doc.data(),
-                        }));
-                        setPendingShops(shops);
-                        setLoading(false);
-                    },
-                    (error) => {
-                        console.error("Error fetching pending shops:", error);
-                        setLoading(false);
-                    },
-                );
-
-                return () => unsubscribe();
-            } catch (error) {
-                console.error("Failed to fetch token:", error);
+        // Fetch live updates to the pendingShops collection
+        const q = query(collection(db, "pendingShops"));
+        const unsubscribe = onSnapshot(
+            q,
+            (querySnapshot) => {
+                const shops = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+                setPendingShops(shops);
                 setLoading(false);
-            }
-        };
-
-        let unsubscribeFunction;
-
-        const loadData = async () => {
-            unsubscribeFunction = await checkAdminAndLoad();
-        };
-
-        // Use immediately invoked async function to properly handle the promise
-        (async () => {
-            try {
-                await loadData();
-            } catch (error) {
-                console.error("Error in loadData:", error);
+            },
+            (error) => {
+                handleError(error, "Failed to load pending submissions", true, { 
+                    action: "fetching pending shops" 
+                });
                 setLoading(false);
-            }
-        })();
+            },
+        );
 
-        // Return cleanup function
-        return () => {
-            if (unsubscribeFunction) {
-                unsubscribeFunction();
-            }
-        };
-    }, []);
+        return () => unsubscribe();
+    }, [adminLoading, isAdmin]);
 
     const handleApprove = async (shop) => {
+        // Prevent double approval by checking if already processing
+        if (processingItems.has(shop.id)) {
+            return;
+        }
+
         Alert.alert(
             "Approve Shop",
             `Are you sure you want to approve "${shop.name}"?`,
@@ -108,11 +80,40 @@ const AdminScreen = ({onClose}) => {
                     text: "Approve",
                     style: "default",
                     onPress: async () => {
-                        // Validate shop data before approval
-                        if (!shop.name?.trim() || !shop.oatMilk?.trim() || !shop.upCharge) {
+                        // Comprehensive validation before approval
+                        const nameValidation = validateShopName(shop.name);
+                        const oatMilkValidation = validateOatMilk(shop.oatMilk);
+                        const upchargeValidation = validateUpcharge(shop.upCharge);
+                        const emojiValidation = validateEmoji(shop.emoji);
+
+                        if (!nameValidation.isValid) {
                             handleError(
-                                { message: "Invalid shop data" }, 
-                                "Shop data is incomplete and cannot be approved"
+                                { message: "Invalid shop name" }, 
+                                `Shop name validation failed: ${nameValidation.error}`
+                            );
+                            return;
+                        }
+
+                        if (!oatMilkValidation.isValid) {
+                            handleError(
+                                { message: "Invalid oat milk brand" }, 
+                                `Oat milk validation failed: ${oatMilkValidation.error}`
+                            );
+                            return;
+                        }
+
+                        if (!upchargeValidation.isValid) {
+                            handleError(
+                                { message: "Invalid upcharge" }, 
+                                `Upcharge validation failed: ${upchargeValidation.error}`
+                            );
+                            return;
+                        }
+
+                        if (!emojiValidation.isValid) {
+                            handleError(
+                                { message: "Invalid emoji" }, 
+                                `Emoji validation failed: ${emojiValidation.error}`
                             );
                             return;
                         }
@@ -125,10 +126,16 @@ const AdminScreen = ({onClose}) => {
                             return;
                         }
 
+                        // Mark the item as processing to prevent double approval and show the loading state
+                        setProcessingItems(prev => new Set([...prev, shop.id]));
+
+                        // Optimistic update - immediately remove from UI
+                        setPendingShops(prev => prev.filter(item => item.id !== shop.id));
+
                         try {
                             // Use transaction to ensure atomic operation
                             await runTransaction(db, async (transaction) => {
-                                // Create new shop document
+                                // Create a new shop document
                                 const newShopRef = doc(collection(db, "coffee_shops"));
                                 const shopData = {
                                     name: shop.name.trim(),
@@ -149,15 +156,25 @@ const AdminScreen = ({onClose}) => {
 
                             showSuccess(
                                 "Success",
-                                "Shop approved and published successfully"
+                                `"${shop.name}" approved and published successfully`
                             );
                         } catch (error) {
+                            // Revert optimistic update on error
+                            setPendingShops(prev => [shop, ...prev]);
+                            
                             handleError(
                                 error, 
                                 "Failed to approve shop. Please try again.", 
                                 true, 
                                 { action: "approving shop", shopId: shop.id }
                             );
+                        } finally {
+                            // Remove from a processing set
+                            setProcessingItems(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(shop.id);
+                                return newSet;
+                            });
                         }
                     },
                 },
@@ -165,21 +182,42 @@ const AdminScreen = ({onClose}) => {
         );
     };
 
-    const handleReject = (shopId) => {
+    const handleReject = (shop) => {
+        // Prevent double rejection by checking if already processing
+        if (processingItems.has(shop.id)) {
+            return;
+        }
+
         showDestructiveConfirmation(
             "Reject Submission",
             "Are you sure you want to reject this shop submission? This action cannot be undone.",
             async () => {
+                // Mark item as processing
+                setProcessingItems(prev => new Set([...prev, shop.id]));
+
+                // Optimistic update - immediately remove from UI
+                setPendingShops(prev => prev.filter(item => item.id !== shop.id));
+
                 try {
-                    await deleteDoc(doc(db, "pendingShops", shopId));
-                    showSuccess("Success", "Shop submission rejected and deleted");
+                    await deleteDoc(doc(db, "pendingShops", shop.id));
+                    showSuccess("Success", `"${shop.name}" submission rejected and deleted`);
                 } catch (error) {
+                    // Revert optimistic update on error
+                    setPendingShops(prev => [shop, ...prev]);
+                    
                     handleError(
                         error, 
                         "Failed to reject shop submission. Please try again.", 
                         true, 
-                        { action: "rejecting shop", shopId }
+                        { action: "rejecting shop", shopId: shop.id }
                     );
+                } finally {
+                    // Remove from a processing set
+                    setProcessingItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(shop.id);
+                        return newSet;
+                    });
                 }
             },
             null,
@@ -227,7 +265,7 @@ const AdminScreen = ({onClose}) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={commonStyles.whiteContainer}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                     <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
@@ -238,7 +276,9 @@ const AdminScreen = ({onClose}) => {
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#4285F4"/>
-                    <Text style={styles.loadingText}>Loading pending submissions...</Text>
+                    <Text style={styles.loadingText}>
+                        {adminLoading ? "Verifying admin access..." : "Loading pending submissions..."}
+                    </Text>
                 </View>
             ) : pendingShops.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -259,196 +299,16 @@ const AdminScreen = ({onClose}) => {
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.listContainer}
                     renderItem={({item}) => (
-                        <View style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.cardImageContainer}>
-                                    <View style={styles.emojiContainer}>
-                                        <Text style={styles.emojiText}>{item.emoji || "☕"}</Text>
-                                    </View>
-                                    <View style={styles.statusBadge}>
-                                        <Text style={styles.statusText}>Pending</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.cardHeaderInfo}>
-                                    <Text style={styles.shopName}>{item.name}</Text>
-                                    <View style={styles.detailRow}>
-                                        <FontAwesome6
-                                            name="seedling"
-                                            size={12}
-                                            color="#4CAF50"
-                                            iconStyle="solid"
-                                        />
-                                        <Text style={styles.detailText}>{item.oatMilk}</Text>
-                                    </View>
-                                    <View style={styles.detailRow}>
-                                        <FontAwesome6
-                                            name="money-bill"
-                                            size={12}
-                                            color="#666"
-                                            iconStyle="solid"
-                                        />
-                                        <Text style={styles.detailText}>
-                                            Upcharge: {item.upCharge}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
-
-                            {item.location && (
-                                <View style={styles.mapContainer}>
-                                    {Platform.OS === "android" ? (
-                                        <FreeMapView
-                                            style={styles.map}
-                                            initialRegion={{
-                                                latitude: item.location.latitude,
-                                                longitude: item.location.longitude,
-                                                latitudeDelta: 0.01,
-                                                longitudeDelta: 0.01,
-                                            }}
-                                            scrollEnabled={false}
-                                            zoomEnabled={false}
-                                            markers={[
-                                                {
-                                                    key: item.id,
-                                                    coordinate: {
-                                                        latitude: item.location.latitude,
-                                                        longitude: item.location.longitude,
-                                                    },
-                                                    title: item.name,
-                                                },
-                                            ]}
-                                        />
-                                    ) : (
-                                        <MapView
-                                            style={styles.map}
-                                            mapType="standard"
-                                            initialRegion={{
-                                                latitude: item.location.latitude,
-                                                longitude: item.location.longitude,
-                                                latitudeDelta: 0.01,
-                                                longitudeDelta: 0.01,
-                                            }}
-                                            scrollEnabled={false}
-                                            zoomEnabled={false}
-                                        >
-                                            <Marker
-                                                coordinate={{
-                                                    latitude: item.location.latitude,
-                                                    longitude: item.location.longitude,
-                                                }}
-                                                title={item.name}
-                                            />
-                                        </MapView>
-                                    )}
-                                    <View style={styles.mapButtonsContainer}>
-                                        <TouchableOpacity
-                                            style={styles.mapButton}
-                                            onPress={() => openInMaps(item)}
-                                        >
-                                            <FontAwesome6
-                                                name="map-location-dot"
-                                                size={14}
-                                                color="#4285F4"
-                                                iconStyle="solid"
-                                            />
-                                            <Text style={styles.mapButtonText}>Open in Maps</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.mapButton}
-                                            onPress={() => searchYelp(item)}
-                                        >
-                                            <FontAwesome6
-                                                name="magnifying-glass"
-                                                size={14}
-                                                color="#D32323"
-                                                iconStyle="solid"
-                                            />
-                                            <Text style={styles.mapButtonText}>Search on Yelp</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.mapButton}
-                                            onPress={() => {
-                                                setSelectedShop(item);
-                                                setShowAdjustPinModal(true);
-                                            }}
-                                        >
-                                            <FontAwesome6
-                                                name="location-crosshairs"
-                                                size={14}
-                                                color="#FF9500"
-                                                iconStyle="solid"
-                                            />
-                                            <Text style={styles.mapButtonText}>Adjust Pin</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            )}
-                            <View style={styles.cardContent}>
-                                <View style={styles.detailRow}>
-                                    <FontAwesome6
-                                        name="calendar"
-                                        size={12}
-                                        color="#666"
-                                        iconStyle="solid"
-                                    />
-                                    <Text style={styles.detailText}>
-                                        Submitted:{" "}
-                                        {item.createdAt?.toDate().toLocaleDateString() || "Unknown"}
-                                    </Text>
-                                </View>
-                                <View style={styles.detailRow}>
-                                    <FontAwesome6
-                                        name="user"
-                                        size={12}
-                                        color="#666"
-                                        iconStyle="solid"
-                                    />
-                                    <Text style={styles.detailText}>
-                                        By: {item.createdBy?.substring(0, 8)}...
-                                    </Text>
-                                </View>
-                                {item.location && (
-                                    <View style={styles.detailRow}>
-                                        <FontAwesome6
-                                            name="location-dot"
-                                            size={12}
-                                            color="#666"
-                                            iconStyle="solid"
-                                        />
-                                        <Text style={styles.detailText}>
-                                            Location: {item.location.latitude.toFixed(6)},{" "}
-                                            {item.location.longitude.toFixed(6)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.actionButtons}>
-                                    <TouchableOpacity
-                                        style={styles.approveButton}
-                                        onPress={() => handleApprove(item)}
-                                    >
-                                        <FontAwesome6
-                                            name="check"
-                                            size={14}
-                                            color="#4CAF50"
-                                            iconStyle="solid"
-                                        />
-                                        <Text style={styles.approveButtonText}>Approve</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={styles.rejectButton}
-                                        onPress={() => handleReject(item.id)}
-                                    >
-                                        <FontAwesome6
-                                            name="xmark"
-                                            size={14}
-                                            color="#FF3B30"
-                                            iconStyle="solid"
-                                        />
-                                        <Text style={styles.rejectButtonText}>Reject</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
+                        <PendingShopCard
+                            item={item}
+                            onApprove={handleApprove}
+                            onReject={handleReject}
+                            onAdjustPin={(shop) => {
+                                setSelectedShop(shop);
+                                setShowAdjustPinModal(true);
+                            }}
+                            isProcessing={processingItems.has(item.id)}
+                        />
                     )}
                 />
             )}
@@ -470,6 +330,10 @@ const AdminScreen = ({onClose}) => {
             </Modal>
         </View>
     );
+};
+
+AdminScreen.propTypes = {
+    onClose: PropTypes.func.isRequired,
 };
 
 const styles = StyleSheet.create({
@@ -686,6 +550,13 @@ const styles = StyleSheet.create({
         color: "#FF3B30",
         fontWeight: "600",
         marginLeft: 4,
+    },
+    disabledButton: {
+        opacity: 0.6,
+        backgroundColor: "#f5f5f5",
+    },
+    disabledButtonText: {
+        color: "#999",
     },
 });
 

@@ -12,6 +12,10 @@ export const createThemeStyles = (colors) => {
             flex: 1,
             backgroundColor: colors.background,
         },
+        whiteContainer: {
+            flex: 1,
+            backgroundColor: "white",
+        },
         safeAreaContainer: {
             flex: 1,
             backgroundColor: colors.background,
@@ -800,6 +804,35 @@ export const createLoginPageStyles = (colors) => {
             color: "#fff",
             fontWeight: "600",
             fontSize: 16,
+        },
+
+        // Common modal styles
+        modalHeader: {
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingTop: 50,
+            paddingBottom: 20,
+        },
+        modalTitle: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: colors.text,
+            flex: 1,
+            textAlign: "center",
+        },
+        modalCloseButton: {
+            position: "absolute",
+            right: 20,
+        },
+
+        // Common map styles
+        mapContainer: {
+            width: "100%",
+            height: 220,
+            borderTopWidth: 1,
+            borderBottomWidth: 1,
+            borderColor: "#f0f0f0",
         },
     });
 };
