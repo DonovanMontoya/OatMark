@@ -3,11 +3,16 @@ import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native
 
 const COFFEE_MILK_EMOJIS = [
     {emoji: '☕', label: 'Coffee'},
+    {emoji: '🍵', label: 'Tea'},
+    {emoji: '🍸', label: 'Cocktail'},
+    {emoji: '🥐', label: 'Croissant'},
+    {emoji: '🪴', label: 'Potted Plant'},
     {emoji: '🥛', label: 'Milk'},
     {emoji: '🥤', label: 'Cup with Straw'},
-    {emoji: '🍵', label: 'Tea'},
     {emoji: '🧋', label: 'Bubble Tea'},
     {emoji: '🫖', label: 'Teapot'},
+    {emoji: '✌️', label: 'Peace'},
+    {emoji: '🦆', label: 'Duck'},
     {emoji: '🍼', label: 'Baby Bottle'},
     {emoji: '🥣', label: 'Bowl with Spoon'},
     {emoji: '🍶', label: 'Sake'},
@@ -16,8 +21,6 @@ const COFFEE_MILK_EMOJIS = [
     {emoji: '🏢', label: 'Office Building'},
     {emoji: '🌱', label: 'Seedling'},
     {emoji: '🌿', label: 'Herb'},
-    {emoji: '🪴', label: 'Potted Plant'},
-    {emoji: '🍃', label: 'Leaf Fluttering'},
 ];
 
 const EmojiSelector = ({selectedEmoji, onSelectEmoji}) => {
