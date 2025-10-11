@@ -46,7 +46,9 @@ const ManageShopModal = ({ shop, visible, onClose, onShopUpdated }) => {
         // Validate inputs
         const shopNameValidation = validateShopName(shopName);
         const oatMilkValidation = validateOatMilk(oatMilk);
-        const upchargeValidation = validateUpcharge(upCharge);
+        const normalizedUpCharge = `${upCharge ?? ""}`.trim();
+        const isFreeUpcharge = normalizedUpCharge.toLowerCase() === "free";
+        const upchargeValidation = validateUpcharge(normalizedUpCharge, isFreeUpcharge);
         const emojiValidation = validateEmoji(selectedEmoji);
 
         if (!shopNameValidation.isValid) {
