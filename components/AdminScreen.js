@@ -265,39 +265,69 @@ const AdminScreen = ({onClose}) => {
     };
 
     return (
-        <View style={commonStyles.whiteContainer}>
-            <View style={styles.header}>
+        <View style={[commonStyles.whiteContainer, { backgroundColor: colors.background }]}>
+            {/* Enhanced Header */}
+            <View style={[styles.header, { backgroundColor: colors.cardBackground }]}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
+                    <FontAwesome6 name="xmark" size={22} color={colors.text} iconStyle="solid"/>
                 </TouchableOpacity>
-                <Text style={styles.title}>Admin Panel</Text>
+                <View style={styles.headerContent}>
+                    <View style={styles.iconBadge}>
+                        <FontAwesome6 name="shield-halved" size={20} color="#FF9500" iconStyle="solid"/>
+                    </View>
+                    <View>
+                        <Text style={[styles.title, { color: colors.text }]}>Admin Panel</Text>
+                        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
+                            Review Pending Submissions
+                        </Text>
+                    </View>
+                </View>
             </View>
+
+            {/* Pending Count Badge */}
+            {!loading && pendingShops.length > 0 && (
+                <View style={styles.countBanner}>
+                    <FontAwesome6 name="clock" size={14} color="#FF9500" iconStyle="solid"/>
+                    <Text style={[styles.countText, { color: colors.text }]}>
+                        {pendingShops.length} {pendingShops.length === 1 ? 'submission' : 'submissions'} awaiting review
+                    </Text>
+                </View>
+            )}
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4285F4"/>
-                    <Text style={styles.loadingText}>
+                    <ActivityIndicator size="large" color="#FF9500"/>
+                    <Text style={[styles.loadingText, { color: colors.secondaryText }]}>
                         {adminLoading ? "Verifying admin access..." : "Loading pending submissions..."}
                     </Text>
                 </View>
             ) : pendingShops.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <FontAwesome6
-                        name="circle-check"
-                        size={50}
-                        color="#4CAF50"
-                        iconStyle="solid"
-                    />
-                    <Text style={styles.emptyText}>No Pending Submissions</Text>
-                    <Text style={styles.emptySubtext}>
-                        All shop submissions have been reviewed
+                    <View style={styles.emptyIconContainer}>
+                        <FontAwesome6
+                            name="circle-check"
+                            size={60}
+                            color="#4CAF50"
+                            iconStyle="solid"
+                        />
+                    </View>
+                    <Text style={[styles.emptyText, { color: colors.text }]}>All Caught Up!</Text>
+                    <Text style={[styles.emptySubtext, { color: colors.secondaryText }]}>
+                        There are no pending shop submissions to review at this time.
                     </Text>
+                    <View style={styles.emptyDetail}>
+                        <FontAwesome6 name="info-circle" size={14} color={colors.secondaryText} iconStyle="solid"/>
+                        <Text style={[styles.emptyDetailText, { color: colors.secondaryText }]}>
+                            New submissions will appear here automatically
+                        </Text>
+                    </View>
                 </View>
             ) : (
                 <FlatList
                     data={pendingShops}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
                     renderItem={({item}) => (
                         <PendingShopCard
                             item={item}
@@ -341,6 +371,117 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "white",
     },
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0,0,0,0.1)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    closeButton: {
+        padding: 8,
+        marginRight: 12,
+    },
+    headerContent: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    iconBadge: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: "rgba(255, 149, 0, 0.1)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: "700",
+        letterSpacing: -0.5,
+    },
+    subtitle: {
+        fontSize: 13,
+        marginTop: 2,
+        fontWeight: "500",
+    },
+    countBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 12,
+        gap: 8,
+        backgroundColor: "rgba(255, 149, 0, 0.08)",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255, 149, 0, 0.2)",
+    },
+    countText: {
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 16,
+    },
+    loadingText: {
+        fontSize: 16,
+        fontWeight: "500",
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 40,
+    },
+    emptyIconContainer: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(76, 175, 80, 0.1)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 20,
+    },
+    emptyText: {
+        fontSize: 24,
+        fontWeight: "700",
+        marginBottom: 8,
+        textAlign: "center",
+    },
+    emptySubtext: {
+        fontSize: 15,
+        marginTop: 8,
+        textAlign: "center",
+        lineHeight: 22,
+    },
+    emptyDetail: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginTop: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: "rgba(0, 0, 0, 0.03)",
+        borderRadius: 8,
+    },
+    emptyDetailText: {
+        fontSize: 13,
+        fontWeight: "500",
+    },
+    listContainer: {
+        paddingVertical: 8,
+    },
+    // Legacy styles kept for compatibility
     mapContainer: {
         width: "100%",
         height: 220,
@@ -383,57 +524,6 @@ const styles = StyleSheet.create({
     },
     emojiText: {
         fontSize: 40,
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
-        backgroundColor: "#f8f8f8",
-    },
-    closeButton: {
-        padding: 5,
-        marginRight: 15,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#333",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        color: "#666",
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 40,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: "#333",
-        marginTop: 20,
-        textAlign: "center",
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: "#666",
-        marginTop: 10,
-        textAlign: "center",
-    },
-    listContainer: {
-        padding: 16,
     },
     card: {
         flexDirection: "column",
