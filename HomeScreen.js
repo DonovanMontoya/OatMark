@@ -1353,12 +1353,21 @@ export default function HomeScreen() {
         )}
       </Modal>
 
-      <ManageShopModal
-        shop={selectedShop}
+      <Modal
+        animationType="slide"
+        transparent={false}
         visible={showManageShopModal}
-        onClose={() => setShowManageShopModal(false)}
-        onShopUpdated={handleShopUpdated}
-      />
+        onRequestClose={() => setShowManageShopModal(false)}
+      >
+        {selectedShop && (
+          <ManageShopModal
+            shop={selectedShop}
+            visible={showManageShopModal}
+            onClose={() => setShowManageShopModal(false)}
+            onShopUpdated={handleShopUpdated}
+          />
+        )}
+      </Modal>
     </View>
   );
 }
