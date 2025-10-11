@@ -1,9 +1,10 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Text, TouchableOpacity, View,} from "react-native";
+import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Share, Text, TouchableOpacity, View,} from "react-native";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./components/FreeMapView";
 import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
+import NetInfo from "@react-native-community/netinfo";
 import {auth, db} from "./services/firebase";
 import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc,} from "firebase/firestore";
 import {getIdTokenResult} from "firebase/auth";
@@ -13,6 +14,7 @@ import SettingsScreen from "./components/SettingsScreen";
 import PendingShopsScreen from "./components/PendingShopsScreen";
 import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
+import ManageShopModal from "./components/ManageShopModal";
 import ShopCard from "./components/ShopCard";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
@@ -21,6 +23,7 @@ import {useTheme} from "./contexts/ThemeContext";
 import {createHomeScreenStyles} from "./styles/ThemeStyles";
 import {isValidLocation} from "./utils/ValidationUtils";
 import {handleError, handleLocationError} from "./utils/ErrorUtils";
+import {loadShopsFromCache, saveShopsToCache, loadFavoritesFromCache, saveFavoritesToCache} from "./services/ShopCache";
 
 export default function HomeScreen() {
   // Get theme context
@@ -275,7 +278,10 @@ export default function HomeScreen() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
+  const [showManageShopModal, setShowManageShopModal] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [isOnline, setIsOnline] = useState(true);
+  const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
 
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -314,6 +320,47 @@ export default function HomeScreen() {
 
   const handleAdminPanel = () => {
     setShowAdminPanel(true);
+  };
+
+  const handleShare = async () => {
+    if (!selectedShop) return;
+
+    try {
+      const shareContent = {
+        title: `Check out ${selectedShop.name}!`,
+        message: `I found this great coffee shop: ${selectedShop.name} ${selectedShop.emoji || "☕"}\n\n${selectedShop.upCharge ? `Oat milk upcharge: ${getFormattedUpcharge(selectedShop.upCharge)}` : "No oat milk upcharge info available"}\n\nFound on OatMark - the app for oat milk lovers!`,
+        url: selectedShop.location ? `https://maps.google.com/?q=${selectedShop.location.latitude},${selectedShop.location.longitude}` : undefined,
+      };
+
+      const result = await Share.share(shareContent);
+      
+      if (result.action === Share.sharedAction) {
+        console.log("Content shared successfully");
+      } else if (result.action === Share.dismissedAction) {
+        console.log("Share dismissed");
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      Alert.alert("Error", "Failed to share. Please try again.");
+    }
+  };
+
+  const handleManageShop = () => {
+    if (!selectedShop || !isAdmin) return;
+    setShowManageShopModal(true);
+  };
+
+  const handleShopUpdated = (updatedShop) => {
+    // Update the shop in the local state
+    const updatedShops = shops.map((shop) =>
+      shop.id === updatedShop.id ? updatedShop : shop,
+    );
+    setShops(updatedShops);
+
+    // Update the selected shop if it's the one being edited
+    if (selectedShop && selectedShop.id === updatedShop.id) {
+      setSelectedShop(updatedShop);
+    }
   };
 
   // Animation functions
@@ -536,40 +583,83 @@ export default function HomeScreen() {
     })();
   }, []);
 
+  // Network status monitoring
   useEffect(() => {
-    return onSnapshot(collection(db, "coffee_shops"), (querySnapshot) => {
-      const shopsData = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        const geo = data.location;
-        
-        // Validate location data from Firebase
-        const location = { 
-          latitude: geo?.latitude, 
-          longitude: geo?.longitude 
-        };
-        
-        if (!isValidLocation(location)) {
-          console.warn(`Invalid location data for shop ${doc.id}:`, location);
-          return null; // Filter out invalid shops
-        }
-        
-        return {
-          id: doc.id,
-          ...data,
-          location,
-        };
-      }).filter(Boolean); // Remove null entries
-
-      if (location) {
-        shopsData.sort(
-          (a, b) =>
-            getDistanceMeters(location, a.location) -
-            getDistanceMeters(location, b.location),
-        );
-      }
-
-      setShops(shopsData);
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected && state.isInternetReachable !== false);
     });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Load shops from cache on mount
+  useEffect(() => {
+    const loadCachedShops = async () => {
+      try {
+        const cachedShops = await loadShopsFromCache();
+        if (cachedShops && cachedShops.length > 0) {
+          console.log('Loaded shops from cache for offline access');
+          setShops(cachedShops);
+          setIsLoadingFromCache(true);
+        }
+      } catch (error) {
+        console.error('Error loading cached shops:', error);
+      }
+    };
+
+    loadCachedShops();
+  }, []);
+
+  // Load shops from Firestore with caching
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "coffee_shops"),
+      (querySnapshot) => {
+        const shopsData = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          const geo = data.location;
+
+          // Validate location data from Firebase
+          const location = {
+            latitude: geo?.latitude,
+            longitude: geo?.longitude
+          };
+
+          if (!isValidLocation(location)) {
+            console.warn(`Invalid location data for shop ${doc.id}:`, location);
+            return null; // Filter out invalid shops
+          }
+
+          return {
+            id: doc.id,
+            ...data,
+            location,
+          };
+        }).filter(Boolean); // Remove null entries
+
+        if (location) {
+          shopsData.sort(
+            (a, b) =>
+              getDistanceMeters(location, a.location) -
+              getDistanceMeters(location, b.location),
+          );
+        }
+
+        setShops(shopsData);
+        setIsLoadingFromCache(false);
+
+        // Save to cache for offline access
+        saveShopsToCache(shopsData).catch(err =>
+          console.error('Failed to cache shops:', err)
+        );
+      },
+      (error) => {
+        console.error('Error loading shops from Firestore:', error);
+        // Keep using cached data if Firestore fails
+      }
+    );
+
+    return unsubscribe;
   }, [location]);
 
   // Check if the current user is an admin
@@ -631,29 +721,44 @@ export default function HomeScreen() {
     }
   };
 
-  // Load user favorites
+  // Load user favorites from cache first, then sync with Firestore
   useEffect(() => {
     if (!auth.currentUser) {
       setFavorites([]);
       return;
     }
 
+    // Load from cache immediately for offline access
+    loadFavoritesFromCache().then(cachedFavorites => {
+      if (cachedFavorites.length > 0) {
+        console.log('Loaded favorites from cache');
+        setFavorites(cachedFavorites);
+      }
+    });
+
     // Create the user document if needed
     createUserDocument(auth.currentUser.uid);
 
+    // Subscribe to Firestore updates
     return onSnapshot(
         doc(db, "users", auth.currentUser.uid),
         (doc) => {
           if (doc.exists()) {
             const userData = doc.data();
-            setFavorites(userData.favorites || []);
+            const newFavorites = userData.favorites || [];
+            setFavorites(newFavorites);
+
+            // Cache favorites for offline access
+            saveFavoritesToCache(newFavorites).catch(err =>
+              console.error('Failed to cache favorites:', err)
+            );
           } else {
             setFavorites([]);
           }
         },
         (error) => {
           console.error("Error loading favorites:", error);
-          setFavorites([]);
+          // Keep using cached data if Firestore fails
         },
     );
   }, [auth.currentUser]);
@@ -811,6 +916,25 @@ export default function HomeScreen() {
         <Text style={styles.label}>Fetching location...</Text>
       )}
       <Text style={styles.label}>Welcome to OatMark</Text>
+
+      {/* Offline indicator banner */}
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <FontAwesome6
+            name="wifi"
+            size={14}
+            color="#FFFFFF"
+            iconStyle="solid"
+            style={styles.offlineIcon}
+          />
+          <Text style={styles.offlineBannerText}>
+            {isLoadingFromCache
+              ? "Offline - Showing cached shops"
+              : "Offline - Limited functionality"}
+          </Text>
+        </View>
+      )}
+
       <FlatList
         data={shops}
         keyExtractor={(item) => item.id}
@@ -1144,6 +1268,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     style={styles.secondaryActionButton}
                     activeOpacity={0.8}
+                    onPress={handleShare}
                   >
                     <FontAwesome6
                       name="share"
@@ -1153,6 +1278,22 @@ export default function HomeScreen() {
                     />
                     <Text style={styles.secondaryButtonText}>Share</Text>
                   </TouchableOpacity>
+
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={styles.secondaryActionButton}
+                      activeOpacity={0.8}
+                      onPress={handleManageShop}
+                    >
+                      <FontAwesome6
+                        name="gear"
+                        size={14}
+                        color={colors.secondaryText}
+                        iconStyle="solid"
+                      />
+                      <Text style={styles.secondaryButtonText}>Manage</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
@@ -1208,6 +1349,22 @@ export default function HomeScreen() {
             collection="coffee_shops"
             onClose={() => setShowAdjustPinModal(false)}
             onSave={handleShopLocationUpdate}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showManageShopModal}
+        onRequestClose={() => setShowManageShopModal(false)}
+      >
+        {selectedShop && (
+          <ManageShopModal
+            shop={selectedShop}
+            visible={showManageShopModal}
+            onClose={() => setShowManageShopModal(false)}
+            onShopUpdated={handleShopUpdated}
           />
         )}
       </Modal>

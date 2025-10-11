@@ -1,22 +1,21 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import PlatformMap from "./PlatformMap";
+import MapView, { Marker } from "react-native-maps";
+import FreeMapView from "./FreeMapView";
 import { openInMaps, searchYelp } from "../utils/MapLinks";
 import { getFormattedUpcharge } from "../utils/upchargeEmojis";
 import { useTheme } from "../contexts/ThemeContext";
-import { createThemeStyles } from "../styles/ThemeStyles";
 
-const PendingShopCard = ({ 
-    item, 
-    onApprove, 
-    onReject, 
-    onAdjustPin, 
-    isProcessing 
+const PendingShopCard = ({
+    item,
+    onApprove,
+    onReject,
+    onAdjustPin,
+    isProcessing
 }) => {
     const { colors } = useTheme();
-    const commonStyles = createThemeStyles(colors);
 
     const markers = [
         {
@@ -30,62 +29,110 @@ const PendingShopCard = ({
     ];
 
     return (
-        <View style={styles.itemContainer}>
+        <View style={[styles.itemContainer, { backgroundColor: colors.cardBackground }]}>
+            {/* Status Badge */}
+            <View style={styles.statusBadge}>
+                <FontAwesome6 name="clock" size={10} color="#fff" iconStyle="solid" />
+                <Text style={styles.statusBadgeText}>PENDING REVIEW</Text>
+            </View>
+
+            {/* Header with Emoji and Shop Info */}
             <View style={styles.itemHeader}>
+                <View style={styles.emojiContainer}>
+                    <Text style={styles.emojiLarge}>{item.emoji || "☕"}</Text>
+                </View>
                 <View style={styles.itemTitleContainer}>
-                    <Text style={styles.itemTitle}>
-                        {item.emoji} {item.name}
+                    <Text style={[styles.itemTitle, { color: colors.text }]}>
+                        {item.name}
                     </Text>
-                    <Text style={styles.itemSubtitle}>
-                        {item.oatMilk} - {getFormattedUpcharge(item.upCharge, item.isFree)}
+                    <View style={styles.infoRow}>
+                        <FontAwesome6 name="mug-hot" size={12} color={colors.secondaryText} iconStyle="solid" />
+                        <Text style={[styles.itemSubtitle, { color: colors.secondaryText }]}>
+                            {item.oatMilk}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <FontAwesome6 name="money-bill" size={12} color="#4CAF50" iconStyle="solid" />
+                        <Text style={[styles.itemSubtitle, { color: colors.secondaryText }]}>
+                            {getFormattedUpcharge(item.upCharge, item.isFree)}
+                        </Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Metadata */}
+            <View style={[styles.metadataContainer, { backgroundColor: colors.inputBackground }]}>
+                <View style={styles.metadataRow}>
+                    <FontAwesome6 name="calendar" size={12} color={colors.secondaryText} iconStyle="solid" />
+                    <Text style={[styles.metadataText, { color: colors.secondaryText }]}>
+                        Submitted: {item.createdAt
+                            ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
+                            : "Unknown"}
+                    </Text>
+                </View>
+                <View style={styles.metadataRow}>
+                    <FontAwesome6 name="user" size={12} color={colors.secondaryText} iconStyle="solid" />
+                    <Text style={[styles.metadataText, { color: colors.secondaryText }]}>
+                        User: {item.createdBy?.substring(0, 8)}...
                     </Text>
                 </View>
             </View>
 
-            <View style={styles.itemContent}>
-                <Text style={styles.itemDetail}>
-                    <Text style={styles.itemDetailLabel}>Submitted:</Text>{" "}
-                    {item.createdAt
-                        ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
-                        : "Unknown"}
-                </Text>
-                <Text style={styles.itemDetail}>
-                    <Text style={styles.itemDetailLabel}>By:</Text>{" "}
-                    {item.createdBy?.substring(0, 8)}...
-                </Text>
-            </View>
-
+            {/* Map Section */}
             {item.location && (
-                <View style={commonStyles.mapContainer}>
-                    <PlatformMap
-                        style={styles.map}
-                        initialRegion={{
-                            latitude: item.location.latitude,
-                            longitude: item.location.longitude,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                        }}
-                        scrollEnabled={false}
-                        zoomEnabled={false}
-                        markers={markers}
-                    />
-                    
+                <View style={styles.mapContainer}>
+                    {Platform.OS === "android" ? (
+                        <FreeMapView
+                            style={styles.map}
+                            initialRegion={{
+                                latitude: item.location.latitude,
+                                longitude: item.location.longitude,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                            }}
+                            scrollEnabled={false}
+                            zoomEnabled={false}
+                            markers={markers}
+                        />
+                    ) : (
+                        <MapView
+                            style={styles.map}
+                            initialRegion={{
+                                latitude: item.location.latitude,
+                                longitude: item.location.longitude,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                            }}
+                            scrollEnabled={false}
+                            zoomEnabled={false}
+                        >
+                            <Marker
+                                coordinate={{
+                                    latitude: item.location.latitude,
+                                    longitude: item.location.longitude,
+                                }}
+                                title={item.name}
+                                description={`Oat Milk: ${item.oatMilk}`}
+                            />
+                        </MapView>
+                    )}
+
                     <View style={styles.mapButtonsContainer}>
                         <TouchableOpacity
                             style={styles.mapButton}
-                            onPress={() => openInMaps(item.location.latitude, item.location.longitude)}
+                            onPress={() => openInMaps(item)}
                             accessibilityRole="button"
                             accessibilityLabel={`Open ${item.name} location in maps`}
                         >
-                            <FontAwesome6 name="location-arrow" size={16} color="#fff" />
+                            <FontAwesome6 name="location-arrow" size={14} color="#fff" iconStyle="solid" />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.mapButton}
-                            onPress={() => searchYelp(item.name, item.location.latitude, item.location.longitude)}
+                            onPress={() => searchYelp(item)}
                             accessibilityRole="button"
                             accessibilityLabel={`Search ${item.name} on Yelp`}
                         >
-                            <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
+                            <FontAwesome6 name="magnifying-glass" size={14} color="#fff" iconStyle="solid" />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.mapButton, styles.adjustPinButton]}
@@ -93,12 +140,13 @@ const PendingShopCard = ({
                             accessibilityRole="button"
                             accessibilityLabel={`Adjust pin location for ${item.name}`}
                         >
-                            <FontAwesome6 name="crosshairs" size={16} color="#fff" />
+                            <FontAwesome6 name="crosshairs" size={14} color="#fff" iconStyle="solid" />
                         </TouchableOpacity>
                     </View>
                 </View>
             )}
 
+            {/* Action Buttons */}
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
                     style={[styles.approveButton, isProcessing && styles.disabledButton]}
@@ -108,11 +156,17 @@ const PendingShopCard = ({
                     accessibilityLabel={`Approve ${item.name} coffee shop submission`}
                     accessibilityHint="Double tap to approve this shop submission"
                 >
+                    <FontAwesome6
+                        name={isProcessing ? "spinner" : "circle-check"}
+                        size={16}
+                        color="#fff"
+                        iconStyle="solid"
+                    />
                     <Text style={styles.approveButtonText}>
                         {isProcessing ? "Processing..." : "Approve"}
                     </Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                     style={[styles.rejectButton, isProcessing && styles.disabledButton]}
                     onPress={() => onReject(item)}
@@ -121,6 +175,7 @@ const PendingShopCard = ({
                     accessibilityLabel={`Reject ${item.name} coffee shop submission`}
                     accessibilityHint="Double tap to reject this shop submission"
                 >
+                    <FontAwesome6 name="circle-xmark" size={16} color="#fff" iconStyle="solid" />
                     <Text style={styles.rejectButtonText}>Reject</Text>
                 </TouchableOpacity>
             </View>
@@ -130,49 +185,109 @@ const PendingShopCard = ({
 
 const styles = StyleSheet.create({
     itemContainer: {
-        backgroundColor: "#fff",
         marginVertical: 8,
         marginHorizontal: 16,
+        borderRadius: 16,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+        overflow: "hidden",
+    },
+    statusBadge: {
+        position: "absolute",
+        top: 12,
+        right: 12,
+        backgroundColor: "#FF9500",
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        zIndex: 10,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
             height: 2,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    statusBadgeText: {
+        color: "#fff",
+        fontSize: 10,
+        fontWeight: "700",
+        letterSpacing: 0.5,
     },
     itemHeader: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
+        flexDirection: "row",
+        padding: 20,
+        paddingTop: 24,
+        alignItems: "center",
+    },
+    emojiContainer: {
+        width: 70,
+        height: 70,
+        backgroundColor: "#F5F5F5",
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 16,
+        borderWidth: 1,
+        borderColor: "#E0E0E0",
+    },
+    emojiLarge: {
+        fontSize: 36,
     },
     itemTitleContainer: {
         flex: 1,
     },
     itemTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#333",
-        marginBottom: 4,
+        fontSize: 20,
+        fontWeight: "700",
+        marginBottom: 8,
     },
     itemSubtitle: {
         fontSize: 14,
-        color: "#666",
+        marginLeft: 6,
     },
-    itemContent: {
-        paddingHorizontal: 16,
+    infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 6,
+        gap: 6,
+    },
+    metadataContainer: {
+        paddingHorizontal: 20,
         paddingVertical: 12,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: "rgba(0,0,0,0.05)",
     },
-    itemDetail: {
-        fontSize: 14,
-        color: "#666",
-        marginBottom: 4,
+    metadataRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
     },
-    itemDetailLabel: {
-        fontWeight: "600",
-        color: "#333",
+    metadataText: {
+        fontSize: 12,
+        fontWeight: "500",
+    },
+    mapContainer: {
+        width: "100%",
+        height: 160,
+        overflow: "hidden",
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: "rgba(0,0,0,0.05)",
     },
     map: {
         width: "100%",
@@ -180,22 +295,30 @@ const styles = StyleSheet.create({
     },
     mapButtonsContainer: {
         position: "absolute",
-        top: 10,
-        right: 10,
+        top: 12,
+        right: 12,
         flexDirection: "row",
-        gap: 8,
+        gap: 10,
     },
     mapButton: {
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        padding: 8,
-        borderRadius: 20,
+        backgroundColor: "rgba(0, 0, 0, 0.75)",
+        padding: 10,
+        borderRadius: 22,
         alignItems: "center",
         justifyContent: "center",
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
     adjustPinButton: {
-        backgroundColor: "rgba(255, 149, 0, 0.9)",
+        backgroundColor: "#FF9500",
     },
     buttonContainer: {
         flexDirection: "row",
@@ -205,28 +328,50 @@ const styles = StyleSheet.create({
     approveButton: {
         flex: 1,
         backgroundColor: "#4CAF50",
-        paddingVertical: 12,
-        borderRadius: 8,
+        paddingVertical: 14,
+        borderRadius: 12,
         alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 8,
+        shadowColor: "#4CAF50",
+        shadowOffset: {
+            width: 0,
+            height: 3,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
     rejectButton: {
         flex: 1,
-        backgroundColor: "#f44336",
-        paddingVertical: 12,
-        borderRadius: 8,
+        backgroundColor: "#FF3B30",
+        paddingVertical: 14,
+        borderRadius: 12,
         alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 8,
+        shadowColor: "#FF3B30",
+        shadowOffset: {
+            width: 0,
+            height: 3,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
     disabledButton: {
-        opacity: 0.6,
+        opacity: 0.5,
     },
     approveButtonText: {
         color: "#fff",
-        fontWeight: "600",
+        fontWeight: "700",
         fontSize: 16,
     },
     rejectButtonText: {
         color: "#fff",
-        fontWeight: "600",
+        fontWeight: "700",
         fontSize: 16,
     },
 });
