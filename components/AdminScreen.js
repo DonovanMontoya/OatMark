@@ -316,7 +316,7 @@ const AdminScreen = ({onClose}) => {
                         There are no pending shop submissions to review at this time.
                     </Text>
                     <View style={styles.emptyDetail}>
-                        <FontAwesome6 name="info-circle" size={14} color={colors.secondaryText} iconStyle="solid"/>
+                        <FontAwesome6 name="circle-info" size={14} color={colors.secondaryText} iconStyle="solid"/>
                         <Text style={[styles.emptyDetailText, { color: colors.secondaryText }]}>
                             New submissions will appear here automatically
                         </Text>
