@@ -471,6 +471,7 @@ const SubmitShopScreen = ({onClose}) => {
                                     ref={mapRef}
                                     style={styles.map}
                                     mapType="standard"
+                                    userInterfaceStyle={isDark ? "dark" : "light"}
                                     initialRegion={{
                                         latitude: userLocation.latitude,
                                         longitude: userLocation.longitude,

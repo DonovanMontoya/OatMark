@@ -136,6 +136,7 @@ const AdjustPinModal = ({
                                 ref={mapRef}
                                 style={styles.map}
                                 mapType="standard"
+                                userInterfaceStyle={isDark ? "dark" : "light"}
                                 onRegionChangeComplete={onRegionChangeComplete}
                                 onRegionChange={onRegionChangeStart}
                                 initialRegion={{
