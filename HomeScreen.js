@@ -858,6 +858,7 @@ export default function HomeScreen() {
               style={styles.map}
               mapType="standard"
               showsUserLocation
+              customMapStyle={isDark ? darkMapStyle : []}
               initialRegion={{
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -1014,6 +1015,7 @@ export default function HomeScreen() {
                 ref={overlayMapRef}
                 style={styles.overlayMap}
                 showsUserLocation
+                customMapStyle={isDark ? darkMapStyle : []}
                 region={{
                   latitude: selectedShop.location.latitude,
                   longitude: selectedShop.location.longitude,
