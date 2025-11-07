@@ -10,7 +10,9 @@ import {handleAuthError} from './utils/ErrorUtils';
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [isSigningUp, setIsSigningUp] = useState(false);
+    const [error, setError] = useState('');
 
     // Get theme context
     const {colors} = useTheme();
@@ -19,52 +21,72 @@ export default function LoginPage() {
     const styles = createLoginPageStyles(colors);
 
     const handleSignUp = async () => {
+        // Clear any previous errors
+        setError('');
+
         // Validate inputs
+        if (!email.trim()) {
+            setError('Please enter your email address.');
+            return;
+        }
+
         if (!isValidEmail(email)) {
-            handleAuthError({ code: 'auth/invalid-email' }, 'signup');
+            setError('Please enter a valid email address.');
+            return;
+        }
+
+        if (!password.trim()) {
+            setError('Please enter a password.');
             return;
         }
 
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.isValid) {
-            handleAuthError({ 
-                code: 'auth/weak-password',
-                message: passwordValidation.messages.join(', ')
-            }, 'signup');
+            setError(passwordValidation.messages.join(' '));
             return;
         }
 
-        setIsLoading(true);
+        setIsSigningUp(true);
         try {
             await createUserWithEmailAndPassword(auth, email.trim(), password);
         } catch (err) {
             handleAuthError(err, 'signup');
         } finally {
-            setIsLoading(false);
+            setIsSigningUp(false);
         }
     };
 
     const handleLogin = async () => {
+        // Clear any previous errors
+        setError('');
+
         // Validate inputs
+        if (!email.trim()) {
+            setError('Please enter your email address.');
+            return;
+        }
+
         if (!isValidEmail(email)) {
-            handleAuthError({ code: 'auth/invalid-email' }, 'login');
+            setError('Please enter a valid email address.');
             return;
         }
 
         if (!password.trim()) {
-            handleAuthError({ code: 'auth/wrong-password' }, 'login');
+            setError('Please enter your password.');
             return;
         }
 
-        setIsLoading(true);
+        setIsLoggingIn(true);
         try {
             await signInWithEmailAndPassword(auth, email.trim(), password);
         } catch (err) {
             handleAuthError(err, 'login');
         } finally {
-            setIsLoading(false);
+            setIsLoggingIn(false);
         }
     };
+
+    const isAnyLoading = isLoggingIn || isSigningUp;
 
     return (
         <View style={styles.authContainer}>
@@ -75,36 +97,50 @@ export default function LoginPage() {
             <TextInput
                 style={styles.input}
                 placeholder="Email"
+                placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                    setEmail(text);
+                    setError('');
+                }}
+                editable={!isAnyLoading}
             />
             <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor={colors.textSecondary}
                 secureTextEntry
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                    setPassword(text);
+                    setError('');
+                }}
+                editable={!isAnyLoading}
             />
 
-            <TouchableOpacity 
-                style={[styles.authButton, isLoading && styles.authButtonDisabled]} 
+            {error ? (
+                <Text style={styles.errorText}>{error}</Text>
+            ) : null}
+
+            <TouchableOpacity
+                style={[styles.authButton, isAnyLoading && styles.authButtonDisabled]}
                 onPress={handleLogin}
-                disabled={isLoading}
+                disabled={isAnyLoading}
             >
                 <Text style={styles.authButtonText}>
-                    {isLoading ? 'Logging In...' : 'Log In'}
+                    {isLoggingIn ? 'Logging In...' : 'Log In'}
                 </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-                style={[styles.authButtonSecondary, isLoading && styles.authButtonDisabled]} 
+            <TouchableOpacity
+                style={[styles.authButtonSecondary, isAnyLoading && styles.authButtonDisabled]}
                 onPress={handleSignUp}
-                disabled={isLoading}
+                disabled={isAnyLoading}
             >
                 <Text style={styles.authButtonText}>
-                    {isLoading ? 'Creating Account...' : 'Sign Up'}
+                    {isSigningUp ? 'Creating Account...' : 'Sign Up'}
                 </Text>
             </TouchableOpacity>
         </View>

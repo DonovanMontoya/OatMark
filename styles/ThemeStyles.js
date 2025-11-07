@@ -829,6 +829,17 @@ export const createLoginPageStyles = (colors) => {
             fontWeight: "600",
             fontSize: 16,
         },
+        authButtonDisabled: {
+            opacity: 0.6,
+        },
+        errorText: {
+            width: "100%",
+            color: "#FF3B30",
+            fontSize: 14,
+            marginBottom: 12,
+            paddingHorizontal: 4,
+            textAlign: "left",
+        },
 
         // Common modal styles
         modalHeader: {
