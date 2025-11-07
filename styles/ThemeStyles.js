@@ -319,6 +319,9 @@ export const createHomeScreenStyles = (colors) => {
             alignItems: "center",
             gap: 6,
         },
+        oatMilk: {
+            color: colors.isDark ? "#FFFFFF" : colors.text,
+        },
         locationRow: {
             flexDirection: "row",
             alignItems: "center",
