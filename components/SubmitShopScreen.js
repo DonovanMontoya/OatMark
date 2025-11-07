@@ -761,7 +761,7 @@ const getStyles = (colors) => StyleSheet.create({
         bottom: 10,
         left: 10,
         right: 10,
-        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        backgroundColor: colors.isDark ? "rgba(15, 26, 46, 0.9)" : "rgba(255, 255, 255, 0.9)",
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 4,
