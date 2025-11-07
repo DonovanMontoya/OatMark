@@ -118,13 +118,16 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
-  // Determine current theme colors
-  const colors = isDark ? darkTheme : lightTheme;
+  // Determine current theme colors and add isDark flag
+  const colors = {
+    ...(isDark ? darkTheme : lightTheme),
+    isDark, // Add isDark to colors object so styles can access it
+  };
 
   // Memoize context value to avoid unnecessary re-renders
   const themeContextValue = useMemo(
     () => ({ isDark, colors, toggleTheme }),
-    [isDark, colors]
+    [isDark]
   );
 
   // Don't render children until theme is loaded to avoid flashing
