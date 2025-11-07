@@ -6,8 +6,10 @@ import {openInMaps, searchYelp} from "../utils/MapLinks";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
+import {useTheme} from "../contexts/ThemeContext";
 
 const PendingShopsScreen = ({onClose}) => {
+    const {isDark, colors} = useTheme();
     const [pendingShops, setPendingShops] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -65,11 +67,13 @@ const PendingShopsScreen = ({onClose}) => {
         );
     };
 
+    const styles = getStyles(colors);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
+                    <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                 </TouchableOpacity>
                 <Text style={styles.title}>My Pending Shops</Text>
             </View>
@@ -253,17 +257,17 @@ const PendingShopsScreen = ({onClose}) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
     },
     mapContainer: {
         width: "100%",
         height: 220,
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: "#f0f0f0",
+        borderColor: colors.border,
         overflow: "hidden",
     },
     map: {
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-around",
         paddingVertical: 8,
-        backgroundColor: "#f8f8f8",
+        backgroundColor: colors.secondaryBackground,
     },
     mapButton: {
         flexDirection: "row",
@@ -282,9 +286,9 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 6,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: "#e0e0e0",
+        borderColor: colors.border,
     },
     mapButtonText: {
         fontSize: 12,
@@ -294,7 +298,7 @@ const styles = StyleSheet.create({
     emojiContainer: {
         width: 100,
         height: 100,
-        backgroundColor: "#f8f8f8",
+        backgroundColor: colors.secondaryBackground,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -308,7 +312,7 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
+        borderBottomColor: colors.border,
     },
     closeButton: {
         padding: 5,
@@ -317,7 +321,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: "bold",
-        color: "#333",
+        color: colors.text,
     },
     loadingContainer: {
         flex: 1,
@@ -327,7 +331,7 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: "#666",
+        color: colors.secondaryText,
     },
     emptyContainer: {
         flex: 1,
@@ -338,13 +342,13 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: "600",
-        color: "#333",
+        color: colors.text,
         marginTop: 20,
         textAlign: "center",
     },
     emptySubtext: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         marginTop: 10,
         textAlign: "center",
     },
@@ -353,7 +357,7 @@ const styles = StyleSheet.create({
     },
     card: {
         flexDirection: "column",
-        backgroundColor: "white",
+        backgroundColor: colors.background,
         borderRadius: 12,
         marginBottom: 16,
         shadowColor: "#000",
@@ -362,7 +366,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
         borderWidth: 1,
-        borderColor: "#f0f0f0",
+        borderColor: colors.border,
         overflow: "hidden",
     },
     cardHeader: {
@@ -382,7 +386,7 @@ const styles = StyleSheet.create({
     image: {
         width: 100,
         height: 100,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: colors.secondaryBackground,
     },
     imageLoadingOverlay: {
         position: "absolute",
@@ -404,7 +408,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     statusText: {
-        color: "white",
+        color: "#FFFFFF",
         fontSize: 10,
         fontWeight: "bold",
     },
@@ -416,7 +420,7 @@ const styles = StyleSheet.create({
     shopName: {
         fontSize: 16,
         fontWeight: "bold",
-        color: "#333",
+        color: colors.text,
         marginBottom: 8,
     },
     detailRow: {
@@ -426,7 +430,7 @@ const styles = StyleSheet.create({
     },
     detailText: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         marginLeft: 8,
     },
     deleteButton: {

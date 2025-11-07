@@ -20,8 +20,10 @@ import FreeMapView from "./FreeMapView";
 import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare,} from "../utils/GeoUtils";
 import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji, isValidLocation} from "../utils/ValidationUtils";
 import {handleError, handleLocationError, showSuccess} from "../utils/ErrorUtils";
+import {useTheme} from "../contexts/ThemeContext";
 
 const SubmitShopScreen = ({onClose}) => {
+    const {isDark, colors} = useTheme();
     const [shopName, setShopName] = useState("");
     const [oatMilk, setOatMilk] = useState("");
     const [upCharge, setUpCharge] = useState("");
@@ -292,6 +294,8 @@ const SubmitShopScreen = ({onClose}) => {
         }
     };
 
+    const styles = getStyles(colors);
+
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -299,7 +303,7 @@ const SubmitShopScreen = ({onClose}) => {
         >
             <View style={styles.header}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
+                    <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                 </TouchableOpacity>
                 <Text style={styles.title}>Submit Coffee Shop</Text>
             </View>
@@ -312,7 +316,7 @@ const SubmitShopScreen = ({onClose}) => {
                         value={shopName}
                         onChangeText={setShopName}
                         placeholder="Enter coffee shop name"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.tertiaryText}
                     />
                 </View>
 
@@ -323,7 +327,7 @@ const SubmitShopScreen = ({onClose}) => {
                         value={oatMilk}
                         onChangeText={setOatMilk}
                         placeholder="e.g., Oatly, Minor Figures, House-made"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.tertiaryText}
                     />
                     {commonBrands.length > 0 && (
                         <View style={styles.brandButtonsContainer}>
@@ -382,7 +386,7 @@ const SubmitShopScreen = ({onClose}) => {
                                     value={upCharge}
                                     onChangeText={handleUpChargeChange}
                                     placeholder="0.00"
-                                    placeholderTextColor="#999"
+                                    placeholderTextColor={colors.tertiaryText}
                                     keyboardType="decimal-pad"
                                     maxLength={6}
                                 />
@@ -534,10 +538,10 @@ const SubmitShopScreen = ({onClose}) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
@@ -546,7 +550,7 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
+        borderBottomColor: colors.border,
     },
     closeButton: {
         padding: 5,
@@ -555,7 +559,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: "bold",
-        color: "#333",
+        color: colors.text,
     },
     form: {
         flex: 1,
@@ -567,24 +571,25 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#333",
+        color: colors.text,
         marginBottom: 8,
     },
     input: {
         height: 44,
         paddingHorizontal: 12,
-        borderColor: "#ddd",
+        borderColor: colors.border,
         borderWidth: 1,
         borderRadius: 8,
         fontSize: 16,
-        backgroundColor: "#f9f9f9",
+        backgroundColor: colors.inputBackground,
+        color: colors.text,
     },
     brandButtonsContainer: {
         marginTop: 10,
     },
     brandButtonsLabel: {
         fontSize: 12,
-        color: "#666",
+        color: colors.secondaryText,
         marginBottom: 8,
         fontWeight: "500",
     },
@@ -597,41 +602,41 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 16,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: colors.isDark ? colors.secondaryBackground : "#f0f0f0",
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
         marginHorizontal: 4,
         marginBottom: 8,
     },
     brandButtonActive: {
-        backgroundColor: "#E3F2FD",
-        borderColor: "#4285F4",
+        backgroundColor: colors.isDark ? "rgba(92, 157, 255, 0.2)" : "#E3F2FD",
+        borderColor: colors.primary,
     },
     brandButtonText: {
         fontSize: 13,
-        color: "#666",
+        color: colors.secondaryText,
         fontWeight: "500",
     },
     brandButtonTextActive: {
-        color: "#4285F4",
+        color: colors.primary,
         fontWeight: "600",
     },
     note: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         fontStyle: "italic",
         marginVertical: 10,
         textAlign: "center",
     },
     submitButton: {
-        backgroundColor: "#4285F4",
+        backgroundColor: colors.primary,
         paddingVertical: 15,
         borderRadius: 8,
         marginVertical: 20,
         alignItems: "center",
     },
     submitButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: colors.isDark ? colors.secondaryBackground : "#ccc",
     },
     submitButtonText: {
         color: "white",
@@ -642,7 +647,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     freeButton: {
-        backgroundColor: "#f0f0f0",
+        backgroundColor: colors.isDark ? colors.secondaryBackground : "#f0f0f0",
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 25,
@@ -652,23 +657,23 @@ const styles = StyleSheet.create({
         borderColor: "transparent",
     },
     freeButtonActive: {
-        backgroundColor: "#e8f5e8",
-        borderColor: "#4CAF50",
+        backgroundColor: colors.isDark ? "rgba(108, 203, 112, 0.2)" : "#e8f5e8",
+        borderColor: colors.success,
     },
     freeButtonText: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#666",
+        color: colors.secondaryText,
     },
     freeButtonTextActive: {
-        color: "#4CAF50",
+        color: colors.success,
     },
     priceInputContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#f9f9f9",
+        backgroundColor: colors.inputBackground,
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
         borderRadius: 8,
         paddingHorizontal: 12,
         height: 44,
@@ -676,18 +681,18 @@ const styles = StyleSheet.create({
     dollarSign: {
         fontSize: 18,
         fontWeight: "bold",
-        color: "#4285F4",
+        color: colors.primary,
         marginRight: 5,
     },
     priceInput: {
         flex: 1,
         fontSize: 16,
-        color: "#333",
+        color: colors.text,
         paddingVertical: 0,
     },
     whimsicalText: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         fontStyle: "italic",
         textAlign: "center",
         marginTop: 8,
@@ -700,7 +705,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
         marginBottom: 10,
         position: "relative",
     },
@@ -710,24 +715,24 @@ const styles = StyleSheet.create({
     },
     mapPlaceholder: {
         height: 200,
-        backgroundColor: "#f9f9f9",
+        backgroundColor: colors.inputBackground,
         borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
     },
     loadingText: {
         fontSize: 16,
-        color: "#666",
+        color: colors.secondaryText,
     },
     errorText: {
         fontSize: 16,
-        color: "#cc0000",
+        color: colors.danger,
     },
     mapInstructions: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         marginBottom: 10,
         fontStyle: "italic",
     },
@@ -763,7 +768,7 @@ const styles = StyleSheet.create({
     },
     distanceText: {
         fontSize: 12,
-        color: "#333",
+        color: colors.text,
         textAlign: "center",
     },
 });
