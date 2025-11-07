@@ -390,7 +390,7 @@ export const createHomeScreenStyles = (colors) => {
         closeButtonTop: {
             position: "absolute",
             top: 50,
-            right: 20,
+            left: 20,
             zIndex: 20,
         },
         closeButtonBackground: {
@@ -418,7 +418,7 @@ export const createHomeScreenStyles = (colors) => {
         adminFloatingButton: {
             position: "absolute",
             top: 50,
-            left: 20,
+            right: 20,
             zIndex: 20,
         },
         adminFloatingBackground: {
