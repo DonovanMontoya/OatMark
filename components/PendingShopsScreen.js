@@ -162,6 +162,7 @@ const PendingShopsScreen = ({onClose}) => {
                                         <MapView
                                             style={styles.map}
                                             mapType="standard"
+                                            userInterfaceStyle={isDark ? "dark" : "light"}
                                             initialRegion={{
                                                 latitude: item.location.latitude,
                                                 longitude: item.location.longitude,
