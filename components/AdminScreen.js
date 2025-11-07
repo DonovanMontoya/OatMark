@@ -13,10 +13,11 @@ import {
 import {collection, deleteDoc, doc, onSnapshot, query, runTransaction} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {handleError, showSuccess, showDestructiveConfirmation} from "../utils/ErrorUtils";
+import {handleError, showDestructiveConfirmation} from "../utils/ErrorUtils";
 import {isValidLocation, validateShopName, validateOatMilk, validateUpcharge, validateEmoji} from "../utils/ValidationUtils";
 import {useAdminStatus} from "../hooks/useAdminStatus";
 import AdjustPinModal from "./AdjustPinModal";
+import EditShopDetailsModal from "./EditShopDetailsModal";
 import PendingShopCard from "./PendingShopCard";
 import {createThemeStyles} from "../styles/ThemeStyles";
 import {useTheme} from "../contexts/ThemeContext";
@@ -28,6 +29,7 @@ const AdminScreen = ({onClose}) => {
     const {colors} = useTheme();
     const commonStyles = createThemeStyles(colors);
     const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
+    const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
     const [selectedShop, setSelectedShop] = useState(null);
     const [processingItems, setProcessingItems] = useState(new Set());
 
@@ -83,7 +85,11 @@ const AdminScreen = ({onClose}) => {
                         // Comprehensive validation before approval
                         const nameValidation = validateShopName(shop.name);
                         const oatMilkValidation = validateOatMilk(shop.oatMilk);
-                        const upchargeValidation = validateUpcharge(shop.upCharge);
+                        // Handle undefined upCharge and check if it's marked as free
+                        // Check both shop.isFree property and if upCharge value is "Free"
+                        const upChargeStr = shop.upCharge != null ? String(shop.upCharge) : '';
+                        const isFree = shop.isFree || upChargeStr.toLowerCase().trim() === 'free';
+                        const upchargeValidation = validateUpcharge(upChargeStr, isFree);
                         const emojiValidation = validateEmoji(shop.emoji);
 
                         if (!nameValidation.isValid) {
@@ -138,10 +144,10 @@ const AdminScreen = ({onClose}) => {
                                 // Create a new shop document
                                 const newShopRef = doc(collection(db, "coffee_shops"));
                                 const shopData = {
-                                    name: shop.name.trim(),
-                                    oatMilk: shop.oatMilk.trim(),
-                                    upCharge: shop.upCharge,
-                                    emoji: shop.emoji || "☕",
+                                    name: nameValidation.sanitized,
+                                    oatMilk: oatMilkValidation.sanitized,
+                                    upCharge: upchargeValidation.sanitized,
+                                    emoji: emojiValidation.sanitized,
                                     location: shop.location,
                                     createdAt: shop.createdAt || new Date(),
                                     approvedAt: new Date(),
@@ -153,11 +159,6 @@ const AdminScreen = ({onClose}) => {
                                 const pendingShopRef = doc(db, "pendingShops", shop.id);
                                 transaction.delete(pendingShopRef);
                             });
-
-                            showSuccess(
-                                "Success",
-                                `"${shop.name}" approved and published successfully`
-                            );
                         } catch (error) {
                             // Revert optimistic update on error
                             setPendingShops(prev => [shop, ...prev]);
@@ -200,7 +201,6 @@ const AdminScreen = ({onClose}) => {
 
                 try {
                     await deleteDoc(doc(db, "pendingShops", shop.id));
-                    showSuccess("Success", `"${shop.name}" submission rejected and deleted`);
                 } catch (error) {
                     // Revert optimistic update on error
                     setPendingShops(prev => [shop, ...prev]);
@@ -257,6 +257,15 @@ const AdminScreen = ({onClose}) => {
 
     // Handle shop location update
     const handleShopLocationUpdate = (updatedShop) => {
+        // Update the shop in the local state
+        const updatedShops = pendingShops.map((shop) =>
+            shop.id === updatedShop.id ? updatedShop : shop,
+        );
+        setPendingShops(updatedShops);
+    };
+
+    // Handle shop details update (oat milk and emoji)
+    const handleShopDetailsUpdate = (updatedShop) => {
         // Update the shop in the local state
         const updatedShops = pendingShops.map((shop) =>
             shop.id === updatedShop.id ? updatedShop : shop,
@@ -337,6 +346,14 @@ const AdminScreen = ({onClose}) => {
                                 setSelectedShop(shop);
                                 setShowAdjustPinModal(true);
                             }}
+                            onEditDetails={(shop) => {
+                                setSelectedShop(shop);
+                                setShowEditDetailsModal(true);
+                            }}
+                            onEditAll={(shop) => {
+                                setSelectedShop(shop);
+                                setShowEditDetailsModal(true);
+                            }}
                             isProcessing={processingItems.has(item.id)}
                         />
                     )}
@@ -358,6 +375,16 @@ const AdminScreen = ({onClose}) => {
                     />
                 )}
             </Modal>
+
+            {/* Edit Shop Details Modal */}
+            {selectedShop && (
+                <EditShopDetailsModal
+                    shop={selectedShop}
+                    visible={showEditDetailsModal}
+                    onClose={() => setShowEditDetailsModal(false)}
+                    onSave={handleShopDetailsUpdate}
+                />
+            )}
         </View>
     );
 };

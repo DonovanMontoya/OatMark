@@ -11,10 +11,10 @@ import {
     View,
 } from "react-native";
 import * as Location from "expo-location";
-import {addDoc, collection} from "firebase/firestore";
+import {addDoc, collection, getDocs} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import EmojiSelector from "./EmojiSelector";
+import EmojiSelector, {getRandomEmoji} from "./EmojiSelector";
 import MapView, {Circle, Polygon} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare,} from "../utils/GeoUtils";
@@ -26,8 +26,9 @@ const SubmitShopScreen = ({onClose}) => {
     const [oatMilk, setOatMilk] = useState("");
     const [upCharge, setUpCharge] = useState("");
     const [isFree, setIsFree] = useState(false);
-    const [selectedEmoji, setSelectedEmoji] = useState("☕");
+    const [selectedEmoji, setSelectedEmoji] = useState(() => getRandomEmoji());
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [commonBrands, setCommonBrands] = useState([]);
 
     // Location state variables
     const [userLocation, setUserLocation] = useState(null);
@@ -87,6 +88,40 @@ const SubmitShopScreen = ({onClose}) => {
         getUserLocation();
     }, []);
 
+    // Fetch common oat milk brands from the database
+    useEffect(() => {
+        const fetchCommonBrands = async () => {
+            try {
+                const shopsSnapshot = await getDocs(collection(db, "coffee_shops"));
+                const brandCounts = {};
+                
+                shopsSnapshot.forEach((doc) => {
+                    const oatMilk = doc.data().oatMilk;
+                    if (oatMilk && typeof oatMilk === 'string') {
+                        const brand = oatMilk.trim();
+                        if (brand) {
+                            brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+                        }
+                    }
+                });
+
+                // Get top 6 most common brands, sorted by count
+                const sortedBrands = Object.entries(brandCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([brand]) => brand);
+
+                setCommonBrands(sortedBrands);
+            } catch (error) {
+                console.error("Error fetching common brands:", error);
+                // Set some default common brands as fallback
+                setCommonBrands(["Oatly", "Minor Figures", "Califia Farms", "Oatly Barista", "Chobani", "Planet Oat"]);
+            }
+        };
+
+        fetchCommonBrands();
+    }, []);
+
     // Handle map region change start
     const onRegionChangeStart = () => {
         setIsMapDragging(true);
@@ -131,8 +166,8 @@ const SubmitShopScreen = ({onClose}) => {
                     longitudeDelta: region.longitudeDelta,
                 };
 
-                // Animate map to boundary with a longer duration for smoother transition
-                mapRef.current.animateToRegion(boundaryLocation, 800);
+                // Animate map to boundary quickly for immediate feedback
+                mapRef.current.animateToRegion(boundaryLocation, 200);
 
                 // Update map center
                 setMapCenter(boundaryPoint);
@@ -290,6 +325,32 @@ const SubmitShopScreen = ({onClose}) => {
                         placeholder="e.g., Oatly, Minor Figures, House-made"
                         placeholderTextColor="#999"
                     />
+                    {commonBrands.length > 0 && (
+                        <View style={styles.brandButtonsContainer}>
+                            <Text style={styles.brandButtonsLabel}>Quick select:</Text>
+                            <View style={styles.brandButtonsRow}>
+                                {commonBrands.map((brand) => (
+                                    <TouchableOpacity
+                                        key={brand}
+                                        style={[
+                                            styles.brandButton,
+                                            oatMilk === brand && styles.brandButtonActive
+                                        ]}
+                                        onPress={() => setOatMilk(brand)}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.brandButtonText,
+                                                oatMilk === brand && styles.brandButtonTextActive
+                                            ]}
+                                        >
+                                            {brand}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -517,6 +578,43 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         fontSize: 16,
         backgroundColor: "#f9f9f9",
+    },
+    brandButtonsContainer: {
+        marginTop: 10,
+    },
+    brandButtonsLabel: {
+        fontSize: 12,
+        color: "#666",
+        marginBottom: 8,
+        fontWeight: "500",
+    },
+    brandButtonsRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        marginHorizontal: -4,
+    },
+    brandButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        backgroundColor: "#f0f0f0",
+        borderWidth: 1,
+        borderColor: "#ddd",
+        marginHorizontal: 4,
+        marginBottom: 8,
+    },
+    brandButtonActive: {
+        backgroundColor: "#E3F2FD",
+        borderColor: "#4285F4",
+    },
+    brandButtonText: {
+        fontSize: 13,
+        color: "#666",
+        fontWeight: "500",
+    },
+    brandButtonTextActive: {
+        color: "#4285F4",
+        fontWeight: "600",
     },
     note: {
         fontSize: 14,

@@ -13,6 +13,8 @@ const PendingShopCard = ({
     onApprove,
     onReject,
     onAdjustPin,
+    onEditDetails,
+    onEditAll,
     isProcessing
 }) => {
     const { colors } = useTheme();
@@ -36,21 +38,47 @@ const PendingShopCard = ({
                 <Text style={styles.statusBadgeText}>PENDING REVIEW</Text>
             </View>
 
+            {/* Settings/Cog Button */}
+            {onEditAll && (
+                <TouchableOpacity
+                    style={styles.settingsButton}
+                    onPress={() => onEditAll(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit all details for ${item.name}`}
+                >
+                    <FontAwesome6 name="gear" size={16} color="#666" iconStyle="solid" />
+                </TouchableOpacity>
+            )}
+
             {/* Header with Emoji and Shop Info */}
             <View style={styles.itemHeader}>
-                <View style={styles.emojiContainer}>
+                <TouchableOpacity
+                    style={styles.emojiContainer}
+                    onPress={() => onEditDetails && onEditDetails(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit shop emoji and oat milk"
+                >
                     <Text style={styles.emojiLarge}>{item.emoji || "☕"}</Text>
-                </View>
+                    <View style={styles.editBadge}>
+                        <FontAwesome6 name="pencil" size={10} color="#fff" iconStyle="solid" />
+                    </View>
+                </TouchableOpacity>
                 <View style={styles.itemTitleContainer}>
                     <Text style={[styles.itemTitle, { color: colors.text }]}>
                         {item.name}
                     </Text>
-                    <View style={styles.infoRow}>
+                    <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={() => onEditDetails && onEditDetails(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit oat milk brand"
+                    >
                         <FontAwesome6 name="mug-hot" size={12} color={colors.secondaryText} iconStyle="solid" />
                         <Text style={[styles.itemSubtitle, { color: colors.secondaryText }]}>
                             {item.oatMilk}
                         </Text>
-                    </View>
+                        <FontAwesome6 name="pencil" size={10} color={colors.secondaryText} iconStyle="solid" style={styles.editIcon} />
+                    </TouchableOpacity>
                     <View style={styles.infoRow}>
                         <FontAwesome6 name="money-bill" size={12} color="#4CAF50" iconStyle="solid" />
                         <Text style={[styles.itemSubtitle, { color: colors.secondaryText }]}>
@@ -219,6 +247,25 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    settingsButton: {
+        position: "absolute",
+        top: 12,
+        left: 12,
+        backgroundColor: "rgba(255, 255, 255, 0.9)",
+        padding: 10,
+        borderRadius: 20,
+        zIndex: 10,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: "#e0e0e0",
+    },
     statusBadgeText: {
         color: "#fff",
         fontSize: 10,
@@ -241,6 +288,23 @@ const styles = StyleSheet.create({
         marginRight: 16,
         borderWidth: 1,
         borderColor: "#E0E0E0",
+        position: "relative",
+    },
+    editBadge: {
+        position: "absolute",
+        bottom: -4,
+        right: -4,
+        backgroundColor: "#4285F4",
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 2,
+        borderColor: "#fff",
+    },
+    editIcon: {
+        marginLeft: 6,
     },
     emojiLarge: {
         fontSize: 36,
@@ -394,6 +458,8 @@ PendingShopCard.propTypes = {
     onApprove: PropTypes.func.isRequired,
     onReject: PropTypes.func.isRequired,
     onAdjustPin: PropTypes.func.isRequired,
+    onEditDetails: PropTypes.func,
+    onEditAll: PropTypes.func,
     isProcessing: PropTypes.bool.isRequired,
 };
 

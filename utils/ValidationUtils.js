@@ -126,18 +126,21 @@ export const validateShopName = (shopName) => {
   const result = {
     isValid: true,
     sanitized,
-    message: ''
+    message: '',
+    error: ''
   };
 
   if (!sanitized || sanitized.length < 2) {
     result.isValid = false;
     result.message = 'Shop name must be at least 2 characters long';
+    result.error = result.message;
   }
 
   // Check for suspicious patterns
   if (/^\s*$/.test(sanitized)) {
     result.isValid = false;
     result.message = 'Shop name cannot be empty or only whitespace';
+    result.error = result.message;
   }
 
   return result;
@@ -154,12 +157,14 @@ export const validateOatMilk = (oatMilk) => {
   const result = {
     isValid: true,
     sanitized,
-    message: ''
+    message: '',
+    error: ''
   };
 
   if (!sanitized || sanitized.length < 2) {
     result.isValid = false;
     result.message = 'Oat milk brand must be at least 2 characters long';
+    result.error = result.message;
   }
 
   return result;
@@ -175,27 +180,33 @@ export const validateUpcharge = (upCharge, isFree = false) => {
   const result = {
     isValid: true,
     message: '',
-    sanitized: isFree ? 'Free' : upCharge
+    error: '',
+    sanitized: isFree ? 'Free' : (upCharge || '')
   };
 
   if (isFree) {
     return result; // Free is always valid
   }
 
-  if (!upCharge || typeof upCharge !== 'string') {
+  // Handle undefined, null, or non-string values by converting to string
+  const upChargeStr = upCharge == null ? '' : String(upCharge);
+
+  if (!upChargeStr || upChargeStr.trim() === '') {
     result.isValid = false;
     result.message = 'Upcharge is required when not free';
+    result.error = result.message;
     return result;
   }
 
   // Remove non-numeric characters except decimal point
-  const numericValue = upCharge.replace(/[^0-9.]/g, '');
+  const numericValue = upChargeStr.replace(/[^0-9.]/g, '');
   
   // Check for valid decimal format
   const decimalParts = numericValue.split('.');
   if (decimalParts.length > 2) {
     result.isValid = false;
     result.message = 'Invalid price format';
+    result.error = result.message;
     return result;
   }
 
@@ -204,18 +215,21 @@ export const validateUpcharge = (upCharge, isFree = false) => {
   if (isNaN(price)) {
     result.isValid = false;
     result.message = 'Please enter a valid price';
+    result.error = result.message;
     return result;
   }
 
   if (price < 0) {
     result.isValid = false;
     result.message = 'Price cannot be negative';
+    result.error = result.message;
     return result;
   }
 
   if (price > 99.99) {
     result.isValid = false;
     result.message = 'Price seems unreasonably high';
+    result.error = result.message;
     return result;
   }
 
@@ -232,13 +246,15 @@ export const validateEmoji = (emoji) => {
   const result = {
     isValid: true,
     sanitized: emoji || '☕',
-    message: ''
+    message: '',
+    error: ''
   };
 
   // Basic emoji validation - just ensure it's a single character
   if (emoji && emoji.length > 4) {
     result.sanitized = '☕';
     result.message = 'Invalid emoji, using default';
+    result.error = result.message;
   }
 
   return result;
