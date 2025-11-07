@@ -5,6 +5,7 @@ import {db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import MapView from "react-native-maps";
 import FreeMapView from "./FreeMapView";
+import {useTheme} from "../contexts/ThemeContext";
 
 const AdjustPinModal = ({
                             shop,
@@ -12,6 +13,7 @@ const AdjustPinModal = ({
                             onSave,
                             collection = "pendingShops",
                         }) => {
+    const {isDark, colors} = useTheme();
     // State variables
     const [mapCenter, setMapCenter] = useState(null);
     const [isMapDragging, setIsMapDragging] = useState(false);
@@ -87,11 +89,13 @@ const AdjustPinModal = ({
         }
     };
 
+    const styles = getStyles(colors);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
+                    <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                 </TouchableOpacity>
                 <Text style={styles.title}>Adjust Pin Location</Text>
             </View>
@@ -132,6 +136,7 @@ const AdjustPinModal = ({
                                 ref={mapRef}
                                 style={styles.map}
                                 mapType="standard"
+                                userInterfaceStyle={isDark ? "dark" : "light"}
                                 onRegionChangeComplete={onRegionChangeComplete}
                                 onRegionChange={onRegionChangeStart}
                                 initialRegion={{
@@ -180,10 +185,10 @@ const AdjustPinModal = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
+        borderBottomColor: colors.border,
     },
     closeButton: {
         padding: 5,
@@ -201,7 +206,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: "bold",
-        color: "#333",
+        color: colors.text,
     },
     content: {
         flex: 1,
@@ -210,12 +215,12 @@ const styles = StyleSheet.create({
     shopName: {
         fontSize: 18,
         fontWeight: "600",
-        color: "#333",
+        color: colors.text,
         marginBottom: 10,
     },
     instructions: {
         fontSize: 14,
-        color: "#666",
+        color: colors.secondaryText,
         marginBottom: 20,
         fontStyle: "italic",
     },
@@ -224,7 +229,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
         marginBottom: 20,
         position: "relative",
     },
@@ -255,28 +260,28 @@ const styles = StyleSheet.create({
         bottom: 10,
         left: 10,
         right: 10,
-        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        backgroundColor: colors.isDark ? "rgba(15, 26, 46, 0.9)" : "rgba(255, 255, 255, 0.9)",
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 4,
     },
     coordinatesText: {
         fontSize: 12,
-        color: "#333",
+        color: colors.text,
         textAlign: "center",
     },
     loadingContainer: {
         height: 400,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f9f9f9",
+        backgroundColor: colors.inputBackground,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: colors.border,
     },
     loadingText: {
         fontSize: 16,
-        color: "#666",
+        color: colors.secondaryText,
     },
     buttonContainer: {
         flexDirection: "row",
@@ -285,29 +290,29 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: colors.secondaryBackground,
         paddingVertical: 15,
         borderRadius: 8,
         marginRight: 10,
         alignItems: "center",
     },
     cancelButtonText: {
-        color: "#666",
+        color: colors.secondaryText,
         fontSize: 16,
         fontWeight: "600",
     },
     saveButton: {
         flex: 2,
-        backgroundColor: "#4285F4",
+        backgroundColor: colors.primary,
         paddingVertical: 15,
         borderRadius: 8,
         alignItems: "center",
     },
     saveButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: colors.isDark ? colors.secondaryBackground : "#ccc",
     },
     saveButtonText: {
-        color: "white",
+        color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "600",
     },
