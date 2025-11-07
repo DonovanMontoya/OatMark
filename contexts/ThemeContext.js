@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define theme colors
 const lightTheme = {
@@ -77,28 +78,62 @@ const ThemeContext = createContext({
 export const ThemeProvider = ({ children }) => {
   // Get the device color scheme
   const deviceColorScheme = useColorScheme();
-  
+
   // Initialize theme based on device preference
   const [isDark, setIsDark] = useState(deviceColorScheme === 'dark');
-  
-  // Update the theme if device preference changes
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load saved theme preference on mount
   useEffect(() => {
-    setIsDark(deviceColorScheme === 'dark');
-  }, [deviceColorScheme]);
-  
+    const loadThemePreference = async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem('theme_preference');
+        if (savedTheme !== null) {
+          setIsDark(savedTheme === 'dark');
+        } else {
+          // No saved preference, use device preference
+          setIsDark(deviceColorScheme === 'dark');
+        }
+      } catch (error) {
+        console.error('Failed to load theme preference:', error);
+        setIsDark(deviceColorScheme === 'dark');
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    loadThemePreference();
+  }, []);
+
   // Toggle theme function
-  const toggleTheme = () => {
-    setIsDark(prevIsDark => !prevIsDark);
+  const toggleTheme = async () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+
+    // Save preference to AsyncStorage
+    try {
+      await AsyncStorage.setItem('theme_preference', newTheme ? 'dark' : 'light');
+    } catch (error) {
+      console.error('Failed to save theme preference:', error);
+    }
   };
-  
-  // Determine current theme colors
-  const colors = isDark ? darkTheme : lightTheme;
+
+  // Determine current theme colors and add isDark flag
+  const colors = {
+    ...(isDark ? darkTheme : lightTheme),
+    isDark, // Add isDark to colors object so styles can access it
+  };
 
   // Memoize context value to avoid unnecessary re-renders
   const themeContextValue = useMemo(
     () => ({ isDark, colors, toggleTheme }),
-    [isDark, colors]
+    [isDark]
   );
+
+  // Don't render children until theme is loaded to avoid flashing
+  if (!isLoaded) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider value={themeContextValue}>
