@@ -16,6 +16,8 @@ import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
 import ManageShopModal from "./components/ManageShopModal";
 import ShopCard from "./components/ShopCard";
+import BeanRating from "./components/BeanRating";
+import RatingModal from "./components/RatingModal";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
@@ -279,6 +281,7 @@ export default function HomeScreen() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
   const [showManageShopModal, setShowManageShopModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
@@ -1181,6 +1184,24 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Rating</Text>
+                  {selectedShop.averageRating && selectedShop.ratingCount > 0 ? (
+                    <BeanRating
+                      rating={selectedShop.averageRating}
+                      size={16}
+                      showCount={true}
+                      count={selectedShop.ratingCount}
+                    />
+                  ) : (
+                    <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+                      Not rated
+                    </Text>
+                  )}
+                </View>
+
                 {location && (
                   <>
                     <View style={styles.statDivider} />
@@ -1281,6 +1302,15 @@ export default function HomeScreen() {
                     <Text style={styles.secondaryButtonText}>Share</Text>
                   </TouchableOpacity>
 
+                  <TouchableOpacity
+                    style={styles.secondaryActionButton}
+                    activeOpacity={0.8}
+                    onPress={() => setShowRatingModal(true)}
+                  >
+                    <Text style={{ fontSize: 14 }}>🫘</Text>
+                    <Text style={styles.secondaryButtonText}>Rate</Text>
+                  </TouchableOpacity>
+
                   {isAdmin && (
                     <TouchableOpacity
                       style={styles.secondaryActionButton}
@@ -1370,6 +1400,13 @@ export default function HomeScreen() {
           />
         )}
       </Modal>
+
+      <RatingModal
+        visible={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        shop={selectedShop}
+        userLocation={location}
+      />
     </View>
   );
 }

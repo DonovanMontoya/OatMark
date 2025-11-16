@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Animated, Image } from 'react-native';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { getFormattedUpcharge, getUpchargeColor } from '../utils/upchargeEmojis';
 import { getDistanceMeters } from '../utils/GeoUtils';
+import BeanRating from './BeanRating';
 
 const ShopCard = ({ 
   item, 
@@ -76,6 +77,16 @@ const ShopCard = ({
                   {item.oatMilk}
                 </Text>
               </View>
+              {item.averageRating && item.ratingCount > 0 && (
+                <View style={styles.ratingRow}>
+                  <BeanRating
+                    rating={item.averageRating}
+                    size={14}
+                    showCount={true}
+                    count={item.ratingCount}
+                  />
+                </View>
+              )}
               <View style={styles.locationRow}>
                 <FontAwesome6
                   name="location-dot"
