@@ -326,6 +326,12 @@ export const createHomeScreenStyles = (colors) => {
             flexDirection: "row",
             alignItems: "center",
             marginVertical: 4,
+            gap: 6,
+        },
+        ratingScore: {
+            fontSize: 16,
+            fontWeight: "700",
+            color: colors.text,
         },
         locationRow: {
             flexDirection: "row",

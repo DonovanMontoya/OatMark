@@ -79,6 +79,9 @@ const ShopCard = ({
               </View>
               {item.averageRating && item.ratingCount > 0 && (
                 <View style={styles.ratingRow}>
+                  <Text style={styles.ratingScore}>
+                    {item.averageRating.toFixed(1)}
+                  </Text>
                   <BeanRating
                     rating={item.averageRating}
                     size={14}
