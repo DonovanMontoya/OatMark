@@ -38,15 +38,36 @@ const BeanRating = ({
     const isFilled = beanValue <= Math.floor(displayRating);
     const isHalf = beanValue === Math.ceil(displayRating) && displayRating % 1 !== 0;
 
-    // Always use coffee bean emoji, adjust opacity for filled/unfilled
     const beanEmoji = '🫘';
-    const opacity = isFilled ? 1.0 : (isHalf ? 0.5 : 0.25);
 
     const Wrapper = interactive ? TouchableOpacity : View;
     const wrapperProps = interactive ? {
       onPress: () => handlePress(index),
       activeOpacity: 0.6
     } : {};
+
+    // For half beans, layer a faded bean with a half-clipped filled bean on top
+    if (isHalf) {
+      return (
+        <Wrapper key={index} {...wrapperProps}>
+          <View style={styles.beanWrapper}>
+            {/* Background faded bean */}
+            <Text style={[styles.bean, { fontSize: size, opacity: 0.25 }]}>
+              {beanEmoji}
+            </Text>
+            {/* Half-filled bean overlay */}
+            <View style={[styles.halfBeanOverlay, { width: size * 0.5 }]}>
+              <Text style={[styles.bean, styles.halfBean, { fontSize: size }]}>
+                {beanEmoji}
+              </Text>
+            </View>
+          </View>
+        </Wrapper>
+      );
+    }
+
+    // Regular filled or empty bean
+    const opacity = isFilled ? 1.0 : 0.25;
 
     return (
       <Wrapper key={index} {...wrapperProps}>
@@ -85,6 +106,20 @@ const styles = StyleSheet.create({
   },
   bean: {
     marginHorizontal: 2,
+  },
+  beanWrapper: {
+    position: 'relative',
+  },
+  halfBeanOverlay: {
+    position: 'absolute',
+    left: 2,
+    top: 0,
+    overflow: 'hidden',
+  },
+  halfBean: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
   },
   countText: {
     marginLeft: 8,
