@@ -38,8 +38,9 @@ const BeanRating = ({
     const isFilled = beanValue <= Math.floor(displayRating);
     const isHalf = beanValue === Math.ceil(displayRating) && displayRating % 1 !== 0;
 
-    // Use coffee bean emoji - filled or empty
-    const beanEmoji = isFilled || isHalf ? '🫘' : '○';
+    // Always use coffee bean emoji, adjust opacity for filled/unfilled
+    const beanEmoji = '🫘';
+    const opacity = isFilled ? 1.0 : (isHalf ? 0.5 : 0.25);
 
     const Wrapper = interactive ? TouchableOpacity : View;
     const wrapperProps = interactive ? {
@@ -51,9 +52,7 @@ const BeanRating = ({
       <Wrapper key={index} {...wrapperProps}>
         <Text style={[
           styles.bean,
-          { fontSize: size },
-          isFilled && styles.filledBean,
-          !isFilled && { color: theme.colors.textSecondary }
+          { fontSize: size, opacity }
         ]}>
           {beanEmoji}
         </Text>
@@ -86,9 +85,6 @@ const styles = StyleSheet.create({
   },
   bean: {
     marginHorizontal: 2,
-  },
-  filledBean: {
-    // Filled beans use default color
   },
   countText: {
     marginLeft: 8,
