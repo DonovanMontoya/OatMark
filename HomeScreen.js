@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import NetInfo from "@react-native-community/netinfo";
 import {auth, db} from "./services/firebase";
-import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc,} from "firebase/firestore";
+import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc, query, orderBy, limit} from "firebase/firestore";
 import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
@@ -612,8 +612,17 @@ export default function HomeScreen() {
 
   // Load shops from Firestore with caching
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    // NOTE: This query has a limit for cost optimization
+    // For production with many shops, consider implementing geohash-based
+    // location queries to fetch only shops within a certain radius
+    const shopsQuery = query(
       collection(db, "coffee_shops"),
+      orderBy("createdAt", "desc"),
+      limit(100) // Limit to reduce read costs
+    );
+
+    const unsubscribe = onSnapshot(
+      shopsQuery,
       (querySnapshot) => {
         const shopsData = querySnapshot.docs.map((doc) => {
           const data = doc.data();

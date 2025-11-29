@@ -11,8 +11,9 @@ import {
     View,
 } from "react-native";
 import * as Location from "expo-location";
-import {addDoc, collection, getDocs} from "firebase/firestore";
+import {addDoc, collection} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
+import {getCommonBrands} from "../services/brandCache";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import EmojiSelector, {getRandomEmoji} from "./EmojiSelector";
 import MapView, {Circle, Polygon} from "react-native-maps";
@@ -93,32 +94,8 @@ const SubmitShopScreen = ({onClose}) => {
     // Fetch common oat milk brands from the database
     useEffect(() => {
         const fetchCommonBrands = async () => {
-            try {
-                const shopsSnapshot = await getDocs(collection(db, "coffee_shops"));
-                const brandCounts = {};
-                
-                shopsSnapshot.forEach((doc) => {
-                    const oatMilk = doc.data().oatMilk;
-                    if (oatMilk && typeof oatMilk === 'string') {
-                        const brand = oatMilk.trim();
-                        if (brand) {
-                            brandCounts[brand] = (brandCounts[brand] || 0) + 1;
-                        }
-                    }
-                });
-
-                // Get top 6 most common brands, sorted by count
-                const sortedBrands = Object.entries(brandCounts)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 6)
-                    .map(([brand]) => brand);
-
-                setCommonBrands(sortedBrands);
-            } catch (error) {
-                console.error("Error fetching common brands:", error);
-                // Set some default common brands as fallback
-                setCommonBrands(["Oatly", "Minor Figures", "Califia Farms", "Oatly Barista", "Chobani", "Planet Oat"]);
-            }
+            const brands = await getCommonBrands();
+            setCommonBrands(brands);
         };
 
         fetchCommonBrands();
