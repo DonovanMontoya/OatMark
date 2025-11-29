@@ -29,6 +29,7 @@
     "expo-web-browser": "~15.0.8",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
+    "geofire-common": "^6.0.0",
     "prop-types": "^15.8.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",

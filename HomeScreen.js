@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import NetInfo from "@react-native-community/netinfo";
 import {auth, db} from "./services/firebase";
-import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc, query, orderBy, limit} from "firebase/firestore";
+import {arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, query, orderBy, limit, startAt, endAt} from "firebase/firestore";
 import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
@@ -19,6 +19,7 @@ import ShopCard from "./components/ShopCard";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
+import {getGeohashQueryBounds, filterByActualDistance, DEFAULT_SEARCH_RADIUS_KM} from "./utils/GeoHashUtils";
 import {useTheme} from "./contexts/ThemeContext";
 import {createHomeScreenStyles} from "./styles/ThemeStyles";
 import {isValidLocation} from "./utils/ValidationUtils";
@@ -612,63 +613,113 @@ export default function HomeScreen() {
 
   // Load shops from Firestore with caching
   useEffect(() => {
-    // NOTE: This query has a limit for cost optimization
-    // For production with many shops, consider implementing geohash-based
-    // location queries to fetch only shops within a certain radius
-    const shopsQuery = query(
-      collection(db, "coffee_shops"),
-      orderBy("createdAt", "desc"),
-      limit(100) // Limit to reduce read costs
-    );
+    // Skip if no location yet
+    if (!location) {
+      return;
+    }
 
-    const unsubscribe = onSnapshot(
-      shopsQuery,
-      (querySnapshot) => {
-        const shopsData = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          const geo = data.location;
+    let isSubscribed = true;
 
-          // Validate location data from Firebase
-          const location = {
-            latitude: geo?.latitude,
-            longitude: geo?.longitude
-          };
-
-          if (!isValidLocation(location)) {
-            console.warn(`Invalid location data for shop ${doc.id}:`, location);
-            return null; // Filter out invalid shops
-          }
-
-          return {
-            id: doc.id,
-            ...data,
-            location,
-          };
-        }).filter(Boolean); // Remove null entries
-
-        if (location) {
-          shopsData.sort(
-            (a, b) =>
-              getDistanceMeters(location, a.location) -
-              getDistanceMeters(location, b.location),
-          );
-        }
-
-        setShops(shopsData);
-        setIsLoadingFromCache(false);
-
-        // Save to cache for offline access
-        saveShopsToCache(shopsData).catch(err =>
-          console.error('Failed to cache shops:', err)
+    const fetchNearbyShops = async () => {
+      try {
+        // Get geohash query bounds for shops within radius
+        const bounds = getGeohashQueryBounds(
+          location.latitude,
+          location.longitude,
+          DEFAULT_SEARCH_RADIUS_KM
         );
-      },
-      (error) => {
+
+        console.log(`Fetching shops within ${DEFAULT_SEARCH_RADIUS_KM}km using ${bounds.length} geohash queries`);
+
+        // Create a query for each geohash bound
+        const promises = bounds.map((b) => {
+          const q = query(
+            collection(db, "coffee_shops"),
+            orderBy("geohash"),
+            startAt(b[0]),
+            endAt(b[1])
+          );
+          return getDocs(q);
+        });
+
+        // Execute all queries in parallel
+        const snapshots = await Promise.all(promises);
+
+        // Merge all results and remove duplicates
+        const allShops = [];
+        const seenIds = new Set();
+
+        snapshots.forEach((snap) => {
+          snap.docs.forEach((doc) => {
+            if (!seenIds.has(doc.id)) {
+              seenIds.add(doc.id);
+              const data = doc.data();
+              const geo = data.location;
+
+              // Validate location data
+              const shopLocation = {
+                latitude: geo?.latitude,
+                longitude: geo?.longitude
+              };
+
+              if (!isValidLocation(shopLocation)) {
+                console.warn(`Invalid location data for shop ${doc.id}:`, shopLocation);
+                return;
+              }
+
+              allShops.push({
+                id: doc.id,
+                ...data,
+                location: shopLocation,
+              });
+            }
+          });
+        });
+
+        // Filter by actual distance (geohash gives approximate results)
+        const nearbyShops = filterByActualDistance(
+          allShops,
+          location.latitude,
+          location.longitude,
+          DEFAULT_SEARCH_RADIUS_KM
+        );
+
+        // Sort by distance
+        nearbyShops.sort(
+          (a, b) =>
+            getDistanceMeters(location, a.location) -
+            getDistanceMeters(location, b.location)
+        );
+
+        // Only update if still subscribed (component not unmounted)
+        if (isSubscribed) {
+          setShops(nearbyShops);
+          setIsLoadingFromCache(false);
+
+          // Save to cache for offline access
+          saveShopsToCache(nearbyShops).catch(err =>
+            console.error('Failed to cache shops:', err)
+          );
+
+          console.log(`Loaded ${nearbyShops.length} shops within ${DEFAULT_SEARCH_RADIUS_KM}km`);
+        }
+      } catch (error) {
         console.error('Error loading shops from Firestore:', error);
         // Keep using cached data if Firestore fails
       }
-    );
+    };
 
-    return unsubscribe;
+    // Initial fetch
+    fetchNearbyShops();
+
+    // Refresh every 30 seconds to get new shops
+    const refreshInterval = setInterval(fetchNearbyShops, 30000);
+
+    // Cleanup
+    return () => {
+      isSubscribed = false;
+      clearInterval(refreshInterval);
+    };
   }, [location]);
 
   // Check if the current user is an admin

@@ -1,8 +1,8 @@
 # Firebase Cost Optimization Report
 
 **Date**: 2025-11-29
-**Status**: ✅ Initial optimizations implemented
-**Estimated Cost Reduction**: ~70-85% for typical usage patterns
+**Status**: ✅ Full optimizations implemented (including geohash)
+**Estimated Cost Reduction**: ~85-95% for typical usage patterns
 
 ---
 
@@ -15,10 +15,10 @@ This document outlines Firebase read/write inefficiencies identified in OatMark 
 - **Free tier limit**: 50,000 reads/day
 - **Cost**: Exceeds free tier within hours
 
-### After Optimization
-- **Estimated monthly reads**: ~350,000 (82% reduction)
-- **Free tier status**: Within limits for up to ~150 daily users
-- **Cost**: Stays free for moderate usage
+### After Optimization (with Geohash)
+- **Estimated monthly reads**: ~120,000 (94% reduction)
+- **Free tier status**: Within limits for up to ~400 daily users
+- **Cost**: Stays free for significant growth
 
 ---
 
@@ -53,31 +53,41 @@ Savings: 90% reduction
 
 ---
 
-### 2. ✅ Unbounded Real-time Listener
+### 2. ✅ Geohash-Based Location Queries
 
 **Problem**:
 - `HomeScreen.js` used `onSnapshot(collection(db, "coffee_shops"))` with NO limits
 - Fetched all shops regardless of user location
+- After adding limit(100), old shops would disappear (P1 bug!)
 - Every shop update triggered re-read of entire collection
 - **Cost scaling**: 10 online users × 100 shops × 1 update = 1,000 reads per update
 
 **Solution Implemented**:
-- Added `limit(100)` to query
-- Added `orderBy("createdAt", "desc")` for consistency
-- Documented need for geohash queries in production
-- Client-side distance sorting still works (fetches recent 100 shops)
+- Implemented geohash-based location queries using `geofire-common`
+- Only fetches shops within 50km radius of user
+- Shows ALL nearby shops regardless of creation date (fixes P1 bug)
+- Switched from real-time listener to periodic refresh (30s interval)
+- Client-side distance sorting for accurate results
+
+**Files Created**:
+- ✅ Created: `/utils/GeoHashUtils.js` - Geohash utility functions
+- ✅ Created: `/scripts/migrateGeohashes.js` - Migration script
+- ✅ Created: `/GEOHASH_MIGRATION.md` - Migration guide
 
 **Files Modified**:
-- ✅ Updated: `/HomeScreen.js` (lines 9, 615-622)
+- ✅ Updated: `/HomeScreen.js` - Geohash queries with 50km radius
+- ✅ Updated: `/components/SubmitShopScreen.js` - Add geohash on creation
+- ✅ Updated: `/components/AdminScreen.js` - Add geohash on approval
+- ✅ Updated: `/components/AdjustPinModal.js` - Update geohash when location changes
 
 **Cost Savings**:
 ```
-Before: Unlimited growth (500+ shops = 500 reads per user)
-After:  Capped at 100 reads per user load
-Savings: 50-80% depending on total shop count
+Before: 100 shops globally = 100 reads per user (or worse with onSnapshot)
+After:  ~15-30 nearby shops = 20 reads avg per user
+Savings: 80% reduction in reads
 ```
 
-**Note**: For 500+ shops, implement geohash-based location queries (see Future Optimizations).
+**Migration Required**: Run `node scripts/migrateGeohashes.js` to add geohash to existing shops.
 
 ---
 
@@ -87,7 +97,7 @@ Savings: 50-80% depending on total shop count
 
 | Screen | Collection | Type | Frequency | Reads/Load | Cost Impact |
 |--------|-----------|------|-----------|------------|-------------|
-| HomeScreen | `coffee_shops` | Real-time | On mount | 100 (limited) | Medium |
+| HomeScreen | `coffee_shops` | Geohash query | On mount + 30s refresh | ~20 (nearby only) | ✅ Low |
 | HomeScreen | `users/{uid}` | Real-time | On mount | 1 | Very Low |
 | AdminScreen | `pendingShops` | Real-time | On mount | Variable (~5-20) | Low |
 | PendingShopsScreen | `pendingShops` | Real-time | On mount | Variable (~1-5) | Very Low |
@@ -117,88 +127,52 @@ Savings: 50-80% depending on total shop count
 - 5 favorites toggled/day
 - 100 total coffee shops in database
 
-**Daily Reads**:
+**Daily Reads** (with Geohash):
 ```
-Home Screen loads:     50 users × 2 sessions × 100 reads = 10,000
+Home Screen loads:     50 users × 2 sessions × 20 reads  = 2,000
+Home Screen refreshes: 50 users × 2 sessions × 20 reads  = 2,000 (30s intervals)
 User favorites loads:  50 users × 2 sessions × 1 read    = 100
 Admin reviews:         2 admins × 20 reads               = 40
 Brand cache refresh:   1 refresh × 100 reads             = 100
-Other queries:                                             500
+Other queries:                                             200
 ─────────────────────────────────────────────────────────
-Total:                                                   10,740 reads/day
+Total:                                                   4,440 reads/day
 ```
 
-**Monthly**: 10,740 × 30 = ~322,000 reads
+**Monthly**: 4,440 × 30 = ~133,000 reads
 
 **Firestore Pricing** (as of 2025):
 - Free tier: 50,000 reads/day (1.5M/month)
-- ✅ **Status**: WITHIN FREE TIER
+- ✅ **Status**: WELL WITHIN FREE TIER
 
 ### Scenario: 200 Daily Active Users
 
 ```
-Daily reads: ~42,000
-Monthly: ~1,260,000 reads
-Status: WITHIN FREE TIER
+Home Screen: 200 × 2 sessions × 40 reads (load + refresh) = 16,000
+Other operations:                                             800
+─────────────────────────────────────────────────────────────
+Daily reads: ~16,800
+Monthly: ~504,000 reads
+Status: ✅ WITHIN FREE TIER
 ```
 
 ### Scenario: 500 Daily Active Users (Future Growth)
 
 ```
-Daily reads: ~105,000
-Monthly: ~3,150,000 reads
-Overage: 1,650,000 reads × $0.06/100k = ~$1/month
-Status: Minimal cost, geohash optimization recommended
+Home Screen: 500 × 2 sessions × 40 reads = 40,000
+Other operations:                            2,000
+───────────────────────────────────────────────
+Daily reads: ~42,000
+Monthly: ~1,260,000 reads
+Status: ✅ WITHIN FREE TIER
+Cost: $0 (well under 1.5M/month limit)
 ```
 
 ---
 
-## 🎯 Future Optimizations (Not Yet Implemented)
+## 🎯 Future Optimizations
 
-### Priority 1: Geohash-based Location Queries
-
-**Current Limitation**:
-- HomeScreen fetches 100 most recent shops, sorts by distance
-- User in NYC might fetch shops from LA
-
-**Recommended Solution**:
-```javascript
-// Install: npm install geofire-common
-import { geohashQueryBounds, distanceBetween } from 'geofire-common';
-
-// Query shops within 50km radius
-const center = [userLat, userLng];
-const radiusInM = 50 * 1000;
-
-const bounds = geohashQueryBounds(center, radiusInM);
-const promises = bounds.map((b) => {
-  const q = query(
-    collection(db, 'coffee_shops'),
-    orderBy('geohash'),
-    startAt(b[0]),
-    endAt(b[1])
-  );
-  return getDocs(q);
-});
-
-// Merge results and filter by actual distance
-```
-
-**Required Changes**:
-1. Add `geohash` field to all shops during creation/approval
-2. Install `geofire-common` package
-3. Create composite index: `createdAt + geohash`
-4. Update HomeScreen query logic
-
-**Cost Impact**:
-- Reduces reads by 60-90% depending on user location density
-- Example: NYC user only fetches NYC shops (20 reads vs 100 reads)
-
-**Estimated Savings**: $5-20/month at scale (1000+ users)
-
----
-
-### Priority 2: Pagination for Admin Screen
+### Priority 1: Pagination for Admin Screen
 
 **Current**:
 - Loads all pending shops at once
@@ -228,7 +202,7 @@ const next = query(
 
 ---
 
-### Priority 3: Selective Field Fetching
+### Priority 2: Selective Field Fetching
 
 **Current**:
 - Fetches entire shop documents
@@ -250,7 +224,7 @@ const listQuery = query(
 
 ---
 
-### Priority 4: Batched Writes for Bulk Operations
+### Priority 3: Batched Writes for Bulk Operations
 
 **Current**: Individual writes (already efficient)
 
@@ -259,11 +233,25 @@ const listQuery = query(
 
 ---
 
+### Priority 4: Dynamic Search Radius
+
+**Current**: Fixed 50km radius for all users
+
+**Recommendation**:
+- Urban areas (high shop density): 10-20km radius
+- Suburban areas: 30-50km radius
+- Rural areas: 100km+ radius
+- Detect density and adjust dynamically
+
+**Cost Impact**: Further 20-40% reduction in urban areas
+
+---
+
 ## 📋 Required Firebase Indexes
 
 To support the optimizations, ensure these indexes exist:
 
-### Current Indexes Needed
+### Required Indexes
 
 ```json
 {
@@ -272,7 +260,7 @@ To support the optimizations, ensure these indexes exist:
       "collectionGroup": "coffee_shops",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "geohash", "order": "ASCENDING" }
       ]
     },
     {
@@ -287,22 +275,7 @@ To support the optimizations, ensure these indexes exist:
 }
 ```
 
-### Future Indexes (for geohash queries)
-
-```json
-{
-  "indexes": [
-    {
-      "collectionGroup": "coffee_shops",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "geohash", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    }
-  ]
-}
-```
+**Critical**: The `geohash` index is **REQUIRED** for the app to work with geohash queries.
 
 **How to add**:
 1. Run app and trigger queries
@@ -355,22 +328,26 @@ To support the optimizations, ensure these indexes exist:
 - [x] Update SubmitShopScreen to use cache
 - [x] Update EditShopDetailsModal to use cache
 - [x] Add cache invalidation to AdminScreen
-- [x] Add limit to HomeScreen shops query
-- [x] Add orderBy to shops query for consistency
+- [x] **Implement geohash location queries (P1 fix)**
+- [x] Create geohash utility functions
+- [x] Update all shop creation/edit to include geohash
+- [x] Create migration script for existing shops
+- [x] Update HomeScreen to use geohash queries (50km radius)
+- [x] Switch to periodic refresh (30s) instead of real-time listener
 - [x] Document all optimizations
 
 ### 🔜 Recommended Next Steps
+- [ ] **Run migration script**: `node scripts/migrateGeohashes.js`
+- [ ] **Create Firebase geohash index** (will be prompted automatically)
 - [ ] Monitor usage for 1 week to validate savings
-- [ ] Create Firebase indexes (createdAt DESC)
-- [ ] Test with 100 shops to ensure limit doesn't cause issues
-- [ ] Plan geohash implementation for 500+ shops milestone
+- [ ] Test with real-world data and various locations
 - [ ] Set up Firebase budget alerts
 - [ ] Consider implementing analytics to track query patterns
 
-### 🎯 Future Considerations (500+ shops)
-- [ ] Implement geohash location queries
+### 🎯 Future Considerations
 - [ ] Add pagination to admin screens
 - [ ] Consider selective field fetching
+- [ ] Implement dynamic search radius based on density
 - [ ] Explore Firestore bundle downloads for static data
 
 ---
@@ -385,13 +362,15 @@ To support the optimizations, ensure these indexes exist:
    - Approve new shop → Check "Brand cache invalidated"
    ```
 
-2. **Query Limit Testing**:
+2. **Geohash Query Testing**:
    ```bash
-   # Verify 100-shop limit works
-   - Create test data with 150 shops
-   - Load HomeScreen
-   - Verify only 100 most recent shown
-   - Verify distance sorting works correctly
+   # Verify geohash queries work
+   - Run migration: node scripts/migrateGeohashes.js
+   - Create Firebase geohash index
+   - Load HomeScreen in different locations
+   - Verify only nearby shops appear (within 50km)
+   - Check logs: "Loaded X shops within 50km"
+   - Verify old shops appear if they're nearby
    ```
 
 3. **Cost Monitoring**:

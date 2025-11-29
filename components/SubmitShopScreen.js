@@ -21,6 +21,7 @@ import FreeMapView from "./FreeMapView";
 import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPointInSquare,} from "../utils/GeoUtils";
 import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji, isValidLocation} from "../utils/ValidationUtils";
 import {handleError, handleLocationError, showSuccess} from "../utils/ErrorUtils";
+import {generateGeohash} from "../utils/GeoHashUtils";
 import {useTheme} from "../contexts/ThemeContext";
 
 const SubmitShopScreen = ({onClose}) => {
@@ -242,6 +243,7 @@ const SubmitShopScreen = ({onClose}) => {
                     latitude: mapCenter.latitude,
                     longitude: mapCenter.longitude,
                 },
+                geohash: generateGeohash(mapCenter.latitude, mapCenter.longitude),
                 userLocation: {
                     latitude: userLocation.latitude,
                     longitude: userLocation.longitude,
