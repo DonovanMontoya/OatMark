@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View,} from "react-native";
+import React, {useState} from "react";
+import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import {signOut} from "firebase/auth";
 import {auth} from "../services/firebase";
@@ -8,24 +8,14 @@ import {useTheme} from "../contexts/ThemeContext";
 
 const SettingsScreen = ({onClose}) => {
     // Get theme context
-    const {isDark, toggleTheme, colors} = useTheme();
+    const {themePreference, setThemePreference, colors} = useTheme();
 
     // noinspection JSUnusedLocalSymbols
     const [notifications, setNotifications] = useState(true);
     // noinspection JSUnusedLocalSymbols
     const [locationSharing, setLocationSharing] = useState(true);
-    // Local state for dark mode toggle
-    const [darkMode, setDarkMode] = useState(isDark);
-
-    // Sync local state with theme context
-    useEffect(() => {
-        setDarkMode(isDark);
-    }, [isDark]);
-
-    // Handle dark mode toggle
-    const handleDarkModeToggle = (value) => {
-        setDarkMode(value);
-        toggleTheme();
+    const handleThemePreferenceChange = (preference) => {
+        setThemePreference(preference);
     };
 
     const handleLogout = async () => {
@@ -123,15 +113,84 @@ const SettingsScreen = ({onClose}) => {
                                 color={colors.icon}
                                 iconStyle="solid"
                             />
-                            <Text style={styles.settingText}>Dark Mode</Text>
+                            <Text style={styles.settingText}>Theme</Text>
                         </View>
-                        <Switch
-                            value={darkMode}
-                            onValueChange={handleDarkModeToggle}
-                            trackColor={{false: "#767577", true: colors.primary}}
-                            thumbColor="#fff"
-                        />
                     </View>
+
+                    <View style={styles.themeOptionsRow}>
+                        <TouchableOpacity
+                            style={[
+                                styles.themeOption,
+                                themePreference === "light" && styles.themeOptionSelected,
+                            ]}
+                            onPress={() => handleThemePreferenceChange("light")}
+                        >
+                            <FontAwesome6
+                                name="sun"
+                                size={16}
+                                color={themePreference === "light" ? colors.primary : colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text
+                                style={[
+                                    styles.themeOptionText,
+                                    {color: themePreference === "light" ? colors.primary : colors.text},
+                                ]}
+                            >
+                                Light
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.themeOption,
+                                themePreference === "dark" && styles.themeOptionSelected,
+                            ]}
+                            onPress={() => handleThemePreferenceChange("dark")}
+                        >
+                            <FontAwesome6
+                                name="moon"
+                                size={16}
+                                color={themePreference === "dark" ? colors.primary : colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text
+                                style={[
+                                    styles.themeOptionText,
+                                    {color: themePreference === "dark" ? colors.primary : colors.text},
+                                ]}
+                            >
+                                Dark
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.themeOption,
+                                themePreference === "auto" && styles.themeOptionSelected,
+                            ]}
+                            onPress={() => handleThemePreferenceChange("auto")}
+                        >
+                            <FontAwesome6
+                                name="circle-half-stroke"
+                                size={16}
+                                color={themePreference === "auto" ? colors.primary : colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text
+                                style={[
+                                    styles.themeOptionText,
+                                    {color: themePreference === "auto" ? colors.primary : colors.text},
+                                ]}
+                            >
+                                Auto
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.themeHelperText}>
+                        Auto follows your device appearance and switches between light and dark
+                        automatically.
+                    </Text>
                 </View>
 
                 <View style={styles.section}>
@@ -299,12 +358,44 @@ const getStyles = (colors) => StyleSheet.create({
         color: colors.text,
         marginLeft: 15,
     },
+    themeOptionsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: 10,
+    },
+    themeOption: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 12,
+        marginHorizontal: 5,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 12,
+        backgroundColor: colors.cardBackground,
+    },
+    themeOptionSelected: {
+        borderColor: colors.primary,
+        backgroundColor: colors.inputBackground,
+    },
+    themeOptionText: {
+        fontSize: 14,
+        marginLeft: 8,
+    },
     theSmallText: {
         fontSize: 13,
         color: colors.text,
         paddingTop: 10,
         alignSelf: "center",
         textAlign: "center",
+    },
+    themeHelperText: {
+        fontSize: 13,
+        color: colors.secondaryText,
+        marginTop: 10,
+        lineHeight: 18,
     },
 });
 
