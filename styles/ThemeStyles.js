@@ -229,6 +229,18 @@ export const createHomeScreenStyles = (colors) => {
             paddingBottom: 20,
             paddingTop: 10,
         },
+        loadMoreButton: {
+            alignSelf: "center",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            marginTop: 8,
+            marginBottom: 24,
+        },
+        loadMoreText: {
+            color: colors.primary,
+            fontWeight: "700",
+            fontSize: 15,
+        },
         card: {
             flexDirection: "row",
             alignItems: "stretch",
