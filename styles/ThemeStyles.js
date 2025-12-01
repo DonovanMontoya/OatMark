@@ -236,6 +236,9 @@ export const createHomeScreenStyles = (colors) => {
             marginTop: 8,
             marginBottom: 24,
         },
+        loadMoreButtonDisabled: {
+            opacity: 0.5,
+        },
         loadMoreText: {
             color: colors.primary,
             fontWeight: "700",
