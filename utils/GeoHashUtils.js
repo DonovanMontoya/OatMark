@@ -50,7 +50,13 @@ export const filterByActualDistance = (shops, centerLat, centerLng, radiusInKm =
   const radiusInKmEffective = radiusInKm;
 
   return shops.filter((shop) => {
-    if (!shop.location?.latitude || !shop.location?.longitude) {
+    if (
+      !shop.location ||
+      shop.location.latitude === null ||
+      shop.location.latitude === undefined ||
+      shop.location.longitude === null ||
+      shop.location.longitude === undefined
+    ) {
       return false;
     }
 
