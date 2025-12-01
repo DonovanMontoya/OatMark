@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -71,6 +78,8 @@ const darkTheme = {
 const ThemeContext = createContext({
   isDark: false,
   colors: lightTheme,
+  themePreference: 'auto',
+  setThemePreference: () => {},
   toggleTheme: () => {},
 });
 
@@ -81,6 +90,7 @@ export const ThemeProvider = ({ children }) => {
 
   // Initialize theme based on device preference
   const [isDark, setIsDark] = useState(deviceColorScheme === 'dark');
+  const [themePreference, setThemePreferenceState] = useState('auto');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load saved theme preference on mount
@@ -88,15 +98,16 @@ export const ThemeProvider = ({ children }) => {
     const loadThemePreference = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('theme_preference');
-        if (savedTheme !== null) {
-          setIsDark(savedTheme === 'dark');
-        } else {
-          // No saved preference, use device preference
-          setIsDark(deviceColorScheme === 'dark');
-        }
+        const allowedPreferences = ['light', 'dark', 'auto'];
+        const initialPreference =
+          savedTheme && allowedPreferences.includes(savedTheme)
+            ? savedTheme
+            : 'auto';
+
+        setThemePreferenceState(initialPreference);
       } catch (error) {
         console.error('Failed to load theme preference:', error);
-        setIsDark(deviceColorScheme === 'dark');
+        setThemePreferenceState('auto');
       } finally {
         setIsLoaded(true);
       }
@@ -105,18 +116,31 @@ export const ThemeProvider = ({ children }) => {
     loadThemePreference();
   }, []);
 
-  // Toggle theme function
-  const toggleTheme = async () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
+  // Apply theme based on preference and device setting
+  useEffect(() => {
+    if (themePreference === 'auto') {
+      setIsDark(deviceColorScheme === 'dark');
+    } else {
+      setIsDark(themePreference === 'dark');
+    }
+  }, [deviceColorScheme, themePreference]);
 
-    // Save preference to AsyncStorage
+  // Persist and update the theme preference
+  const setThemePreference = useCallback(async (preference) => {
+    setThemePreferenceState(preference);
+
     try {
-      await AsyncStorage.setItem('theme_preference', newTheme ? 'dark' : 'light');
+      await AsyncStorage.setItem('theme_preference', preference);
     } catch (error) {
       console.error('Failed to save theme preference:', error);
     }
-  };
+  }, []);
+
+  // Toggle theme function (switches between light and dark manual modes)
+  const toggleTheme = useCallback(async () => {
+    const newPreference = isDark ? 'light' : 'dark';
+    await setThemePreference(newPreference);
+  }, [isDark, setThemePreference]);
 
   // Determine current theme colors and add isDark flag
   const colors = {
@@ -126,8 +150,8 @@ export const ThemeProvider = ({ children }) => {
 
   // Memoize context value to avoid unnecessary re-renders
   const themeContextValue = useMemo(
-    () => ({ isDark, colors, toggleTheme }),
-    [isDark]
+    () => ({ isDark, colors, themePreference, setThemePreference, toggleTheme }),
+    [colors, isDark, themePreference, setThemePreference, toggleTheme]
   );
 
   // Don't render children until theme is loaded to avoid flashing

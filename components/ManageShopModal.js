@@ -128,16 +128,16 @@ const ManageShopModal = ({ shop, visible, onClose, onShopUpdated }) => {
         >
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
-                    <FontAwesome6 name="xmark" size={20} color={colors.primaryText} iconStyle="solid" />
+                    <FontAwesome6 name="xmark" size={20} color={colors.text} iconStyle="solid" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Manage Shop</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={handleSave} 
                     style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
                     disabled={isSaving}
                 >
                     {isSaving ? (
-                        <ActivityIndicator size="small" color={colors.primaryText} />
+                        <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                         <Text style={styles.saveButtonText}>Save</Text>
                     )}
@@ -222,7 +222,7 @@ const createStyles = (colors) => StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: "600",
-        color: colors.primaryText,
+        color: colors.text,
     },
     saveButton: {
         paddingHorizontal: 16,
@@ -234,7 +234,7 @@ const createStyles = (colors) => StyleSheet.create({
         opacity: 0.6,
     },
     saveButtonText: {
-        color: colors.primaryText,
+        color: colors.text,
         fontWeight: "600",
     },
     content: {
@@ -247,7 +247,7 @@ const createStyles = (colors) => StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         fontWeight: "600",
-        color: colors.primaryText,
+        color: colors.text,
         marginBottom: 20,
     },
     inputGroup: {
@@ -256,7 +256,7 @@ const createStyles = (colors) => StyleSheet.create({
     inputLabel: {
         fontSize: 16,
         fontWeight: "500",
-        color: colors.primaryText,
+        color: colors.text,
         marginBottom: 8,
     },
     textInput: {
@@ -266,7 +266,7 @@ const createStyles = (colors) => StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 16,
-        color: colors.primaryText,
+        color: colors.text,
         backgroundColor: colors.cardBackground,
     },
 });

@@ -3,7 +3,6 @@ import {Alert, Platform, StyleSheet, Text, TouchableOpacity, View,} from "react-
 import {doc, updateDoc} from "firebase/firestore";
 import {db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {generateGeohash} from "../utils/GeoHashUtils";
 import MapView from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {useTheme} from "../contexts/ThemeContext";
@@ -59,9 +58,6 @@ const AdjustPinModal = ({
         setIsSaving(true);
 
         try {
-            // Calculate new geohash for updated location
-            const newGeohash = generateGeohash(mapCenter.latitude, mapCenter.longitude);
-
             // Update the shop's location in the database
             const shopRef = doc(db, collection, shop.id);
             await updateDoc(shopRef, {
@@ -69,7 +65,6 @@ const AdjustPinModal = ({
                     latitude: mapCenter.latitude,
                     longitude: mapCenter.longitude,
                 },
-                geohash: newGeohash,
             });
 
             // Create the updated shop object
@@ -79,7 +74,6 @@ const AdjustPinModal = ({
                     latitude: mapCenter.latitude,
                     longitude: mapCenter.longitude,
                 },
-                geohash: newGeohash,
             };
 
             // Call onSave callback with updated shop
