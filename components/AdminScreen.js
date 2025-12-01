@@ -12,11 +12,9 @@ import {
 } from "react-native";
 import {collection, deleteDoc, doc, onSnapshot, query, runTransaction} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
-import {invalidateBrandCache} from "../services/brandCache";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import {handleError, showDestructiveConfirmation} from "../utils/ErrorUtils";
 import {isValidLocation, validateShopName, validateOatMilk, validateUpcharge, validateEmoji} from "../utils/ValidationUtils";
-import {generateGeohash} from "../utils/GeoHashUtils";
 import {useAdminStatus} from "../hooks/useAdminStatus";
 import AdjustPinModal from "./AdjustPinModal";
 import EditShopDetailsModal from "./EditShopDetailsModal";
@@ -151,7 +149,6 @@ const AdminScreen = ({onClose}) => {
                                     upCharge: upchargeValidation.sanitized,
                                     emoji: emojiValidation.sanitized,
                                     location: shop.location,
-                                    geohash: shop.geohash || generateGeohash(shop.location.latitude, shop.location.longitude),
                                     createdAt: shop.createdAt || new Date(),
                                     approvedAt: new Date(),
                                     approvedBy: auth.currentUser.uid,
@@ -162,9 +159,6 @@ const AdminScreen = ({onClose}) => {
                                 const pendingShopRef = doc(db, "pendingShops", shop.id);
                                 transaction.delete(pendingShopRef);
                             });
-
-                            // Invalidate brand cache so new brands appear in suggestions
-                            await invalidateBrandCache();
                         } catch (error) {
                             // Revert optimistic update on error
                             setPendingShops(prev => [shop, ...prev]);
