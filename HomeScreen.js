@@ -285,6 +285,10 @@ export default function HomeScreen() {
   const [favorites, setFavorites] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
+  const [isLoadingMoreShops, setIsLoadingMoreShops] = useState(false);
+  const [hasReachedMaxRadius, setHasReachedMaxRadius] = useState(false);
+  const previousShopCountRef = useRef(0);
+  const maxSearchRadiusKm = 500; // Maximum search radius
 
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -349,6 +353,8 @@ export default function HomeScreen() {
   };
 
   const handleLoadMoreShops = () => {
+    setIsLoadingMoreShops(true);
+    previousShopCountRef.current = shops.length;
     setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
   };
 
@@ -759,11 +765,35 @@ export default function HomeScreen() {
 
       if (!Array.isArray(loadedShops)) {
         console.warn('Skipping shop update; using cached data because fetch failed');
+        setIsLoadingMoreShops(false);
         return;
       }
 
       setShops(loadedShops);
       setIsLoadingFromCache(false);
+
+      // Check if we found new shops after clicking "Load more"
+      if (isLoadingMoreShops) {
+        const newShopsCount = loadedShops.length - previousShopCountRef.current;
+
+        if (newShopsCount === 0 && searchRadiusKm < maxSearchRadiusKm) {
+          // No new shops found, automatically expand radius further
+          console.log(`No new shops at ${searchRadiusKm}km, expanding search...`);
+          setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
+          // Keep loading state active
+        } else {
+          // Either found new shops OR hit max radius
+          setIsLoadingMoreShops(false);
+
+          if (newShopsCount > 0) {
+            console.log(`Found ${newShopsCount} new shops at ${searchRadiusKm}km!`);
+          } else {
+            // Hit max radius with no new shops
+            console.log(`Reached maximum search radius (${searchRadiusKm}km) with no additional shops`);
+            setHasReachedMaxRadius(true);
+          }
+        }
+      }
 
       // Save to cache for offline access
       saveShopsToCache(loadedShops).catch(err =>
@@ -1080,14 +1110,28 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.flatListContainer}
         ListFooterComponent={
-          location ? (
+          location && !hasReachedMaxRadius ? (
             <TouchableOpacity
-              style={styles.loadMoreButton}
+              style={[
+                styles.loadMoreButton,
+                isLoadingMoreShops && styles.loadMoreButtonDisabled
+              ]}
               onPress={handleLoadMoreShops}
               activeOpacity={0.8}
+              disabled={isLoadingMoreShops}
             >
-              <Text style={styles.loadMoreText}>Load more shops</Text>
+              <Text style={styles.loadMoreText}>
+                {isLoadingMoreShops
+                  ? `Searching within ${DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km...`
+                  : `Load more shops (${DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km radius)`}
+              </Text>
             </TouchableOpacity>
+          ) : location && hasReachedMaxRadius ? (
+            <View style={styles.loadMoreButton}>
+              <Text style={[styles.loadMoreText, { opacity: 0.5 }]}>
+                Maximum distance loaded (searched {DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km)
+              </Text>
+            </View>
           ) : null
         }
         renderItem={({ item }) => (
