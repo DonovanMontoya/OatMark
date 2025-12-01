@@ -17,8 +17,10 @@ export const generateGeohash = (latitude, longitude) => {
 };
 
 /**
- * Gets query bounds for searching within a radius
- * Returns array of [start, end] bound pairs for querying
+ * Gets query bounds for searching within a radius.
+ *
+ * Note: `geofire-common` expects radius in meters, while all of our
+ * app-level APIs use kilometers. This helper converts km → m.
  *
  * @param {number} latitude - Center point latitude
  * @param {number} longitude - Center point longitude
@@ -33,8 +35,8 @@ export const getGeohashQueryBounds = (latitude, longitude, radiusInKm = DEFAULT_
 };
 
 /**
- * Filters results by actual distance (geohash queries return approximate results)
- * Use this to filter results after querying by geohash bounds
+ * Filters results by actual distance (geohash queries return approximate results).
+ * Use this to filter results after querying by geohash bounds.
  *
  * @param {Array} shops - Array of shop objects with location {latitude, longitude}
  * @param {number} centerLat - Center point latitude
@@ -44,7 +46,8 @@ export const getGeohashQueryBounds = (latitude, longitude, radiusInKm = DEFAULT_
  */
 export const filterByActualDistance = (shops, centerLat, centerLng, radiusInKm = DEFAULT_SEARCH_RADIUS_KM) => {
   const center = [centerLat, centerLng];
-  const radiusInM = radiusInKm * 1000;
+  // distanceBetween returns kilometers, so keep everything in km for clarity
+  const radiusInKmEffective = radiusInKm;
 
   return shops.filter((shop) => {
     if (!shop.location?.latitude || !shop.location?.longitude) {
@@ -52,14 +55,15 @@ export const filterByActualDistance = (shops, centerLat, centerLng, radiusInKm =
     }
 
     const shopLocation = [shop.location.latitude, shop.location.longitude];
-    const distanceInM = distanceBetween(center, shopLocation) * 1000;
+    const distanceInKm = distanceBetween(center, shopLocation);
 
-    return distanceInM <= radiusInM;
+    return distanceInKm <= radiusInKmEffective;
   });
 };
 
 /**
- * Calculates distance between two points in kilometers
+ * Calculates distance between two points in kilometers.
+ * Thin wrapper around `distanceBetween` to keep a clear, typed surface API.
  * @param {number} lat1
  * @param {number} lng1
  * @param {number} lat2

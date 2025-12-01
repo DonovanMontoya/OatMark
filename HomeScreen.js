@@ -1080,7 +1080,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.flatListContainer}
         ListFooterComponent={
-          shops.length > 0 ? (
+          location && shops.length > 0 ? (
             <TouchableOpacity
               style={styles.loadMoreButton}
               onPress={handleLoadMoreShops}
