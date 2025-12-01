@@ -4,7 +4,7 @@
  * Run this once to update all existing shops in Firestore with geohash values
  *
  * Usage:
- *   node scripts/migrateGeohashes.js
+ *   node adminUtils/migrateGeohashes.js
  *
  * This script:
  * 1. Fetches all documents from coffee_shops collection
@@ -13,31 +13,28 @@
  * 4. Reports progress and results
  */
 
-const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDocs, doc, updateDoc } = require('firebase/firestore');
+const admin = require('firebase-admin');
 const { geohashForLocation } = require('geofire-common');
+const path = require('path');
 
-// Firebase configuration - matches your app config
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "your-api-key",
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "your-auth-domain",
-  projectId: process.env.FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "your-storage-bucket",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "your-sender-id",
-  appId: process.env.FIREBASE_APP_ID || "your-app-id"
-};
+// Load service account from parent directory
+const serviceAccountPath = path.join(__dirname, '..', 'serviceAccount.json');
+const serviceAccount = require(serviceAccountPath);
+
+// Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
 
 async function migrateGeohashes() {
   console.log('🚀 Starting geohash migration...\n');
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
   try {
     // Fetch all coffee shops
     console.log('📥 Fetching all coffee shops...');
-    const shopsSnapshot = await getDocs(collection(db, 'coffee_shops'));
+    const shopsSnapshot = await db.collection('coffee_shops').get();
     const totalShops = shopsSnapshot.size;
     console.log(`✓ Found ${totalShops} shops to migrate\n`);
 
@@ -79,7 +76,7 @@ async function migrateGeohashes() {
         ]);
 
         // Update document
-        await updateDoc(doc(db, 'coffee_shops', shopId), {
+        await db.collection('coffee_shops').doc(shopId).update({
           geohash: geohash
         });
 
