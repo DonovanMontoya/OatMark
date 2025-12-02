@@ -773,28 +773,162 @@ export default function HomeScreen() {
       }
     };
 
-    const setupRealtimeListener = (queryCenter, searchRadiusKm) => {
+    const setupRealtimeListener = async (queryCenter, searchRadiusKm) => {
       console.log(`Setting up real-time listener for ${searchRadiusKm}km radius`);
 
-      // Use onSnapshot for real-time updates (limit to 200 for base radius)
-      const q = query(collection(db, "coffee_shops"), limit(200));
+      if (!queryCenter) {
+        // No location: listen to all shops with a reasonable limit
+        const q = query(collection(db, "coffee_shops"), limit(200));
 
-      unsubscribeListener = onSnapshot(
-        q,
-        (querySnapshot) => {
+        unsubscribeListener = onSnapshot(
+          q,
+          (querySnapshot) => {
+            if (!isSubscribed) return;
+
+            const allShops = [];
+            const seenIds = new Set();
+            addDocsFromSnapshot(querySnapshot, seenIds, allShops);
+
+            processAndSetShops(allShops, null, searchRadiusKm);
+          },
+          (error) => {
+            console.error('Error in real-time shop listener:', error);
+            // Keep using cached data if Firestore fails
+          }
+        );
+        return;
+      }
+
+      // With location: Use geohash-based real-time queries for accurate nearby shops
+      try {
+        const bounds = getGeohashQueryBounds(
+          queryCenter.latitude,
+          queryCenter.longitude,
+          searchRadiusKm
+        );
+
+        console.log(`Setting up ${bounds.length} real-time geohash listeners`);
+
+        // Store shops from each listener separately to handle updates correctly
+        const listenerShops = {};
+        const listeners = [];
+
+        // Helper to merge and process all shops from all active listeners
+        const mergeAndProcessShops = () => {
+          const allShops = [];
+          const seenIds = new Set();
+
+          // Merge shops from all geohash listeners
+          Object.values(listenerShops).forEach((shopList) => {
+            shopList.forEach((shop) => {
+              if (!seenIds.has(shop.id) && isValidLocation(shop.location)) {
+                seenIds.add(shop.id);
+                allShops.push(shop);
+              }
+            });
+          });
+
+          processAndSetShops(allShops, queryCenter, searchRadiusKm);
+        };
+
+        // Create a real-time listener for each geohash bound
+        bounds.forEach((b, index) => {
+          const q = query(
+            collection(db, "coffee_shops"),
+            orderBy("geohash"),
+            startAt(b[0]),
+            endAt(b[1])
+          );
+
+          const listener = onSnapshot(
+            q,
+            (querySnapshot) => {
+              if (!isSubscribed) return;
+
+              // Store shops from this listener
+              const shops = [];
+              querySnapshot.docs.forEach((doc) => {
+                const data = doc.data();
+                const shopLocation = {
+                  latitude: data.location?.latitude,
+                  longitude: data.location?.longitude,
+                };
+
+                shops.push({
+                  id: doc.id,
+                  ...data,
+                  location: shopLocation,
+                });
+              });
+
+              listenerShops[`geohash_${index}`] = shops;
+
+              // Merge and process all shops
+              mergeAndProcessShops();
+            },
+            (error) => {
+              console.error(`Error in geohash listener ${index}:`, error);
+            }
+          );
+
+          listeners.push(listener);
+        });
+
+        // Also add fallback listener for shops without geohash (migration period)
+        const legacyQuery = query(collection(db, "coffee_shops"), limit(100));
+        const legacyListener = onSnapshot(
+          legacyQuery,
+          (querySnapshot) => {
+            if (!isSubscribed) return;
+
+            const shops = [];
+            querySnapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              const shopLocation = {
+                latitude: data.location?.latitude,
+                longitude: data.location?.longitude,
+              };
+
+              shops.push({
+                id: doc.id,
+                ...data,
+                location: shopLocation,
+              });
+            });
+
+            const previousLegacyCount = listenerShops['legacy']?.length || 0;
+            listenerShops['legacy'] = shops;
+
+            if (shops.length > previousLegacyCount) {
+              console.log(`Real-time: Found ${shops.length - previousLegacyCount} new legacy shops without geohash`);
+            }
+
+            // Merge and process all shops
+            mergeAndProcessShops();
+          },
+          (error) => {
+            console.error('Error in legacy shop listener:', error);
+          }
+        );
+
+        listeners.push(legacyListener);
+
+        // Store cleanup function for all listeners
+        unsubscribeListener = () => {
+          listeners.forEach(unsubscribe => unsubscribe());
+        };
+      } catch (error) {
+        console.error('Error setting up real-time listeners:', error);
+        // Fallback to simple listener
+        const q = query(collection(db, "coffee_shops"), limit(200));
+        unsubscribeListener = onSnapshot(q, (querySnapshot) => {
           if (!isSubscribed) return;
-
           const allShops = [];
           const seenIds = new Set();
           addDocsFromSnapshot(querySnapshot, seenIds, allShops);
-
           processAndSetShops(allShops, queryCenter, searchRadiusKm);
-        },
-        (error) => {
-          console.error('Error in real-time shop listener:', error);
-          // Keep using cached data if Firestore fails
-        }
-      );
+        });
+      }
     };
 
     // Determine strategy based on extraRadiusKm
