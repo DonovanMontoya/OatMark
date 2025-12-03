@@ -628,178 +628,24 @@ export default function HomeScreen() {
     loadCachedShops();
   }, []);
 
-  // Load shops from Firestore with caching
+  // Setup real-time listeners that adapt to current radius
   useEffect(() => {
+    if (!location) return;
+
     let isSubscribed = true;
-    let unsubscribeListener = null;
+    const listeners = [];
 
-    const addDocsFromSnapshot = (snap, seenIds, allShops) => {
-      snap.docs.forEach((doc) => {
-        if (seenIds.has(doc.id)) {
-          return;
-        }
-
-        const data = doc.data();
-        const geo = data.location;
-
-        const shopLocation = {
-          latitude: geo?.latitude,
-          longitude: geo?.longitude
-        };
-
-        if (!isValidLocation(shopLocation)) {
-          console.warn(`Invalid location data for shop ${doc.id}:`, shopLocation);
-          return;
-        }
-
-        seenIds.add(doc.id);
-        allShops.push({
-          id: doc.id,
-          ...data,
-          location: shopLocation,
-        });
-      });
+    const queryCenter = {
+      latitude: location.latitude,
+      longitude: location.longitude
     };
 
-    const processAndSetShops = (allShops, queryCenter, searchRadiusKm) => {
-      // Filter by actual distance if we have a location
-      const filteredShops = queryCenter
-        ? filterByActualDistance(
-            allShops,
-            queryCenter.latitude,
-            queryCenter.longitude,
-            searchRadiusKm
-          )
-        : allShops;
+    // Current search radius (base + extra)
+    const searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm;
 
-      // Sort by distance if we have a location, otherwise alphabetically
-      if (queryCenter) {
-        filteredShops.sort(
-          (a, b) =>
-            getDistanceMeters(queryCenter, a.location) -
-            getDistanceMeters(queryCenter, b.location)
-        );
-      } else {
-        filteredShops.sort((a, b) => a.name.localeCompare(b.name));
-      }
-
-      setShops(filteredShops);
-      setIsLoadingFromCache(false);
-
-      // Save to cache for offline access
-      saveShopsToCache(filteredShops).catch(err =>
-        console.error('Failed to cache shops:', err)
-      );
-
-      if (queryCenter) {
-        console.log(`Loaded ${filteredShops.length} shops within ${searchRadiusKm}km`);
-      } else {
-        console.log(`Loaded ${filteredShops.length} shops without location filter`);
-      }
-
-      return filteredShops;
-    };
-
-    const fetchExtendedRadiusShops = async (center, searchRadiusKm) => {
-      try {
-        // Get geohash query bounds for shops within radius
-        const bounds = getGeohashQueryBounds(
-          center.latitude,
-          center.longitude,
-          searchRadiusKm
-        );
-
-        console.log(`Fetching shops within ${searchRadiusKm}km using ${bounds.length} geohash queries`);
-
-        // Create a query for each geohash bound
-        const promises = bounds.map((b) => {
-          const q = query(
-            collection(db, "coffee_shops"),
-            orderBy("geohash"),
-            startAt(b[0]),
-            endAt(b[1])
-          );
-          return getDocs(q);
-        });
-
-        // Execute all queries in parallel
-        const snapshots = await Promise.all(promises);
-
-        // Merge all results and remove duplicates
-        const allShops = [];
-        const seenIds = new Set();
-
-        snapshots.forEach((snap) => addDocsFromSnapshot(snap, seenIds, allShops));
-
-        // Fallback for legacy documents without geohash field (needed during migration)
-        const legacySnapshot = await getDocs(
-          query(collection(db, "coffee_shops"), limit(100))
-        );
-        const legacyCountBefore = allShops.length;
-        addDocsFromSnapshot(legacySnapshot, seenIds, allShops);
-        const legacyCountAdded = allShops.length - legacyCountBefore;
-
-        if (legacyCountAdded > 0) {
-          console.log(`Added ${legacyCountAdded} legacy shops without geohash (migration in progress)`);
-        }
-
-        const filteredShops = processAndSetShops(allShops, center, searchRadiusKm);
-
-        // Check if we found new shops after clicking "Load more"
-        if (isLoadingMoreShops) {
-          const newShopsCount = filteredShops.length - previousShopCountRef.current;
-
-          if (newShopsCount === 0 && searchRadiusKm < maxSearchRadiusKm) {
-            // No new shops found, automatically expand radius further
-            console.log(`No new shops at ${searchRadiusKm}km, expanding search...`);
-            setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
-            // Keep loading state active
-          } else {
-            // Either found new shops OR hit max radius
-            setIsLoadingMoreShops(false);
-
-            if (newShopsCount > 0) {
-              console.log(`Found ${newShopsCount} new shops at ${searchRadiusKm}km!`);
-            } else {
-              // Hit max radius with no new shops
-              console.log(`Reached maximum search radius (${searchRadiusKm}km) with no additional shops`);
-              setHasReachedMaxRadius(true);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading shops from Firestore:', error);
-        setIsLoadingMoreShops(false);
-      }
-    };
-
-    const setupRealtimeListener = async (queryCenter, searchRadiusKm) => {
+    const setupRealtimeListener = async () => {
       console.log(`Setting up real-time listener for ${searchRadiusKm}km radius`);
 
-      if (!queryCenter) {
-        // No location: listen to all shops with a reasonable limit
-        const q = query(collection(db, "coffee_shops"), limit(200));
-
-        unsubscribeListener = onSnapshot(
-          q,
-          (querySnapshot) => {
-            if (!isSubscribed) return;
-
-            const allShops = [];
-            const seenIds = new Set();
-            addDocsFromSnapshot(querySnapshot, seenIds, allShops);
-
-            processAndSetShops(allShops, null, searchRadiusKm);
-          },
-          (error) => {
-            console.error('Error in real-time shop listener:', error);
-            // Keep using cached data if Firestore fails
-          }
-        );
-        return;
-      }
-
-      // With location: Use geohash-based real-time queries for accurate nearby shops
       try {
         const bounds = getGeohashQueryBounds(
           queryCenter.latitude,
@@ -811,10 +657,11 @@ export default function HomeScreen() {
 
         // Store shops from each listener separately to handle updates correctly
         const listenerShops = {};
-        const listeners = [];
 
         // Helper to merge and process all shops from all active listeners
         const mergeAndProcessShops = () => {
+          if (!isSubscribed) return;
+
           const allShops = [];
           const seenIds = new Set();
 
@@ -828,7 +675,52 @@ export default function HomeScreen() {
             });
           });
 
-          processAndSetShops(allShops, queryCenter, searchRadiusKm);
+          // Filter by actual distance
+          const filteredShops = filterByActualDistance(
+            allShops,
+            queryCenter.latitude,
+            queryCenter.longitude,
+            searchRadiusKm
+          );
+
+          // Sort by distance
+          filteredShops.sort(
+            (a, b) =>
+              getDistanceMeters(queryCenter, a.location) -
+              getDistanceMeters(queryCenter, b.location)
+          );
+
+          setShops(filteredShops);
+          setIsLoadingFromCache(false);
+
+          // Save to cache for offline access
+          saveShopsToCache(filteredShops).catch(err =>
+            console.error('Failed to cache shops:', err)
+          );
+
+          console.log(`Real-time: Loaded ${filteredShops.length} shops within ${searchRadiusKm}km`);
+
+          // Handle "load more" completion
+          if (isLoadingMoreShops && extraRadiusKm > 0) {
+            const newShopsCount = filteredShops.length - previousShopCountRef.current;
+
+            if (newShopsCount === 0 && searchRadiusKm < maxSearchRadiusKm) {
+              // No new shops found, automatically expand radius further
+              console.log(`No new shops at ${searchRadiusKm}km, expanding search...`);
+              setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
+            } else {
+              // Either found new shops OR hit max radius
+              setIsLoadingMoreShops(false);
+
+              if (newShopsCount > 0) {
+                console.log(`Found ${newShopsCount} new shops at ${searchRadiusKm}km!`);
+              } else {
+                // Hit max radius with no new shops
+                console.log(`Reached maximum search radius (${searchRadiusKm}km) with no additional shops`);
+                setHasReachedMaxRadius(true);
+              }
+            }
+          }
         };
 
         // Create a real-time listener for each geohash bound
@@ -912,55 +804,20 @@ export default function HomeScreen() {
         );
 
         listeners.push(legacyListener);
-
-        // Store cleanup function for all listeners
-        unsubscribeListener = () => {
-          listeners.forEach(unsubscribe => unsubscribe());
-        };
       } catch (error) {
         console.error('Error setting up real-time listeners:', error);
-        // Fallback to simple listener
-        const q = query(collection(db, "coffee_shops"), limit(200));
-        unsubscribeListener = onSnapshot(q, (querySnapshot) => {
-          if (!isSubscribed) return;
-          const allShops = [];
-          const seenIds = new Set();
-          addDocsFromSnapshot(querySnapshot, seenIds, allShops);
-          processAndSetShops(allShops, queryCenter, searchRadiusKm);
-        });
       }
     };
 
-    // Determine strategy based on extraRadiusKm
-    const queryCenter = location
-      ? { latitude: location.latitude, longitude: location.longitude }
-      : null;
+    setupRealtimeListener();
 
-    const searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm;
-
-    if (extraRadiusKm === 0) {
-      // Initial radius: Use real-time listener for live updates
-      if (queryCenter) {
-        setupRealtimeListener(queryCenter, searchRadiusKm);
-      } else {
-        // No location: just listen to all shops
-        setupRealtimeListener(null, searchRadiusKm);
-      }
-    } else {
-      // Extended radius: Use one-time fetch with geohash optimization
-      if (queryCenter) {
-        fetchExtendedRadiusShops(queryCenter, searchRadiusKm);
-      }
-    }
-
-    // Cleanup
+    // Cleanup when location or radius changes, or component unmounts
     return () => {
       isSubscribed = false;
-      if (unsubscribeListener) {
-        unsubscribeListener();
-      }
+      listeners.forEach(unsubscribe => unsubscribe());
+      console.log(`Real-time listeners cleaned up for ${searchRadiusKm}km radius`);
     };
-  }, [location, extraRadiusKm]);
+  }, [location, extraRadiusKm]); // Re-setup listeners when radius changes
 
   // Check if the current user is an admin
   useEffect(() => {
