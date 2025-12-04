@@ -290,6 +290,11 @@ export default function HomeScreen() {
   const previousShopCountRef = useRef(0);
   const maxSearchRadiusKm = 500; // Maximum search radius
 
+  // Refs for dynamic values accessed in real-time listener callbacks
+  const isLoadingMoreShopsRef = useRef(isLoadingMoreShops);
+  const extraRadiusKmRef = useRef(extraRadiusKm);
+  const maxSearchRadiusKmRef = useRef(maxSearchRadiusKm);
+
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(100)).current;
@@ -299,6 +304,15 @@ export default function HomeScreen() {
   
   // Store animation references for cleanup
   const animationRefs = useRef([]);
+
+  // Keep refs in sync with state for real-time listener callbacks
+  useEffect(() => {
+    isLoadingMoreShopsRef.current = isLoadingMoreShops;
+  }, [isLoadingMoreShops]);
+
+  useEffect(() => {
+    extraRadiusKmRef.current = extraRadiusKm;
+  }, [extraRadiusKm]);
 
   // Cleanup animations on unmount
   useEffect(() => {
@@ -634,6 +648,7 @@ export default function HomeScreen() {
 
     let isSubscribed = true;
     const listeners = [];
+    let mergeTimeout = null; // Move to outer scope for cleanup
 
     const queryCenter = {
       latitude: location.latitude,
@@ -657,70 +672,83 @@ export default function HomeScreen() {
 
         // Store shops from each listener separately to handle updates correctly
         const listenerShops = {};
+        let listenersReady = 0;
+        const totalListeners = bounds.length + 1; // geohash bounds + legacy
 
-        // Helper to merge and process all shops from all active listeners
+        // Debounced merge to prevent render thrashing from multiple listeners
         const mergeAndProcessShops = () => {
           if (!isSubscribed) return;
 
-          const allShops = [];
-          const seenIds = new Set();
+          // Clear existing timeout
+          if (mergeTimeout) {
+            clearTimeout(mergeTimeout);
+          }
 
-          // Merge shops from all geohash listeners
-          Object.values(listenerShops).forEach((shopList) => {
-            shopList.forEach((shop) => {
-              if (!seenIds.has(shop.id) && isValidLocation(shop.location)) {
-                seenIds.add(shop.id);
-                allShops.push(shop);
-              }
+          // Debounce: wait 50ms for all listeners to fire on initial load
+          mergeTimeout = setTimeout(() => {
+            const allShops = [];
+            const seenIds = new Set();
+
+            // Merge shops from all geohash listeners
+            Object.values(listenerShops).forEach((shopList) => {
+              shopList.forEach((shop) => {
+                if (!seenIds.has(shop.id) && isValidLocation(shop.location)) {
+                  seenIds.add(shop.id);
+                  allShops.push(shop);
+                }
+              });
             });
-          });
 
-          // Filter by actual distance
-          const filteredShops = filterByActualDistance(
-            allShops,
-            queryCenter.latitude,
-            queryCenter.longitude,
-            searchRadiusKm
-          );
+            // Use current search radius from closure (safe since it's constant per effect run)
+            const currentSearchRadiusKm = DEFAULT_SEARCH_RADIUS_KM + extraRadiusKmRef.current;
 
-          // Sort by distance
-          filteredShops.sort(
-            (a, b) =>
-              getDistanceMeters(queryCenter, a.location) -
-              getDistanceMeters(queryCenter, b.location)
-          );
+            // Filter by actual distance
+            const filteredShops = filterByActualDistance(
+              allShops,
+              queryCenter.latitude,
+              queryCenter.longitude,
+              currentSearchRadiusKm
+            );
 
-          setShops(filteredShops);
-          setIsLoadingFromCache(false);
+            // Sort by distance
+            filteredShops.sort(
+              (a, b) =>
+                getDistanceMeters(queryCenter, a.location) -
+                getDistanceMeters(queryCenter, b.location)
+            );
 
-          // Save to cache for offline access
-          saveShopsToCache(filteredShops).catch(err =>
-            console.error('Failed to cache shops:', err)
-          );
+            setShops(filteredShops);
+            setIsLoadingFromCache(false);
 
-          console.log(`Real-time: Loaded ${filteredShops.length} shops within ${searchRadiusKm}km`);
+            // Save to cache for offline access
+            saveShopsToCache(filteredShops).catch(err =>
+              console.error('Failed to cache shops:', err)
+            );
 
-          // Handle "load more" completion
-          if (isLoadingMoreShops && extraRadiusKm > 0) {
-            const newShopsCount = filteredShops.length - previousShopCountRef.current;
+            console.log(`Real-time: Loaded ${filteredShops.length} shops within ${currentSearchRadiusKm}km`);
 
-            if (newShopsCount === 0 && searchRadiusKm < maxSearchRadiusKm) {
-              // No new shops found, automatically expand radius further
-              console.log(`No new shops at ${searchRadiusKm}km, expanding search...`);
-              setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
-            } else {
-              // Either found new shops OR hit max radius
-              setIsLoadingMoreShops(false);
+            // Handle "load more" completion using refs to avoid stale closure
+            if (isLoadingMoreShopsRef.current && extraRadiusKmRef.current > 0) {
+              const newShopsCount = filteredShops.length - previousShopCountRef.current;
 
-              if (newShopsCount > 0) {
-                console.log(`Found ${newShopsCount} new shops at ${searchRadiusKm}km!`);
+              if (newShopsCount === 0 && currentSearchRadiusKm < maxSearchRadiusKmRef.current) {
+                // No new shops found, automatically expand radius further
+                console.log(`No new shops at ${currentSearchRadiusKm}km, expanding search...`);
+                setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
               } else {
-                // Hit max radius with no new shops
-                console.log(`Reached maximum search radius (${searchRadiusKm}km) with no additional shops`);
-                setHasReachedMaxRadius(true);
+                // Either found new shops OR hit max radius
+                setIsLoadingMoreShops(false);
+
+                if (newShopsCount > 0) {
+                  console.log(`Found ${newShopsCount} new shops at ${currentSearchRadiusKm}km!`);
+                } else {
+                  // Hit max radius with no new shops
+                  console.log(`Reached maximum search radius (${currentSearchRadiusKm}km) with no additional shops`);
+                  setHasReachedMaxRadius(true);
+                }
               }
             }
-          }
+          }, listenersReady < totalListeners ? 100 : 50); // Longer debounce on initial load
         };
 
         // Create a real-time listener for each geohash bound
@@ -736,6 +764,9 @@ export default function HomeScreen() {
             q,
             (querySnapshot) => {
               if (!isSubscribed) return;
+
+              // Mark this listener as ready on first callback
+              listenersReady++;
 
               // Store shops from this listener
               const shops = [];
@@ -755,7 +786,7 @@ export default function HomeScreen() {
 
               listenerShops[`geohash_${index}`] = shops;
 
-              // Merge and process all shops
+              // Merge and process all shops (debounced)
               mergeAndProcessShops();
             },
             (error) => {
@@ -766,36 +797,48 @@ export default function HomeScreen() {
           listeners.push(listener);
         });
 
-        // Also add fallback listener for shops without geohash (migration period)
-        const legacyQuery = query(collection(db, "coffee_shops"), limit(100));
+        // Fallback listener for legacy shops without geohash
+        // Only fetches shops that don't have geohash field (migration cleanup)
+        // This is much more efficient than limit(100) globally
+        const legacyQuery = query(
+          collection(db, "coffee_shops"),
+          orderBy("geohash"),
+          startAt(""),
+          endAt("")
+        );
+
         const legacyListener = onSnapshot(
           legacyQuery,
           (querySnapshot) => {
             if (!isSubscribed) return;
 
+            listenersReady++;
+
             const shops = [];
             querySnapshot.docs.forEach((doc) => {
               const data = doc.data();
-              const shopLocation = {
-                latitude: data.location?.latitude,
-                longitude: data.location?.longitude,
-              };
+              // Only include if it truly has no geohash or empty geohash
+              if (!data.geohash) {
+                const shopLocation = {
+                  latitude: data.location?.latitude,
+                  longitude: data.location?.longitude,
+                };
 
-              shops.push({
-                id: doc.id,
-                ...data,
-                location: shopLocation,
-              });
+                shops.push({
+                  id: doc.id,
+                  ...data,
+                  location: shopLocation,
+                });
+              }
             });
 
-            const previousLegacyCount = listenerShops['legacy']?.length || 0;
-            listenerShops['legacy'] = shops;
-
-            if (shops.length > previousLegacyCount) {
-              console.log(`Real-time: Found ${shops.length - previousLegacyCount} new legacy shops without geohash`);
+            if (shops.length > 0) {
+              console.log(`Real-time: Found ${shops.length} legacy shops without geohash`);
             }
 
-            // Merge and process all shops
+            listenerShops['legacy'] = shops;
+
+            // Merge and process all shops (debounced)
             mergeAndProcessShops();
           },
           (error) => {
@@ -814,7 +857,15 @@ export default function HomeScreen() {
     // Cleanup when location or radius changes, or component unmounts
     return () => {
       isSubscribed = false;
+
+      // Clear any pending debounce timeout
+      if (mergeTimeout) {
+        clearTimeout(mergeTimeout);
+      }
+
+      // Unsubscribe all listeners
       listeners.forEach(unsubscribe => unsubscribe());
+
       console.log(`Real-time listeners cleaned up for ${searchRadiusKm}km radius`);
     };
   }, [location, extraRadiusKm]); // Re-setup listeners when radius changes
