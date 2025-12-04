@@ -644,11 +644,63 @@ export default function HomeScreen() {
 
   // Setup real-time listeners that adapt to current radius
   useEffect(() => {
-    if (!location) return;
-
     let isSubscribed = true;
     const listeners = [];
     let mergeTimeout = null; // Move to outer scope for cleanup
+
+    // Handle no-location case with fallback listener
+    if (!location) {
+      console.log('Setting up fallback real-time listener (no location)');
+
+      const fallbackQuery = query(collection(db, "coffee_shops"), limit(200));
+      const fallbackListener = onSnapshot(
+        fallbackQuery,
+        (querySnapshot) => {
+          if (!isSubscribed) return;
+
+          const allShops = [];
+          querySnapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            const shopLocation = {
+              latitude: data.location?.latitude,
+              longitude: data.location?.longitude,
+            };
+
+            if (isValidLocation(shopLocation)) {
+              allShops.push({
+                id: doc.id,
+                ...data,
+                location: shopLocation,
+              });
+            }
+          });
+
+          // Sort alphabetically since we have no location for distance sorting
+          allShops.sort((a, b) => a.name.localeCompare(b.name));
+
+          setShops(allShops);
+          setIsLoadingFromCache(false);
+
+          saveShopsToCache(allShops).catch(err =>
+            console.error('Failed to cache shops:', err)
+          );
+
+          console.log(`Real-time (no location): Loaded ${allShops.length} shops`);
+        },
+        (error) => {
+          console.error('Error in fallback real-time listener:', error);
+        }
+      );
+
+      listeners.push(fallbackListener);
+
+      // Cleanup for no-location case
+      return () => {
+        isSubscribed = false;
+        fallbackListener();
+        console.log('Fallback real-time listener cleaned up');
+      };
+    }
 
     const queryCenter = {
       latitude: location.latitude,
@@ -672,7 +724,7 @@ export default function HomeScreen() {
 
         // Store shops from each listener separately to handle updates correctly
         const listenerShops = {};
-        let listenersReady = 0;
+        const listenersReadySet = new Set(); // Track which listeners have fired
         const totalListeners = bounds.length + 1; // geohash bounds + legacy
 
         // Debounced merge to prevent render thrashing from multiple listeners
@@ -699,7 +751,7 @@ export default function HomeScreen() {
               });
             });
 
-            // Use current search radius from closure (safe since it's constant per effect run)
+            // Use current search radius from ref for dynamic updates
             const currentSearchRadiusKm = DEFAULT_SEARCH_RADIUS_KM + extraRadiusKmRef.current;
 
             // Filter by actual distance
@@ -748,7 +800,7 @@ export default function HomeScreen() {
                 }
               }
             }
-          }, listenersReady < totalListeners ? 100 : 50); // Longer debounce on initial load
+          }, listenersReadySet.size < totalListeners ? 100 : 50); // Longer debounce on initial load
         };
 
         // Create a real-time listener for each geohash bound
@@ -760,13 +812,14 @@ export default function HomeScreen() {
             endAt(b[1])
           );
 
+          const listenerKey = `geohash_${index}`;
           const listener = onSnapshot(
             q,
             (querySnapshot) => {
               if (!isSubscribed) return;
 
-              // Mark this listener as ready on first callback
-              listenersReady++;
+              // Mark this listener as ready (only adds once to Set)
+              listenersReadySet.add(listenerKey);
 
               // Store shops from this listener
               const shops = [];
@@ -784,7 +837,7 @@ export default function HomeScreen() {
                 });
               });
 
-              listenerShops[`geohash_${index}`] = shops;
+              listenerShops[listenerKey] = shops;
 
               // Merge and process all shops (debounced)
               mergeAndProcessShops();
@@ -798,37 +851,35 @@ export default function HomeScreen() {
         });
 
         // Fallback listener for legacy shops without geohash
-        // Only fetches shops that don't have geohash field (migration cleanup)
-        // This is much more efficient than limit(100) globally
-        const legacyQuery = query(
-          collection(db, "coffee_shops"),
-          orderBy("geohash"),
-          startAt(""),
-          endAt("")
-        );
+        // Uses limit(100) with client-side filtering to catch shops where field is missing
+        // Note: orderBy excludes docs without the field, so we use limit instead
+        const legacyQuery = query(collection(db, "coffee_shops"), limit(100));
 
         const legacyListener = onSnapshot(
           legacyQuery,
           (querySnapshot) => {
             if (!isSubscribed) return;
 
-            listenersReady++;
+            // Mark legacy listener as ready (only adds once to Set)
+            listenersReadySet.add('legacy');
 
             const shops = [];
             querySnapshot.docs.forEach((doc) => {
               const data = doc.data();
               // Only include if it truly has no geohash or empty geohash
-              if (!data.geohash) {
+              if (!data.geohash || data.geohash === '') {
                 const shopLocation = {
                   latitude: data.location?.latitude,
                   longitude: data.location?.longitude,
                 };
 
-                shops.push({
-                  id: doc.id,
-                  ...data,
-                  location: shopLocation,
-                });
+                if (isValidLocation(shopLocation)) {
+                  shops.push({
+                    id: doc.id,
+                    ...data,
+                    location: shopLocation,
+                  });
+                }
               }
             });
 
@@ -849,6 +900,54 @@ export default function HomeScreen() {
         listeners.push(legacyListener);
       } catch (error) {
         console.error('Error setting up real-time listeners:', error);
+
+        // Fallback: Set up basic listener if geohash queries fail
+        console.log('Setting up fallback listener due to error');
+        const fallbackQuery = query(collection(db, "coffee_shops"), limit(200));
+        const fallbackListener = onSnapshot(
+          fallbackQuery,
+          (querySnapshot) => {
+            if (!isSubscribed) return;
+
+            const allShops = [];
+            querySnapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              const shopLocation = {
+                latitude: data.location?.latitude,
+                longitude: data.location?.longitude,
+              };
+
+              if (isValidLocation(shopLocation)) {
+                allShops.push({
+                  id: doc.id,
+                  ...data,
+                  location: shopLocation,
+                });
+              }
+            });
+
+            // Sort by distance
+            allShops.sort(
+              (a, b) =>
+                getDistanceMeters(queryCenter, a.location) -
+                getDistanceMeters(queryCenter, b.location)
+            );
+
+            setShops(allShops);
+            setIsLoadingFromCache(false);
+
+            saveShopsToCache(allShops).catch(err =>
+              console.error('Failed to cache shops:', err)
+            );
+
+            console.log(`Fallback: Loaded ${allShops.length} shops`);
+          },
+          (error) => {
+            console.error('Error in fallback listener:', error);
+          }
+        );
+
+        listeners.push(fallbackListener);
       }
     };
 
