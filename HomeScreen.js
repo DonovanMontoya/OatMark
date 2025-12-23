@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import NetInfo from "@react-native-community/netinfo";
 import {auth, db} from "./services/firebase";
-import {arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, query, orderBy, limit, startAt, endAt} from "firebase/firestore";
+import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc} from "firebase/firestore";
 import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
@@ -19,7 +19,6 @@ import ShopCard from "./components/ShopCard";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
-import {getGeohashQueryBounds, filterByActualDistance, DEFAULT_SEARCH_RADIUS_KM} from "./utils/GeoHashUtils";
 import {useTheme} from "./contexts/ThemeContext";
 import {createHomeScreenStyles} from "./styles/ThemeStyles";
 import {isValidLocation} from "./utils/ValidationUtils";
@@ -270,7 +269,6 @@ export default function HomeScreen() {
 
   const [location, setLocation] = useState(null);
   const [locationUnavailableReason, setLocationUnavailableReason] = useState(null);
-  const [extraRadiusKm, setExtraRadiusKm] = useState(0);
   const [shops, setShops] = useState([]);
   const mapRef = useRef(null);
   const overlayMapRef = useRef(null);
@@ -285,10 +283,6 @@ export default function HomeScreen() {
   const [favorites, setFavorites] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
-  const [isLoadingMoreShops, setIsLoadingMoreShops] = useState(false);
-  const [hasReachedMaxRadius, setHasReachedMaxRadius] = useState(false);
-  const previousShopCountRef = useRef(0);
-  const maxSearchRadiusKm = 500; // Maximum search radius
 
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -350,12 +344,6 @@ export default function HomeScreen() {
       console.error("Error sharing:", error);
       Alert.alert("Error", "Failed to share. Please try again.");
     }
-  };
-
-  const handleLoadMoreShops = () => {
-    setIsLoadingMoreShops(true);
-    previousShopCountRef.current = shops.length;
-    setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
   };
 
   const handleManageShop = () => {
@@ -628,201 +616,67 @@ export default function HomeScreen() {
     loadCachedShops();
   }, []);
 
-  // Load shops from Firestore with caching
+  // Load shops from Firestore with real-time updates
   useEffect(() => {
-    let isSubscribed = true;
-    let refreshInterval;
+    const unsubscribe = onSnapshot(
+      collection(db, "coffee_shops"),
+      (querySnapshot) => {
+        const shopsList = [];
+        querySnapshot.forEach((docSnapshot) => {
+          const data = docSnapshot.data();
+          const geo = data.location;
 
-    const addDocsFromSnapshot = (snap, seenIds, allShops) => {
-      snap.docs.forEach((doc) => {
-        if (seenIds.has(doc.id)) {
-          return;
-        }
+          const shopLocation = {
+            latitude: geo?.latitude,
+            longitude: geo?.longitude,
+          };
 
-        const data = doc.data();
-        const geo = data.location;
-
-        const shopLocation = {
-          latitude: geo?.latitude,
-          longitude: geo?.longitude
-        };
-
-        if (!isValidLocation(shopLocation)) {
-          console.warn(`Invalid location data for shop ${doc.id}:`, shopLocation);
-          return;
-        }
-
-        seenIds.add(doc.id);
-        allShops.push({
-          id: doc.id,
-          ...data,
-          location: shopLocation,
-        });
-      });
-    };
-
-    const fetchNearbyShops = async (center, searchRadiusKm) => {
-      try {
-        // Get geohash query bounds for shops within radius
-        const bounds = getGeohashQueryBounds(
-          center.latitude,
-          center.longitude,
-          searchRadiusKm
-        );
-
-        console.log(`Fetching shops within ${searchRadiusKm}km using ${bounds.length} geohash queries`);
-
-        // Create a query for each geohash bound
-        const promises = bounds.map((b) => {
-          const q = query(
-            collection(db, "coffee_shops"),
-            orderBy("geohash"),
-            startAt(b[0]),
-            endAt(b[1])
-          );
-          return getDocs(q);
-        });
-
-        // Execute all queries in parallel
-        const snapshots = await Promise.all(promises);
-
-        // Merge all results and remove duplicates
-        const allShops = [];
-        const seenIds = new Set();
-
-        snapshots.forEach((snap) => addDocsFromSnapshot(snap, seenIds, allShops));
-
-        // Fallback for legacy documents without geohash field (needed during migration)
-        // Always run to catch shops without geohashes, even when geohash queries find results
-        // seenIds prevents duplicates, and distance filtering will exclude far shops
-        // Using smaller limit (100) to reduce cost - most shops should have geohashes after migration
-        const legacySnapshot = await getDocs(
-          query(collection(db, "coffee_shops"), limit(100))
-        );
-        const legacyCountBefore = allShops.length;
-        addDocsFromSnapshot(legacySnapshot, seenIds, allShops);
-        const legacyCountAdded = allShops.length - legacyCountBefore;
-        
-        if (legacyCountAdded > 0) {
-          console.log(`Added ${legacyCountAdded} legacy shops without geohash (migration in progress)`);
-        }
-
-        // Filter by actual distance (geohash gives approximate results)
-        const nearbyShops = filterByActualDistance(
-          allShops,
-          center.latitude,
-          center.longitude,
-          searchRadiusKm
-        );
-
-        // Sort by distance
-        nearbyShops.sort(
-          (a, b) =>
-            getDistanceMeters(center, a.location) -
-            getDistanceMeters(center, b.location)
-        );
-
-        return nearbyShops;
-      } catch (error) {
-        console.error('Error loading shops from Firestore:', error);
-        return null;
-      }
-    };
-
-    const fetchWithoutLocation = async () => {
-      try {
-        const fallbackSnapshot = await getDocs(
-          query(collection(db, "coffee_shops"), limit(200))
-        );
-
-        const allShops = [];
-        const seenIds = new Set();
-        addDocsFromSnapshot(fallbackSnapshot, seenIds, allShops);
-
-        // Sort alphabetically for a stable order without distance context
-        allShops.sort((a, b) => a.name.localeCompare(b.name));
-        return allShops;
-      } catch (error) {
-        console.error('Error loading shops without location:', error);
-        return null;
-      }
-    };
-
-    const loadShops = async () => {
-      const queryCenter = location
-        ? { latitude: location.latitude, longitude: location.longitude }
-        : null;
-
-      const searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm;
-
-      const loadedShops = queryCenter
-        ? await fetchNearbyShops(queryCenter, searchRadiusKm)
-        : await fetchWithoutLocation();
-
-      if (!isSubscribed) {
-        return;
-      }
-
-      if (!Array.isArray(loadedShops)) {
-        console.warn('Skipping shop update; using cached data because fetch failed');
-        setIsLoadingMoreShops(false);
-        return;
-      }
-
-      setShops(loadedShops);
-      setIsLoadingFromCache(false);
-
-      // Check if we found new shops after clicking "Load more"
-      if (isLoadingMoreShops) {
-        const newShopsCount = loadedShops.length - previousShopCountRef.current;
-
-        if (newShopsCount === 0 && searchRadiusKm < maxSearchRadiusKm) {
-          // No new shops found, automatically expand radius further
-          console.log(`No new shops at ${searchRadiusKm}km, expanding search...`);
-          setExtraRadiusKm((prev) => prev + Math.max(5, Math.round(DEFAULT_SEARCH_RADIUS_KM / 2)));
-          // Keep loading state active
-        } else {
-          // Either found new shops OR hit max radius
-          setIsLoadingMoreShops(false);
-
-          if (newShopsCount > 0) {
-            console.log(`Found ${newShopsCount} new shops at ${searchRadiusKm}km!`);
-          } else {
-            // Hit max radius with no new shops
-            console.log(`Reached maximum search radius (${searchRadiusKm}km) with no additional shops`);
-            setHasReachedMaxRadius(true);
+          if (!isValidLocation(shopLocation)) {
+            console.warn(`Invalid location data for shop ${docSnapshot.id}:`, shopLocation);
+            return;
           }
+
+          shopsList.push({
+            id: docSnapshot.id,
+            ...data,
+            location: shopLocation,
+          });
+        });
+
+        // Sort by distance if location available, otherwise alphabetically
+        if (location) {
+          shopsList.sort(
+            (a, b) =>
+              getDistanceMeters(location, a.location) -
+              getDistanceMeters(location, b.location)
+          );
+        } else {
+          shopsList.sort((a, b) => {
+            // Handle missing name fields safely
+            const nameA = a.name || '';
+            const nameB = b.name || '';
+            return nameA.localeCompare(nameB);
+          });
         }
+
+        setShops(shopsList);
+        setIsLoadingFromCache(false);
+
+        // Save to cache for offline access
+        saveShopsToCache(shopsList).catch((err) =>
+          console.error("Failed to cache shops:", err)
+        );
+
+        console.log(`Loaded ${shopsList.length} shops from Firestore`);
+      },
+      (error) => {
+        console.error("Error loading shops from Firestore:", error);
+        // Keep using cached data if Firestore fails
       }
+    );
 
-      // Save to cache for offline access
-      saveShopsToCache(loadedShops).catch(err =>
-        console.error('Failed to cache shops:', err)
-      );
-
-      if (queryCenter) {
-        console.log(`Loaded ${loadedShops.length} shops within ${searchRadiusKm}km`);
-      } else {
-        console.log(`Loaded ${loadedShops.length} shops without location filter`);
-      }
-    };
-
-    // Initial fetch
-    loadShops();
-
-    // Refresh every 30 seconds to get new shops if we have a location for proximity sorting
-    if (location) {
-      refreshInterval = setInterval(loadShops, 30000);
-    }
-
-    // Cleanup
-    return () => {
-      isSubscribed = false;
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-      }
-    };
-  }, [location, extraRadiusKm]);
+    return () => unsubscribe();
+  }, [location]);
 
   // Check if the current user is an admin
   useEffect(() => {
@@ -1109,31 +963,6 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.flatListContainer}
-        ListFooterComponent={
-          location && !hasReachedMaxRadius ? (
-            <TouchableOpacity
-              style={[
-                styles.loadMoreButton,
-                isLoadingMoreShops && styles.loadMoreButtonDisabled
-              ]}
-              onPress={handleLoadMoreShops}
-              activeOpacity={0.8}
-              disabled={isLoadingMoreShops}
-            >
-              <Text style={styles.loadMoreText}>
-                {isLoadingMoreShops
-                  ? `Searching within ${DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km...`
-                  : `Load more shops (${DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km radius)`}
-              </Text>
-            </TouchableOpacity>
-          ) : location && hasReachedMaxRadius ? (
-            <View style={styles.loadMoreButton}>
-              <Text style={[styles.loadMoreText, { opacity: 0.5 }]}>
-                Maximum distance loaded (searched {DEFAULT_SEARCH_RADIUS_KM + extraRadiusKm}km)
-              </Text>
-            </View>
-          ) : null
-        }
         renderItem={({ item }) => (
           <ShopCard
             item={item}
