@@ -6,12 +6,25 @@ import LoginPage from './LoginPage';
 import HomeScreen from './HomeScreen';
 import {ThemeProvider, useTheme} from './contexts/ThemeContext';
 import {createThemeStyles} from './styles/ThemeStyles';
-import {StatusBar, View} from 'react-native';
+import {fontAssets, fonts} from './styles/tokens';
+import {useFonts} from 'expo-font';
+import {ActivityIndicator, StatusBar, Text, TextInput, View} from 'react-native';
+
+// Best-effort global default body font. Stylesheets set fontFamily explicitly
+// everywhere it matters; this is just a safety net for any stray <Text>.
+try {
+    Text.defaultProps = Text.defaultProps || {};
+    Text.defaultProps.style = [{fontFamily: fonts.body}, Text.defaultProps.style];
+    TextInput.defaultProps = TextInput.defaultProps || {};
+    TextInput.defaultProps.style = [{fontFamily: fonts.body}, TextInput.defaultProps.style];
+} catch (e) {
+    // Some RN/React versions freeze defaultProps — non-fatal, styles cover us.
+}
 
 // StatusBar manager component that uses theme context
 const StatusBarManager = () => {
     const {isDark} = useTheme();
-    return <StatusBar barStyle={isDark ? "light-content" : "dark-content"}/>;
+    return <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'}/>;
 };
 
 // Main app content that uses theme context
@@ -20,7 +33,19 @@ const AppContent = () => {
     const {colors} = useTheme();
     const styles = createThemeStyles(colors);
 
+    const [fontsLoaded, fontError] = useFonts(fontAssets);
+
     useEffect(() => onAuthStateChanged(auth, setUser), []);
+
+    // Hold on a warm cream/espresso splash until type is ready (or has failed).
+    if (!fontsLoaded && !fontError) {
+        return (
+            <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
+                <StatusBarManager/>
+                <ActivityIndicator size="large" color={colors.accent}/>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>

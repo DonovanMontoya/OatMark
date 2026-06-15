@@ -6,6 +6,7 @@ import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import MapView from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {useTheme} from "../contexts/ThemeContext";
+import {fonts, radius, space} from "../styles/tokens";
 
 const AdjustPinModal = ({
                             shop,
@@ -113,7 +114,7 @@ const AdjustPinModal = ({
                             <FontAwesome6
                                 name="map-pin"
                                 size={36}
-                                color="#FF3B30"
+                                color={colors.danger}
                                 iconStyle="solid"
                                 style={styles.fixedPin}
                             />
@@ -204,33 +205,35 @@ const getStyles = (colors) => StyleSheet.create({
         marginRight: 15,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 24,
+        fontFamily: fonts.display,
         color: colors.text,
+        letterSpacing: -0.4,
     },
     content: {
         flex: 1,
-        padding: 20,
+        padding: space.lg,
     },
     shopName: {
         fontSize: 18,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
         color: colors.text,
-        marginBottom: 10,
+        marginBottom: space.sm,
     },
     instructions: {
         fontSize: 14,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
-        marginBottom: 20,
+        marginBottom: space.lg,
         fontStyle: "italic",
     },
     mapContainer: {
         height: 400,
-        borderRadius: 8,
+        borderRadius: radius.md,
         overflow: "hidden",
         borderWidth: 1,
         borderColor: colors.border,
-        marginBottom: 20,
+        marginBottom: space.lg,
         position: "relative",
     },
     map: {
@@ -250,23 +253,26 @@ const getStyles = (colors) => StyleSheet.create({
     },
     fixedPin: {
         marginBottom: 36, // Offset to account for the pin's anchor point
-        shadowColor: "#000",
+        shadowColor: colors.shadow,
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.3,
         shadowRadius: 2,
     },
     coordinatesContainer: {
         position: "absolute",
-        bottom: 10,
-        left: 10,
-        right: 10,
-        backgroundColor: colors.isDark ? "rgba(15, 26, 46, 0.9)" : "rgba(255, 255, 255, 0.9)",
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 4,
+        bottom: space.sm,
+        left: space.sm,
+        right: space.sm,
+        backgroundColor: colors.overlayBackground,
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     coordinatesText: {
         fontSize: 12,
+        fontFamily: fonts.medium,
         color: colors.text,
         textAlign: "center",
     },
@@ -275,46 +281,49 @@ const getStyles = (colors) => StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: colors.inputBackground,
-        borderRadius: 8,
+        borderRadius: radius.md,
         borderWidth: 1,
         borderColor: colors.border,
     },
     loadingText: {
         fontSize: 16,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
     },
     buttonContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 20,
+        marginTop: space.lg,
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: colors.secondaryBackground,
-        paddingVertical: 15,
-        borderRadius: 8,
-        marginRight: 10,
+        backgroundColor: colors.surfaceMuted,
+        paddingVertical: 16,
+        borderRadius: radius.md,
+        marginRight: space.sm,
         alignItems: "center",
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     cancelButtonText: {
-        color: colors.secondaryText,
+        color: colors.text,
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
     },
     saveButton: {
         flex: 2,
-        backgroundColor: colors.primary,
-        paddingVertical: 15,
-        borderRadius: 8,
+        backgroundColor: colors.accent,
+        paddingVertical: 16,
+        borderRadius: radius.md,
         alignItems: "center",
     },
     saveButtonDisabled: {
-        backgroundColor: colors.isDark ? colors.secondaryBackground : "#ccc",
+        backgroundColor: colors.surfaceMuted,
     },
     saveButtonText: {
-        color: "#FFFFFF",
+        color: colors.onAccent,
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.bold,
     },
 });
 

@@ -117,7 +117,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
                                 <FontAwesome6
                                     name="clock"
                                     size={18}
-                                    color="#FF9500"
+                                    color={colors.warning}
                                     iconStyle="solid"
                                     style={styles.menuIcon}
                                 />

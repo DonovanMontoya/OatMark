@@ -18,6 +18,7 @@ import EmojiSelector from "./EmojiSelector";
 import { validateShopName, validateOatMilk, validateUpcharge, validateEmoji } from "../utils/ValidationUtils";
 import { handleError, showSuccess } from "../utils/ErrorUtils";
 import { useTheme } from "../contexts/ThemeContext";
+import { fonts, radius, space } from "../styles/tokens";
 
 const ManageShopModal = ({ shop, visible, onClose, onShopUpdated }) => {
     const { colors } = useTheme();
@@ -137,7 +138,7 @@ const ManageShopModal = ({ shop, visible, onClose, onShopUpdated }) => {
                     disabled={isSaving}
                 >
                     {isSaving ? (
-                        <ActivityIndicator size="small" color={colors.text} />
+                        <ActivityIndicator size="small" color={colors.onAccent} />
                     ) : (
                         <Text style={styles.saveButtonText}>Save</Text>
                     )}
@@ -210,64 +211,66 @@ const createStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: Platform.OS === "ios" ? 60 : 40,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
-        padding: 8,
+        padding: space.xs,
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: "600",
+        fontSize: 20,
+        fontFamily: fonts.display,
         color: colors.text,
+        letterSpacing: -0.3,
     },
     saveButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: colors.primary,
-        borderRadius: 8,
+        paddingHorizontal: space.md,
+        paddingVertical: space.xs,
+        backgroundColor: colors.accent,
+        borderRadius: radius.md,
     },
     saveButtonDisabled: {
         opacity: 0.6,
     },
     saveButtonText: {
-        color: colors.text,
-        fontWeight: "600",
+        color: colors.onAccent,
+        fontFamily: fonts.bold,
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
     },
     section: {
-        paddingVertical: 20,
+        paddingVertical: space.lg,
     },
     sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
+        fontSize: 18,
+        fontFamily: fonts.semibold,
         color: colors.text,
-        marginBottom: 20,
+        marginBottom: space.lg,
     },
     inputGroup: {
-        marginBottom: 20,
+        marginBottom: space.lg,
     },
     inputLabel: {
         fontSize: 16,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
         color: colors.text,
-        marginBottom: 8,
+        marginBottom: space.xs,
     },
     textInput: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        borderRadius: radius.sm,
+        paddingHorizontal: space.md,
+        paddingVertical: 14,
         fontSize: 16,
+        fontFamily: fonts.body,
         color: colors.text,
-        backgroundColor: colors.cardBackground,
+        backgroundColor: colors.inputBackground,
     },
 });
 

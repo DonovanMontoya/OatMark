@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useMemo} from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useTheme} from '../contexts/ThemeContext';
+import {fonts, radius, space} from '../styles/tokens';
 
 export const COFFEE_MILK_EMOJIS = [
     {emoji: '☕', label: 'Coffee'},
@@ -109,62 +110,66 @@ const EmojiSelector = ({selectedEmoji, onSelectEmoji}) => {
 
 const getStyles = (colors) => StyleSheet.create({
     container: {
-        marginBottom: 20,
+        marginBottom: space.lg,
     },
     title: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: fonts.semibold,
         color: colors.text,
-        marginBottom: 10,
+        marginBottom: space.sm,
     },
     emojiScrollContainer: {
-        paddingVertical: 10,
+        paddingVertical: space.sm,
     },
     emojiButton: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: space.sm,
         width: 70,
         height: 90,
-        borderRadius: 12,
-        backgroundColor: colors.isDark ? colors.secondaryBackground : '#f8f8f8',
+        borderRadius: radius.md,
+        backgroundColor: colors.surfaceMuted,
         borderWidth: 1,
         borderColor: colors.border,
-        padding: 8,
+        padding: space.xs,
     },
     selectedEmojiButton: {
-        borderColor: colors.primary,
-        backgroundColor: colors.isDark ? 'rgba(92, 157, 255, 0.2)' : '#EFF6FF',
+        borderColor: colors.accent,
+        borderWidth: 2,
+        backgroundColor: colors.accentSoft,
     },
     emoji: {
         fontSize: 28,
-        marginBottom: 5,
+        marginBottom: space.xxs,
     },
     emojiLabel: {
         fontSize: 10,
+        fontFamily: fonts.medium,
         color: colors.secondaryText,
         textAlign: 'center',
     },
     selectedContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 15,
+        marginTop: space.md,
     },
     selectedLabel: {
         fontSize: 14,
+        fontFamily: fonts.medium,
         color: colors.secondaryText,
-        marginRight: 10,
+        marginRight: space.sm,
     },
     selectedEmojiContainer: {
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: colors.isDark ? colors.secondaryBackground : '#f0f0f0',
+        paddingHorizontal: space.md,
+        paddingVertical: space.xs,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceMuted,
         borderWidth: 1,
         borderColor: colors.border,
     },
     selectedEmoji: {
         fontSize: 16,
+        fontFamily: fonts.medium,
         color: colors.text,
     },
 });

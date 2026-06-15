@@ -7,6 +7,7 @@ import FreeMapView from "./FreeMapView";
 import { openInMaps, searchYelp } from "../utils/MapLinks";
 import { getFormattedUpcharge } from "../utils/upchargeEmojis";
 import { useTheme } from "../contexts/ThemeContext";
+import { fonts, makeShadow, radius, space } from "../styles/tokens";
 
 const PendingShopCard = ({
     item,
@@ -18,6 +19,7 @@ const PendingShopCard = ({
     isProcessing
 }) => {
     const { colors } = useTheme();
+    const styles = getStyles(colors);
 
     const markers = [
         {
@@ -34,7 +36,7 @@ const PendingShopCard = ({
         <View style={[styles.itemContainer, { backgroundColor: colors.cardBackground }]}>
             {/* Status Badge */}
             <View style={styles.statusBadge}>
-                <FontAwesome6 name="clock" size={10} color="#fff" iconStyle="solid" />
+                <FontAwesome6 name="clock" size={10} color={colors.warning} iconStyle="solid" />
                 <Text style={styles.statusBadgeText}>PENDING REVIEW</Text>
             </View>
 
@@ -46,7 +48,7 @@ const PendingShopCard = ({
                     accessibilityRole="button"
                     accessibilityLabel={`Edit all details for ${item.name}`}
                 >
-                    <FontAwesome6 name="gear" size={16} color="#666" iconStyle="solid" />
+                    <FontAwesome6 name="gear" size={16} color={colors.icon} iconStyle="solid" />
                 </TouchableOpacity>
             )}
 
@@ -60,7 +62,7 @@ const PendingShopCard = ({
                 >
                     <Text style={styles.emojiLarge}>{item.emoji || "☕"}</Text>
                     <View style={styles.editBadge}>
-                        <FontAwesome6 name="pencil" size={10} color="#fff" iconStyle="solid" />
+                        <FontAwesome6 name="pencil" size={10} color={colors.onAccent} iconStyle="solid" />
                     </View>
                 </TouchableOpacity>
                 <View style={styles.itemTitleContainer}>
@@ -80,7 +82,7 @@ const PendingShopCard = ({
                         <FontAwesome6 name="pencil" size={10} color={colors.secondaryText} iconStyle="solid" style={styles.editIcon} />
                     </TouchableOpacity>
                     <View style={styles.infoRow}>
-                        <FontAwesome6 name="money-bill" size={12} color="#4CAF50" iconStyle="solid" />
+                        <FontAwesome6 name="money-bill" size={12} color={colors.success} iconStyle="solid" />
                         <Text style={[styles.itemSubtitle, { color: colors.secondaryText }]}>
                             {getFormattedUpcharge(item.upCharge, item.isFree)}
                         </Text>
@@ -187,7 +189,7 @@ const PendingShopCard = ({
                     <FontAwesome6
                         name={isProcessing ? "spinner" : "circle-check"}
                         size={16}
-                        color="#fff"
+                        color={colors.onAccent}
                         iconStyle="solid"
                     />
                     <Text style={styles.approveButtonText}>
@@ -203,7 +205,7 @@ const PendingShopCard = ({
                     accessibilityLabel={`Reject ${item.name} coffee shop submission`}
                     accessibilityHint="Double tap to reject this shop submission"
                 >
-                    <FontAwesome6 name="circle-xmark" size={16} color="#fff" iconStyle="solid" />
+                    <FontAwesome6 name="circle-xmark" size={16} color={colors.onAccent} iconStyle="solid" />
                     <Text style={styles.rejectButtonText}>Reject</Text>
                 </TouchableOpacity>
             </View>
@@ -211,100 +213,82 @@ const PendingShopCard = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     itemContainer: {
-        marginVertical: 8,
-        marginHorizontal: 16,
-        borderRadius: 16,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 6,
+        marginVertical: space.xs,
+        marginHorizontal: space.md,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...makeShadow(colors, "md"),
         overflow: "hidden",
     },
     statusBadge: {
         position: "absolute",
-        top: 12,
-        right: 12,
-        backgroundColor: "#FF9500",
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 12,
+        top: space.sm,
+        right: space.sm,
+        backgroundColor: colors.warningSoft,
+        paddingHorizontal: space.sm,
+        paddingVertical: space.xxs + 2,
+        borderRadius: radius.pill,
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: space.xs,
         zIndex: 10,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
+        borderWidth: 1,
+        borderColor: colors.warning,
     },
     settingsButton: {
         position: "absolute",
-        top: 12,
-        left: 12,
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        padding: 10,
-        borderRadius: 20,
+        top: space.sm,
+        left: space.sm,
+        backgroundColor: colors.surfaceMuted,
+        padding: space.sm,
+        borderRadius: radius.pill,
         zIndex: 10,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
+        ...makeShadow(colors, "sm"),
         borderWidth: 1,
-        borderColor: "#e0e0e0",
+        borderColor: colors.border,
     },
     statusBadgeText: {
-        color: "#fff",
+        color: colors.warning,
         fontSize: 10,
-        fontWeight: "700",
-        letterSpacing: 0.5,
+        fontFamily: fonts.bold,
+        letterSpacing: 0.6,
     },
     itemHeader: {
         flexDirection: "row",
-        padding: 20,
-        paddingTop: 24,
+        padding: space.lg,
+        paddingTop: space.xl,
         alignItems: "center",
     },
     emojiContainer: {
         width: 70,
         height: 70,
-        backgroundColor: "#F5F5F5",
-        borderRadius: 16,
+        backgroundColor: colors.accentSoft,
+        borderRadius: radius.md,
         alignItems: "center",
         justifyContent: "center",
-        marginRight: 16,
+        marginRight: space.md,
         borderWidth: 1,
-        borderColor: "#E0E0E0",
+        borderColor: colors.accentBorder,
         position: "relative",
     },
     editBadge: {
         position: "absolute",
         bottom: -4,
         right: -4,
-        backgroundColor: "#4285F4",
-        borderRadius: 10,
-        width: 20,
-        height: 20,
+        backgroundColor: colors.accent,
+        borderRadius: radius.pill,
+        width: 22,
+        height: 22,
         alignItems: "center",
         justifyContent: "center",
         borderWidth: 2,
-        borderColor: "#fff",
+        borderColor: colors.cardBackground,
     },
     editIcon: {
-        marginLeft: 6,
+        marginLeft: space.xs,
     },
     emojiLarge: {
         fontSize: 36,
@@ -314,36 +298,38 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 20,
-        fontWeight: "700",
-        marginBottom: 8,
+        fontFamily: fonts.bold,
+        marginBottom: space.xs,
+        letterSpacing: -0.3,
     },
     itemSubtitle: {
         fontSize: 14,
-        marginLeft: 6,
+        fontFamily: fonts.medium,
+        marginLeft: space.xs,
     },
     infoRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 6,
-        gap: 6,
+        marginBottom: space.xs,
+        gap: space.xs,
     },
     metadataContainer: {
-        paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingHorizontal: space.lg,
+        paddingVertical: space.sm,
         flexDirection: "row",
         justifyContent: "space-between",
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: "rgba(0,0,0,0.05)",
+        borderColor: colors.divider,
     },
     metadataRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: space.xs,
     },
     metadataText: {
         fontSize: 12,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
     },
     mapContainer: {
         width: "100%",
@@ -351,7 +337,7 @@ const styles = StyleSheet.create({
         overflow: "hidden",
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: "rgba(0,0,0,0.05)",
+        borderColor: colors.divider,
     },
     map: {
         width: "100%",
@@ -359,83 +345,62 @@ const styles = StyleSheet.create({
     },
     mapButtonsContainer: {
         position: "absolute",
-        top: 12,
-        right: 12,
+        top: space.sm,
+        right: space.sm,
         flexDirection: "row",
-        gap: 10,
+        gap: space.xs,
     },
     mapButton: {
         backgroundColor: "rgba(0, 0, 0, 0.75)",
-        padding: 10,
-        borderRadius: 22,
+        padding: space.sm,
+        borderRadius: radius.pill,
         alignItems: "center",
         justifyContent: "center",
         width: 40,
         height: 40,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 4,
+        ...makeShadow(colors, "sm"),
     },
     adjustPinButton: {
-        backgroundColor: "#FF9500",
+        backgroundColor: colors.warning,
     },
     buttonContainer: {
         flexDirection: "row",
-        padding: 16,
-        gap: 12,
+        padding: space.md,
+        gap: space.sm,
     },
     approveButton: {
         flex: 1,
-        backgroundColor: "#4CAF50",
+        backgroundColor: colors.success,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: radius.md,
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
-        gap: 8,
-        shadowColor: "#4CAF50",
-        shadowOffset: {
-            width: 0,
-            height: 3,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 4,
+        gap: space.xs,
+        ...makeShadow(colors, "sm"),
     },
     rejectButton: {
         flex: 1,
-        backgroundColor: "#FF3B30",
+        backgroundColor: colors.danger,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: radius.md,
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
-        gap: 8,
-        shadowColor: "#FF3B30",
-        shadowOffset: {
-            width: 0,
-            height: 3,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 4,
+        gap: space.xs,
+        ...makeShadow(colors, "sm"),
     },
     disabledButton: {
         opacity: 0.5,
     },
     approveButtonText: {
-        color: "#fff",
-        fontWeight: "700",
+        color: colors.onAccent,
+        fontFamily: fonts.bold,
         fontSize: 16,
     },
     rejectButtonText: {
-        color: "#fff",
-        fontWeight: "700",
+        color: colors.onAccent,
+        fontFamily: fonts.bold,
         fontSize: 16,
     },
 });

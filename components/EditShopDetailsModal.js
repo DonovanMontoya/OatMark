@@ -5,6 +5,8 @@ import {db} from "../services/firebase";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import EmojiSelector from "./EmojiSelector";
 import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji} from "../utils/ValidationUtils";
+import {useTheme} from "../contexts/ThemeContext";
+import {fonts, makeShadow, radius, space} from "../styles/tokens";
 
 const EditShopDetailsModal = ({
     shop,
@@ -12,6 +14,8 @@ const EditShopDetailsModal = ({
     onClose,
     onSave,
 }) => {
+    const {colors} = useTheme();
+    const styles = getStyles(colors);
     const [shopName, setShopName] = useState("");
     const [oatMilk, setOatMilk] = useState("");
     const [upCharge, setUpCharge] = useState("");
@@ -155,7 +159,7 @@ const EditShopDetailsModal = ({
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                        <FontAwesome6 name="xmark" size={20} color="#333" iconStyle="solid"/>
+                        <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                     </TouchableOpacity>
                     <Text style={styles.title}>Edit Shop Details</Text>
                 </View>
@@ -169,7 +173,7 @@ const EditShopDetailsModal = ({
                             value={shopName}
                             onChangeText={setShopName}
                             placeholder="Enter shop name"
-                            placeholderTextColor="#999"
+                            placeholderTextColor={colors.tertiaryText}
                         />
                     </View>
 
@@ -181,7 +185,7 @@ const EditShopDetailsModal = ({
                             value={oatMilk}
                             onChangeText={setOatMilk}
                             placeholder="e.g., Oatly, Minor Figures, House-made"
-                            placeholderTextColor="#999"
+                            placeholderTextColor={colors.tertiaryText}
                         />
                         {commonBrands.length > 0 && (
                             <View style={styles.brandButtonsContainer}>
@@ -240,7 +244,7 @@ const EditShopDetailsModal = ({
                                         value={upCharge}
                                         onChangeText={handleUpChargeChange}
                                         placeholder="0.00"
-                                        placeholderTextColor="#999"
+                                        placeholderTextColor={colors.tertiaryText}
                                         keyboardType="decimal-pad"
                                         maxLength={6}
                                     />
@@ -279,175 +283,184 @@ const EditShopDetailsModal = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
+        borderBottomColor: colors.border,
     },
     closeButton: {
-        padding: 5,
-        marginRight: 15,
+        padding: space.xxs,
+        marginRight: space.md,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#333",
+        fontSize: 24,
+        fontFamily: fonts.display,
+        color: colors.text,
+        letterSpacing: -0.4,
     },
     content: {
         flex: 1,
-        padding: 20,
+        padding: space.lg,
     },
     shopName: {
         fontSize: 18,
-        fontWeight: "600",
-        color: "#333",
-        marginBottom: 20,
+        fontFamily: fonts.semibold,
+        color: colors.text,
+        marginBottom: space.lg,
     },
     inputGroup: {
-        marginBottom: 20,
+        marginBottom: space.lg,
     },
     label: {
         fontSize: 16,
-        fontWeight: "600",
-        color: "#333",
-        marginBottom: 8,
+        fontFamily: fonts.semibold,
+        color: colors.text,
+        marginBottom: space.xs,
     },
     input: {
-        height: 44,
-        paddingHorizontal: 12,
-        borderColor: "#ddd",
+        height: 50,
+        paddingHorizontal: space.md,
+        borderColor: colors.border,
         borderWidth: 1,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         fontSize: 16,
-        backgroundColor: "#f9f9f9",
+        fontFamily: fonts.body,
+        backgroundColor: colors.inputBackground,
+        color: colors.text,
     },
     brandButtonsContainer: {
-        marginTop: 10,
+        marginTop: space.sm,
     },
     brandButtonsLabel: {
         fontSize: 12,
-        color: "#666",
-        marginBottom: 8,
-        fontWeight: "500",
+        color: colors.secondaryText,
+        marginBottom: space.xs,
+        fontFamily: fonts.medium,
     },
     brandButtonsRow: {
         flexDirection: "row",
         flexWrap: "wrap",
-        marginHorizontal: -4,
+        marginHorizontal: -space.xxs,
     },
     brandButton: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        backgroundColor: "#f0f0f0",
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceMuted,
         borderWidth: 1,
-        borderColor: "#ddd",
-        marginHorizontal: 4,
-        marginBottom: 8,
+        borderColor: colors.border,
+        marginHorizontal: space.xxs,
+        marginBottom: space.xs,
     },
     brandButtonActive: {
-        backgroundColor: "#E3F2FD",
-        borderColor: "#4285F4",
+        backgroundColor: colors.accentSoft,
+        borderColor: colors.accent,
     },
     brandButtonText: {
         fontSize: 13,
-        color: "#666",
-        fontWeight: "500",
+        color: colors.secondaryText,
+        fontFamily: fonts.medium,
     },
     brandButtonTextActive: {
-        color: "#4285F4",
-        fontWeight: "600",
+        color: colors.accent,
+        fontFamily: fonts.semibold,
     },
     upchargeContainer: {
-        marginBottom: 10,
+        marginBottom: space.sm,
     },
     freeButton: {
-        backgroundColor: "#f0f0f0",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 25,
-        marginBottom: 15,
+        backgroundColor: colors.surfaceMuted,
+        paddingVertical: space.sm,
+        paddingHorizontal: space.lg,
+        borderRadius: radius.pill,
+        marginBottom: space.md,
         alignItems: "center",
         borderWidth: 2,
         borderColor: "transparent",
     },
     freeButtonActive: {
-        backgroundColor: "#e8f5e8",
-        borderColor: "#4CAF50",
+        backgroundColor: colors.successSoft,
+        borderColor: colors.success,
     },
     freeButtonText: {
         fontSize: 16,
-        fontWeight: "600",
-        color: "#666",
+        fontFamily: fonts.semibold,
+        color: colors.secondaryText,
     },
     freeButtonTextActive: {
-        color: "#4CAF50",
+        color: colors.success,
     },
     priceInputContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#f9f9f9",
+        backgroundColor: colors.inputBackground,
         borderWidth: 1,
-        borderColor: "#ddd",
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        height: 44,
+        borderColor: colors.border,
+        borderRadius: radius.sm,
+        paddingHorizontal: space.md,
+        height: 50,
     },
     dollarSign: {
         fontSize: 18,
-        fontWeight: "bold",
-        color: "#4285F4",
-        marginRight: 5,
+        fontFamily: fonts.bold,
+        color: colors.accent,
+        marginRight: space.xxs,
     },
     priceInput: {
         flex: 1,
         fontSize: 16,
-        color: "#333",
+        fontFamily: fonts.body,
+        color: colors.text,
         paddingVertical: 0,
     },
     buttonContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
-        padding: 20,
+        padding: space.lg,
         borderTopWidth: 1,
-        borderTopColor: "#f0f0f0",
+        borderTopColor: colors.border,
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: "#f0f0f0",
-        paddingVertical: 15,
-        borderRadius: 8,
-        marginRight: 10,
+        backgroundColor: colors.surfaceMuted,
+        paddingVertical: 16,
+        borderRadius: radius.md,
+        marginRight: space.sm,
         alignItems: "center",
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     cancelButtonText: {
-        color: "#666",
+        color: colors.text,
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
     },
     saveButton: {
         flex: 2,
-        backgroundColor: "#4285F4",
-        paddingVertical: 15,
-        borderRadius: 8,
+        backgroundColor: colors.accent,
+        paddingVertical: 16,
+        borderRadius: radius.md,
         alignItems: "center",
+        ...makeShadow(colors, "sm"),
     },
     saveButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: colors.surfaceMuted,
+        shadowOpacity: 0,
+        elevation: 0,
     },
     saveButtonText: {
-        color: "white",
+        color: colors.onAccent,
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.bold,
     },
 });
 

@@ -97,7 +97,7 @@ export default function LoginPage() {
             <TextInput
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.tertiaryText}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={email}
@@ -110,7 +110,7 @@ export default function LoginPage() {
             <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.tertiaryText}
                 secureTextEntry
                 value={password}
                 onChangeText={(text) => {
@@ -139,7 +139,7 @@ export default function LoginPage() {
                 onPress={handleSignUp}
                 disabled={isAnyLoading}
             >
-                <Text style={styles.authButtonText}>
+                <Text style={styles.authButtonSecondaryText}>
                     {isSigningUp ? 'Creating Account...' : 'Sign Up'}
                 </Text>
             </TouchableOpacity>

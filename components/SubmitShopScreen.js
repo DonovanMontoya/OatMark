@@ -21,6 +21,7 @@ import {calculateSquareCorners, getDistanceMeters, getNearestPointOnSquare, isPo
 import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji, isValidLocation} from "../utils/ValidationUtils";
 import {handleError, handleLocationError, showSuccess} from "../utils/ErrorUtils";
 import {useTheme} from "../contexts/ThemeContext";
+import {fonts, makeShadow, radius, space} from "../styles/tokens";
 
 const SubmitShopScreen = ({onClose}) => {
     const {isDark, colors} = useTheme();
@@ -426,7 +427,7 @@ const SubmitShopScreen = ({onClose}) => {
                                 <FontAwesome6
                                     name="map-pin"
                                     size={36}
-                                    color="#FF3B30"
+                                    color={colors.danger}
                                     iconStyle="solid"
                                     style={styles.fixedPin}
                                 />
@@ -449,8 +450,8 @@ const SubmitShopScreen = ({onClose}) => {
                                         center={userLocation}
                                         radius={10}
                                         strokeWidth={3}
-                                        strokeColor="white"
-                                        fillColor="#4285F4"
+                                        strokeColor={colors.onAccent}
+                                        fillColor={colors.accent}
                                         zIndex={20}
                                     />
 
@@ -461,8 +462,8 @@ const SubmitShopScreen = ({onClose}) => {
                                             MAX_DISTANCE_METERS,
                                         )}
                                         strokeWidth={2}
-                                        strokeColor="rgba(66, 133, 244, 0.7)"
-                                        fillColor="rgba(66, 133, 244, 0.1)"
+                                        strokeColor={colors.accent}
+                                        fillColor={colors.accentSoft}
                                         zIndex={5}
                                     />
                                 </FreeMapView>
@@ -486,8 +487,8 @@ const SubmitShopScreen = ({onClose}) => {
                                         center={userLocation}
                                         radius={10}
                                         strokeWidth={3}
-                                        strokeColor="white"
-                                        fillColor="#4285F4"
+                                        strokeColor={colors.onAccent}
+                                        fillColor={colors.accent}
                                         zIndex={20}
                                     />
 
@@ -498,8 +499,8 @@ const SubmitShopScreen = ({onClose}) => {
                                             MAX_DISTANCE_METERS,
                                         )}
                                         strokeWidth={2}
-                                        strokeColor="rgba(66, 133, 244, 0.7)"
-                                        fillColor="rgba(66, 133, 244, 0.1)"
+                                        strokeColor={colors.accent}
+                                        fillColor={colors.accentSoft}
                                         zIndex={5}
                                     />
                                 </MapView>
@@ -547,123 +548,129 @@ const getStyles = (colors) => StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
-        padding: 5,
-        marginRight: 15,
+        padding: space.xxs,
+        marginRight: space.md,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 24,
+        fontFamily: fonts.display,
         color: colors.text,
+        letterSpacing: -0.4,
     },
     form: {
         flex: 1,
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
     },
     inputGroup: {
-        marginVertical: 15,
+        marginVertical: space.md,
     },
     label: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
         color: colors.text,
-        marginBottom: 8,
+        marginBottom: space.xs,
     },
     input: {
-        height: 44,
-        paddingHorizontal: 12,
+        height: 50,
+        paddingHorizontal: space.md,
         borderColor: colors.border,
         borderWidth: 1,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         fontSize: 16,
+        fontFamily: fonts.body,
         backgroundColor: colors.inputBackground,
         color: colors.text,
     },
     brandButtonsContainer: {
-        marginTop: 10,
+        marginTop: space.sm,
     },
     brandButtonsLabel: {
         fontSize: 12,
         color: colors.secondaryText,
-        marginBottom: 8,
-        fontWeight: "500",
+        marginBottom: space.xs,
+        fontFamily: fonts.medium,
     },
     brandButtonsRow: {
         flexDirection: "row",
         flexWrap: "wrap",
-        marginHorizontal: -4,
+        marginHorizontal: -space.xxs,
     },
     brandButton: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        backgroundColor: colors.isDark ? colors.secondaryBackground : "#f0f0f0",
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceMuted,
         borderWidth: 1,
         borderColor: colors.border,
-        marginHorizontal: 4,
-        marginBottom: 8,
+        marginHorizontal: space.xxs,
+        marginBottom: space.xs,
     },
     brandButtonActive: {
-        backgroundColor: colors.isDark ? "rgba(92, 157, 255, 0.2)" : "#E3F2FD",
-        borderColor: colors.primary,
+        backgroundColor: colors.accentSoft,
+        borderColor: colors.accent,
     },
     brandButtonText: {
         fontSize: 13,
         color: colors.secondaryText,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
     },
     brandButtonTextActive: {
-        color: colors.primary,
-        fontWeight: "600",
+        color: colors.accent,
+        fontFamily: fonts.semibold,
     },
     note: {
         fontSize: 14,
         color: colors.secondaryText,
+        fontFamily: fonts.body,
         fontStyle: "italic",
-        marginVertical: 10,
+        marginVertical: space.sm,
         textAlign: "center",
     },
     submitButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: 15,
-        borderRadius: 8,
-        marginVertical: 20,
+        backgroundColor: colors.accent,
+        paddingVertical: 16,
+        borderRadius: radius.md,
+        marginVertical: space.lg,
         alignItems: "center",
+        ...makeShadow(colors, "sm"),
     },
     submitButtonDisabled: {
-        backgroundColor: colors.isDark ? colors.secondaryBackground : "#ccc",
+        backgroundColor: colors.surfaceMuted,
+        shadowOpacity: 0,
+        elevation: 0,
     },
     submitButtonText: {
-        color: "white",
+        color: colors.onAccent,
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.bold,
     },
     upchargeContainer: {
-        marginBottom: 10,
+        marginBottom: space.sm,
     },
     freeButton: {
-        backgroundColor: colors.isDark ? colors.secondaryBackground : "#f0f0f0",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 25,
-        marginBottom: 15,
+        backgroundColor: colors.surfaceMuted,
+        paddingVertical: space.sm,
+        paddingHorizontal: space.lg,
+        borderRadius: radius.pill,
+        marginBottom: space.md,
         alignItems: "center",
         borderWidth: 2,
         borderColor: "transparent",
     },
     freeButtonActive: {
-        backgroundColor: colors.isDark ? "rgba(108, 203, 112, 0.2)" : "#e8f5e8",
+        backgroundColor: colors.successSoft,
         borderColor: colors.success,
     },
     freeButtonText: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
         color: colors.secondaryText,
     },
     freeButtonTextActive: {
@@ -675,39 +682,41 @@ const getStyles = (colors) => StyleSheet.create({
         backgroundColor: colors.inputBackground,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        height: 44,
+        borderRadius: radius.sm,
+        paddingHorizontal: space.md,
+        height: 50,
     },
     dollarSign: {
         fontSize: 18,
-        fontWeight: "bold",
-        color: colors.primary,
-        marginRight: 5,
+        fontFamily: fonts.bold,
+        color: colors.accent,
+        marginRight: space.xxs,
     },
     priceInput: {
         flex: 1,
         fontSize: 16,
+        fontFamily: fonts.body,
         color: colors.text,
         paddingVertical: 0,
     },
     whimsicalText: {
         fontSize: 14,
         color: colors.secondaryText,
+        fontFamily: fonts.body,
         fontStyle: "italic",
         textAlign: "center",
-        marginTop: 8,
-        paddingHorizontal: 10,
+        marginTop: space.xs,
+        paddingHorizontal: space.sm,
         lineHeight: 18,
     },
     // Map styles
     mapContainer: {
         height: 300,
-        borderRadius: 8,
+        borderRadius: radius.md,
         overflow: "hidden",
         borderWidth: 1,
         borderColor: colors.border,
-        marginBottom: 10,
+        marginBottom: space.sm,
         position: "relative",
     },
     map: {
@@ -717,7 +726,7 @@ const getStyles = (colors) => StyleSheet.create({
     mapPlaceholder: {
         height: 200,
         backgroundColor: colors.inputBackground,
-        borderRadius: 8,
+        borderRadius: radius.md,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 1,
@@ -725,16 +734,19 @@ const getStyles = (colors) => StyleSheet.create({
     },
     loadingText: {
         fontSize: 16,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
     },
     errorText: {
         fontSize: 16,
+        fontFamily: fonts.medium,
         color: colors.danger,
     },
     mapInstructions: {
         fontSize: 14,
         color: colors.secondaryText,
-        marginBottom: 10,
+        fontFamily: fonts.body,
+        marginBottom: space.sm,
         fontStyle: "italic",
     },
     // Fixed pin styles
@@ -751,24 +763,27 @@ const getStyles = (colors) => StyleSheet.create({
     },
     fixedPin: {
         marginBottom: 36, // Offset to account for the pin's anchor point
-        shadowColor: "#000",
+        shadowColor: colors.shadow,
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.3,
         shadowRadius: 2,
     },
     distanceContainer: {
         position: "absolute",
-        bottom: 10,
-        left: 10,
-        right: 10,
-        backgroundColor: colors.isDark ? "rgba(15, 26, 46, 0.9)" : "rgba(255, 255, 255, 0.9)",
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 4,
+        bottom: space.sm,
+        left: space.sm,
+        right: space.sm,
+        backgroundColor: colors.overlayBackground,
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
         zIndex: 5,
     },
     distanceText: {
         fontSize: 12,
+        fontFamily: fonts.medium,
         color: colors.text,
         textAlign: "center",
     },
