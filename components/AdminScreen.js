@@ -21,6 +21,7 @@ import EditShopDetailsModal from "./EditShopDetailsModal";
 import PendingShopCard from "./PendingShopCard";
 import {createThemeStyles} from "../styles/ThemeStyles";
 import {useTheme} from "../contexts/ThemeContext";
+import {fonts, makeShadow, radius, space} from "../styles/tokens";
 
 const AdminScreen = ({onClose}) => {
     const [pendingShops, setPendingShops] = useState([]);
@@ -28,6 +29,7 @@ const AdminScreen = ({onClose}) => {
     const {isAdmin, isLoading: adminLoading} = useAdminStatus();
     const {colors} = useTheme();
     const commonStyles = createThemeStyles(colors);
+    const styles = getStyles(colors);
     const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
     const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
     const [selectedShop, setSelectedShop] = useState(null);
@@ -233,7 +235,7 @@ const AdminScreen = ({onClose}) => {
                         <FontAwesome6
                             name="xmark"
                             size={20}
-                            color="#333"
+                            color={colors.text}
                             iconStyle="solid"
                         />
                     </TouchableOpacity>
@@ -243,7 +245,7 @@ const AdminScreen = ({onClose}) => {
                     <FontAwesome6
                         name="lock"
                         size={50}
-                        color="#cc0000"
+                        color={colors.danger}
                         iconStyle="solid"
                     />
                     <Text style={styles.emptyText}>Access Denied</Text>
@@ -282,7 +284,7 @@ const AdminScreen = ({onClose}) => {
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
                     <View style={styles.iconBadge}>
-                        <FontAwesome6 name="shield-halved" size={20} color="#FF9500" iconStyle="solid"/>
+                        <FontAwesome6 name="shield-halved" size={20} color={colors.warning} iconStyle="solid"/>
                     </View>
                     <View>
                         <Text style={[styles.title, { color: colors.text }]}>Admin Panel</Text>
@@ -296,7 +298,7 @@ const AdminScreen = ({onClose}) => {
             {/* Pending Count Badge */}
             {!loading && pendingShops.length > 0 && (
                 <View style={styles.countBanner}>
-                    <FontAwesome6 name="clock" size={14} color="#FF9500" iconStyle="solid"/>
+                    <FontAwesome6 name="clock" size={14} color={colors.warning} iconStyle="solid"/>
                     <Text style={[styles.countText, { color: colors.text }]}>
                         {pendingShops.length} {pendingShops.length === 1 ? 'submission' : 'submissions'} awaiting review
                     </Text>
@@ -305,7 +307,7 @@ const AdminScreen = ({onClose}) => {
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#FF9500"/>
+                    <ActivityIndicator size="large" color={colors.warning}/>
                     <Text style={[styles.loadingText, { color: colors.secondaryText }]}>
                         {adminLoading ? "Verifying admin access..." : "Loading pending submissions..."}
                     </Text>
@@ -316,7 +318,7 @@ const AdminScreen = ({onClose}) => {
                         <FontAwesome6
                             name="circle-check"
                             size={60}
-                            color="#4CAF50"
+                            color={colors.success}
                             iconStyle="solid"
                         />
                     </View>
@@ -393,287 +395,125 @@ AdminScreen.propTypes = {
     onClose: PropTypes.func.isRequired,
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
-        borderBottomColor: "rgba(0,0,0,0.1)",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 3,
+        borderBottomColor: colors.border,
+        ...makeShadow(colors, "sm"),
     },
     closeButton: {
-        padding: 8,
-        marginRight: 12,
+        padding: space.xs,
+        marginRight: space.sm,
     },
     headerContent: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: space.sm,
     },
     iconBadge: {
         width: 44,
         height: 44,
-        borderRadius: 12,
-        backgroundColor: "rgba(255, 149, 0, 0.1)",
+        borderRadius: radius.md,
+        backgroundColor: colors.warningSoft,
         alignItems: "center",
         justifyContent: "center",
     },
     title: {
-        fontSize: 22,
-        fontWeight: "700",
+        fontSize: 24,
+        fontFamily: fonts.display,
+        color: colors.text,
         letterSpacing: -0.5,
     },
     subtitle: {
         fontSize: 13,
         marginTop: 2,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
+        color: colors.secondaryText,
     },
     countBanner: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 12,
-        gap: 8,
-        backgroundColor: "rgba(255, 149, 0, 0.08)",
+        paddingVertical: space.sm,
+        gap: space.xs,
+        backgroundColor: colors.warningSoft,
         borderBottomWidth: 1,
-        borderBottomColor: "rgba(255, 149, 0, 0.2)",
+        borderBottomColor: colors.warning,
     },
     countText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
+        color: colors.text,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        gap: 16,
+        gap: space.md,
     },
     loadingText: {
         fontSize: 16,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
+        color: colors.secondaryText,
     },
     emptyContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 40,
+        paddingHorizontal: space.xxl,
     },
     emptyIconContainer: {
         width: 100,
         height: 100,
-        borderRadius: 50,
-        backgroundColor: "rgba(76, 175, 80, 0.1)",
+        borderRadius: radius.pill,
+        backgroundColor: colors.successSoft,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 20,
+        marginBottom: space.lg,
     },
     emptyText: {
         fontSize: 24,
-        fontWeight: "700",
-        marginBottom: 8,
+        fontFamily: fonts.display,
+        color: colors.text,
+        marginBottom: space.xs,
         textAlign: "center",
+        letterSpacing: -0.4,
     },
     emptySubtext: {
         fontSize: 15,
-        marginTop: 8,
+        fontFamily: fonts.body,
+        color: colors.secondaryText,
+        marginTop: space.xs,
         textAlign: "center",
         lineHeight: 22,
     },
     emptyDetail: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
-        marginTop: 24,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        backgroundColor: "rgba(0, 0, 0, 0.03)",
-        borderRadius: 8,
+        gap: space.xs,
+        marginTop: space.xl,
+        paddingHorizontal: space.md,
+        paddingVertical: space.sm,
+        backgroundColor: colors.surfaceMuted,
+        borderRadius: radius.sm,
     },
     emptyDetailText: {
         fontSize: 13,
-        fontWeight: "500",
+        fontFamily: fonts.medium,
+        color: colors.secondaryText,
     },
     listContainer: {
-        paddingVertical: 8,
-    },
-    // Legacy styles kept for compatibility
-    mapContainer: {
-        width: "100%",
-        height: 220,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: "#f0f0f0",
-        overflow: "hidden",
-    },
-    map: {
-        width: "100%",
-        height: 180,
-    },
-    mapButtonsContainer: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        paddingVertical: 8,
-        backgroundColor: "#f8f8f8",
-    },
-    mapButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 6,
-        backgroundColor: "white",
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-    },
-    mapButtonText: {
-        fontSize: 12,
-        fontWeight: "600",
-        marginLeft: 6,
-    },
-    emojiContainer: {
-        width: 100,
-        height: 100,
-        backgroundColor: "#f8f8f8",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    emojiText: {
-        fontSize: 40,
-    },
-    card: {
-        flexDirection: "column",
-        backgroundColor: "white",
-        borderRadius: 12,
-        marginBottom: 16,
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: "#f0f0f0",
-        overflow: "hidden",
-    },
-    cardHeader: {
-        flexDirection: "row",
-        padding: 12,
-    },
-    cardHeaderInfo: {
-        flex: 1,
-        marginLeft: 12,
-        justifyContent: "center",
-    },
-    cardImageContainer: {
-        position: "relative",
-        width: 100,
-        height: 100,
-    },
-    image: {
-        width: 100,
-        height: 100,
-        backgroundColor: "#f0f0f0",
-    },
-    imageLoadingOverlay: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(255, 255, 255, 0.8)",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    statusBadge: {
-        position: "absolute",
-        top: 8,
-        right: 8,
-        backgroundColor: "#FF9500",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
-    },
-    statusText: {
-        color: "white",
-        fontSize: 10,
-        fontWeight: "bold",
-    },
-    cardContent: {
-        flex: 1,
-        padding: 16,
-        paddingTop: 12,
-    },
-    shopName: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#333",
-        marginBottom: 8,
-    },
-    detailRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 6,
-    },
-    detailText: {
-        fontSize: 14,
-        color: "#666",
-        marginLeft: 8,
-    },
-    actionButtons: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        marginTop: 8,
-    },
-    approveButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 6,
-        backgroundColor: "#E8F5E9",
-        borderWidth: 1,
-        borderColor: "#C8E6C9",
-        marginRight: 8,
-    },
-    approveButtonText: {
-        fontSize: 12,
-        color: "#4CAF50",
-        fontWeight: "600",
-        marginLeft: 4,
-    },
-    rejectButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 6,
-        backgroundColor: "#FFF0F0",
-        borderWidth: 1,
-        borderColor: "#FFDDDD",
-    },
-    rejectButtonText: {
-        fontSize: 12,
-        color: "#FF3B30",
-        fontWeight: "600",
-        marginLeft: 4,
-    },
-    disabledButton: {
-        opacity: 0.6,
-        backgroundColor: "#f5f5f5",
-    },
-    disabledButtonText: {
-        color: "#999",
+        paddingVertical: space.xs,
     },
 });
 

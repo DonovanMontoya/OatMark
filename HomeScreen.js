@@ -946,7 +946,7 @@ export default function HomeScreen() {
           <FontAwesome6
             name="wifi"
             size={14}
-            color="#FFFFFF"
+            color="#3B2A12"
             iconStyle="solid"
             style={styles.offlineIcon}
           />
@@ -1113,7 +1113,7 @@ export default function HomeScreen() {
                 <FontAwesome6
                   name="location-crosshairs"
                   size={16}
-                  color="#FF9500"
+                  color={colors.warning}
                   iconStyle="solid"
                 />
               </TouchableOpacity>
@@ -1210,7 +1210,7 @@ export default function HomeScreen() {
                       <FontAwesome6
                         name="location-dot"
                         size={16}
-                        color="#FF9500"
+                        color={colors.accent}
                         iconStyle="solid"
                       />
                       <Text style={styles.statLabel}>Distance</Text>
@@ -1244,14 +1244,14 @@ export default function HomeScreen() {
                     <FontAwesome6
                       name="route"
                       size={16}
-                      color="#FFFFFF"
+                      color={colors.onAccent}
                       iconStyle="solid"
                     />
                     <Text style={styles.primaryButtonText}>Get Directions</Text>
                     <FontAwesome6
                       name="arrow-right"
                       size={12}
-                      color="#FFFFFF"
+                      color={colors.onAccent}
                       iconStyle="solid"
                       style={{ marginLeft: 8 }}
                     />
@@ -1272,7 +1272,7 @@ export default function HomeScreen() {
                       size={14}
                       color={
                         isFavorite(selectedShop.id)
-                          ? "#FF6B6B"
+                          ? colors.favorite
                           : colors.secondaryText
                       }
                       iconStyle={
@@ -1282,7 +1282,7 @@ export default function HomeScreen() {
                     <Text
                       style={[
                         styles.secondaryButtonText,
-                        isFavorite(selectedShop.id) && { color: "#FF6B6B" },
+                        isFavorite(selectedShop.id) && { color: colors.favorite },
                       ]}
                     >
                       {isFavorite(selectedShop.id) ? "Saved" : "Save"}

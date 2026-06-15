@@ -5,6 +5,7 @@ import {signOut} from "firebase/auth";
 import {auth} from "../services/firebase";
 import Constants from "expo-constants";
 import {useTheme} from "../contexts/ThemeContext";
+import {fonts, radius, space} from "../styles/tokens";
 
 const SettingsScreen = ({onClose}) => {
     // Get theme context
@@ -312,41 +313,44 @@ const getStyles = (colors) => StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
-        padding: 5,
-        marginRight: 15,
+        padding: space.xxs,
+        marginRight: space.md,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 24,
+        fontFamily: fonts.display,
         color: colors.text,
+        letterSpacing: -0.4,
     },
     content: {
         flex: 1,
     },
     section: {
-        marginTop: 30,
-        paddingHorizontal: 20,
+        marginTop: space.xxl,
+        paddingHorizontal: space.lg,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: colors.text,
-        marginBottom: 15,
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.tertiaryText,
+        marginBottom: space.sm,
+        textTransform: "uppercase",
+        letterSpacing: 1.2,
     },
     settingItem: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 15,
+        paddingVertical: space.md,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderBottomColor: colors.divider,
     },
     settingLeft: {
         flexDirection: "row",
@@ -355,46 +359,50 @@ const getStyles = (colors) => StyleSheet.create({
     },
     settingText: {
         fontSize: 16,
+        fontFamily: fonts.medium,
         color: colors.text,
-        marginLeft: 15,
+        marginLeft: space.md,
     },
     themeOptionsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginTop: 10,
+        marginTop: space.sm,
+        gap: space.xs,
     },
     themeOption: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 12,
-        marginHorizontal: 5,
+        paddingVertical: space.sm,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 12,
+        borderRadius: radius.md,
         backgroundColor: colors.cardBackground,
     },
     themeOptionSelected: {
-        borderColor: colors.primary,
-        backgroundColor: colors.inputBackground,
+        borderColor: colors.accent,
+        backgroundColor: colors.accentSoft,
     },
     themeOptionText: {
         fontSize: 14,
-        marginLeft: 8,
+        fontFamily: fonts.semibold,
+        marginLeft: space.xs,
     },
     theSmallText: {
         fontSize: 13,
-        color: colors.text,
-        paddingTop: 10,
+        fontFamily: fonts.body,
+        color: colors.secondaryText,
+        paddingTop: space.sm,
         alignSelf: "center",
         textAlign: "center",
     },
     themeHelperText: {
         fontSize: 13,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
-        marginTop: 10,
+        marginTop: space.sm,
         lineHeight: 18,
     },
 });

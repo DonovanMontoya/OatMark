@@ -3,14 +3,16 @@ import { View, Text, TouchableOpacity, Animated, Image } from 'react-native';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { getFormattedUpcharge, getUpchargeColor } from '../utils/upchargeEmojis';
 import { getDistanceMeters } from '../utils/GeoUtils';
+import { useTheme } from '../contexts/ThemeContext';
 
-const ShopCard = ({ 
-  item, 
-  location, 
-  onPress, 
-  isFavorite = false, 
-  styles 
+const ShopCard = ({
+  item,
+  location,
+  onPress,
+  isFavorite = false,
+  styles
 }) => {
+  const { colors } = useTheme();
   // Create animated value with useRef to prevent recreation on each render
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -44,8 +46,8 @@ const ShopCard = ({
             <View style={styles.imageOverlay}>
               <FontAwesome6
                 name="store"
-                size={16}
-                color="white"
+                size={13}
+                color={colors.onAccent}
                 iconStyle="solid"
               />
             </View>
@@ -80,7 +82,7 @@ const ShopCard = ({
                 <FontAwesome6
                   name="location-dot"
                   size={12}
-                  color="#666"
+                  color={colors.tertiaryText}
                   iconStyle="solid"
                 />
                 <Text style={styles.distanceText}>
@@ -94,9 +96,9 @@ const ShopCard = ({
                   <FontAwesome6
                     name="heart"
                     size={12}
-                    color="#FF6B6B"
+                    color={colors.favorite}
                     iconStyle="solid"
-                    style={{ marginLeft: "auto", opacity: 0.8 }}
+                    style={{ marginLeft: "auto" }}
                   />
                 )}
               </View>

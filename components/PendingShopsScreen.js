@@ -7,6 +7,7 @@ import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {useTheme} from "../contexts/ThemeContext";
+import {fonts, makeShadow, radius, space} from "../styles/tokens";
 
 const PendingShopsScreen = ({onClose}) => {
     const {isDark, colors} = useTheme();
@@ -80,12 +81,12 @@ const PendingShopsScreen = ({onClose}) => {
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4285F4"/>
+                    <ActivityIndicator size="large" color={colors.accent}/>
                     <Text style={styles.loadingText}>Loading your submissions...</Text>
                 </View>
             ) : pendingShops.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <FontAwesome6 name="store" size={50} color="#ccc" iconStyle="solid"/>
+                    <FontAwesome6 name="store" size={50} color={colors.tertiaryText} iconStyle="solid"/>
                     <Text style={styles.emptyText}>
                         You don't have any pending shop submissions
                     </Text>
@@ -115,7 +116,7 @@ const PendingShopsScreen = ({onClose}) => {
                                         <FontAwesome6
                                             name="seedling"
                                             size={12}
-                                            color="#4CAF50"
+                                            color={colors.success}
                                             iconStyle="solid"
                                         />
                                         <Text style={styles.detailText}>{item.oatMilk}</Text>
@@ -124,7 +125,7 @@ const PendingShopsScreen = ({onClose}) => {
                                         <FontAwesome6
                                             name="money-bill"
                                             size={12}
-                                            color="#666"
+                                            color={colors.secondaryText}
                                             iconStyle="solid"
                                         />
                                         <Text style={styles.detailText}>
@@ -189,7 +190,7 @@ const PendingShopsScreen = ({onClose}) => {
                                             <FontAwesome6
                                                 name="map-location-dot"
                                                 size={14}
-                                                color="#4285F4"
+                                                color={colors.accent}
                                                 iconStyle="solid"
                                             />
                                             <Text style={styles.mapButtonText}>Open in Maps</Text>
@@ -215,7 +216,7 @@ const PendingShopsScreen = ({onClose}) => {
                                     <FontAwesome6
                                         name="calendar"
                                         size={12}
-                                        color="#666"
+                                        color={colors.secondaryText}
                                         iconStyle="solid"
                                     />
                                     <Text style={styles.detailText}>
@@ -228,7 +229,7 @@ const PendingShopsScreen = ({onClose}) => {
                                         <FontAwesome6
                                             name="location-dot"
                                             size={12}
-                                            color="#666"
+                                            color={colors.secondaryText}
                                             iconStyle="solid"
                                         />
                                         <Text style={styles.detailText}>
@@ -244,7 +245,7 @@ const PendingShopsScreen = ({onClose}) => {
                                     <FontAwesome6
                                         name="trash"
                                         size={14}
-                                        color="#FF3B30"
+                                        color={colors.danger}
                                         iconStyle="solid"
                                     />
                                     <Text style={styles.deleteButtonText}>Delete</Text>
@@ -278,28 +279,29 @@ const getStyles = (colors) => StyleSheet.create({
     mapButtonsContainer: {
         flexDirection: "row",
         justifyContent: "space-around",
-        paddingVertical: 8,
+        paddingVertical: space.xs,
         backgroundColor: colors.secondaryBackground,
     },
     mapButton: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 6,
-        backgroundColor: colors.background,
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.sm,
+        backgroundColor: colors.cardBackground,
         borderWidth: 1,
         borderColor: colors.border,
     },
     mapButtonText: {
         fontSize: 12,
-        fontWeight: "600",
-        marginLeft: 6,
+        fontFamily: fonts.semibold,
+        color: colors.text,
+        marginLeft: space.xs,
     },
     emojiContainer: {
         width: 100,
         height: 100,
-        backgroundColor: colors.secondaryBackground,
+        backgroundColor: colors.accentSoft,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -309,20 +311,21 @@ const getStyles = (colors) => StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        paddingHorizontal: space.lg,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
-        padding: 5,
-        marginRight: 15,
+        padding: space.xxs,
+        marginRight: space.md,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 24,
+        fontFamily: fonts.display,
         color: colors.text,
+        letterSpacing: -0.4,
     },
     loadingContainer: {
         flex: 1,
@@ -330,53 +333,51 @@ const getStyles = (colors) => StyleSheet.create({
         alignItems: "center",
     },
     loadingText: {
-        marginTop: 10,
+        marginTop: space.sm,
         fontSize: 16,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
     },
     emptyContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 40,
+        paddingHorizontal: space.xxl,
     },
     emptyText: {
         fontSize: 18,
-        fontWeight: "600",
+        fontFamily: fonts.semibold,
         color: colors.text,
-        marginTop: 20,
+        marginTop: space.lg,
         textAlign: "center",
     },
     emptySubtext: {
         fontSize: 14,
+        fontFamily: fonts.body,
         color: colors.secondaryText,
-        marginTop: 10,
+        marginTop: space.sm,
         textAlign: "center",
     },
     listContainer: {
-        padding: 16,
+        padding: space.md,
     },
     card: {
         flexDirection: "column",
-        backgroundColor: colors.background,
-        borderRadius: 12,
-        marginBottom: 16,
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        backgroundColor: colors.cardBackground,
+        borderRadius: radius.lg,
+        marginBottom: space.md,
+        ...makeShadow(colors, "md"),
         borderWidth: 1,
         borderColor: colors.border,
         overflow: "hidden",
     },
     cardHeader: {
         flexDirection: "row",
-        padding: 12,
+        padding: space.sm,
     },
     cardHeaderInfo: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: space.sm,
         justifyContent: "center",
     },
     cardImageContainer: {
@@ -395,62 +396,67 @@ const getStyles = (colors) => StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        backgroundColor: colors.overlayBackground,
         alignItems: "center",
         justifyContent: "center",
     },
     statusBadge: {
         position: "absolute",
-        top: 8,
-        right: 8,
-        backgroundColor: "#FF9500",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
+        top: space.xs,
+        right: space.xs,
+        backgroundColor: colors.warningSoft,
+        paddingHorizontal: space.xs,
+        paddingVertical: space.xxs,
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: colors.warning,
     },
     statusText: {
-        color: "#FFFFFF",
+        color: colors.warning,
         fontSize: 10,
-        fontWeight: "bold",
+        fontFamily: fonts.bold,
+        letterSpacing: 0.4,
     },
     cardContent: {
         flex: 1,
-        padding: 16,
-        paddingTop: 12,
+        padding: space.md,
+        paddingTop: space.sm,
     },
     shopName: {
-        fontSize: 16,
-        fontWeight: "bold",
+        fontSize: 17,
+        fontFamily: fonts.bold,
         color: colors.text,
-        marginBottom: 8,
+        marginBottom: space.xs,
+        letterSpacing: -0.2,
     },
     detailRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 6,
+        marginBottom: space.xs,
     },
     detailText: {
         fontSize: 14,
+        fontFamily: fonts.medium,
         color: colors.secondaryText,
-        marginLeft: 8,
+        marginLeft: space.xs,
     },
     deleteButton: {
         flexDirection: "row",
         alignItems: "center",
         alignSelf: "flex-end",
-        marginTop: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 6,
-        backgroundColor: "#FFF0F0",
+        marginTop: space.xs,
+        paddingVertical: space.xs,
+        paddingHorizontal: space.sm,
+        borderRadius: radius.sm,
+        backgroundColor: colors.dangerSoft,
         borderWidth: 1,
-        borderColor: "#FFDDDD",
+        borderColor: colors.danger,
     },
     deleteButtonText: {
         fontSize: 12,
-        color: "#FF3B30",
-        fontWeight: "600",
-        marginLeft: 4,
+        color: colors.danger,
+        fontFamily: fonts.semibold,
+        marginLeft: space.xxs,
     },
 });
 

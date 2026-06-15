@@ -9,69 +9,114 @@ import React, {
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define theme colors
+// ---------------------------------------------------------------------------
+// "Oat & Espresso" palette
+//
+// The brand is an oat-milk carton inked in espresso on warm cream (see the
+// app icon). The UI follows suit: cream paper, espresso ink, a roasted
+// caramel accent, and a leaf green that nods to the oat sprig. Dark mode is a
+// "dark roast" — deep warm browns instead of cold midnight blue.
+//
+// Every key from the original theme is preserved so existing styles keep
+// working; the additions are semantic tokens (accent, surface, favorite,
+// warning, …) that screens used to hardcode.
+// ---------------------------------------------------------------------------
 const lightTheme = {
-  // Background colors
-  background: '#FFFFFF',
-  secondaryBackground: '#F9F9FB',
-  cardBackground: '#FFFFFF',
-  inputBackground: '#f9f9f9',
-  
-  // Text colors
-  text: '#1a1a1a',
-  secondaryText: '#666666',
-  tertiaryText: '#999999',
-  
-  // UI element colors
-  border: '#f0f0f0',
-  divider: '#E5E5EA',
-  icon: '#333333',
-  
-  // Interactive elements
-  primary: '#4285F4',
-  success: '#4CAF50',
-  danger: '#cc0000',
-  
+  // Backgrounds — layered creams from canvas → elevated surface
+  background: '#F4EDDD',          // warm oat canvas
+  secondaryBackground: '#ECE3CF', // grouped sections
+  cardBackground: '#FBF7EE',      // cards lift off the canvas
+  surface: '#FBF7EE',             // alias for elevated surfaces
+  surfaceMuted: '#EFE6D4',        // chips, inputs, wells
+  inputBackground: '#F3EBD9',
+
+  // Text — espresso ink on cream
+  text: '#2A211A',
+  secondaryText: '#6E6152',
+  tertiaryText: '#9C8F7C',
+  textSecondary: '#6E6152',       // alias (some screens referenced this name)
+
+  // Lines
+  border: '#E4D9C2',
+  divider: '#E8DFCB',
+  icon: '#5A4D3F',
+
+  // Brand / interactive
+  primary: '#A85F28',             // roasted caramel — primary actions
+  accent: '#A85F28',
+  accentSoft: 'rgba(168, 95, 40, 0.12)',
+  accentBorder: 'rgba(168, 95, 40, 0.35)',
+  onAccent: '#FFF8EC',            // text/icons on the accent
+
+  success: '#5B8A3C',             // leaf green (the oat sprig)
+  successSoft: 'rgba(91, 138, 60, 0.14)',
+  danger: '#B23B2E',              // warm brick
+  dangerSoft: 'rgba(178, 59, 46, 0.12)',
+  warning: '#D8902F',             // honey amber — alerts, admin, offline
+  warningSoft: 'rgba(216, 144, 47, 0.16)',
+  favorite: '#CF5C46',            // terracotta heart
+  favoriteSoft: 'rgba(207, 92, 70, 0.14)',
+
   // Specific component backgrounds
-  menuBackground: '#FFFFFF',
-  overlayBackground: 'rgba(255, 255, 255, 0.98)',
-  modalBackground: 'rgba(0, 0, 0, 0.5)',
-  
+  menuBackground: '#FBF7EE',
+  overlayBackground: 'rgba(251, 247, 238, 0.98)',
+  modalBackground: 'rgba(42, 33, 26, 0.45)',
+
+  // Effects
+  shadow: '#5A3D1E',              // warm shadow, not cold black
+
   // Map related
-  locationButton: '#333333',
-  locationButtonText: '#FFFFFF',
+  locationButton: '#2A211A',
+  locationButtonText: '#FFF8EC',
 };
 
 const darkTheme = {
-  // Background colors - using midnight blue tones
-  background: '#0F1A2E',
-  secondaryBackground: '#162A45',
-  cardBackground: '#1E3356',
-  inputBackground: '#2A4166',
-  
-  // Text colors - lighter for dark mode
-  text: '#F0F0F0',
-  secondaryText: '#CCCCCC',
-  tertiaryText: '#AAAAAA',
-  
-  // UI element colors
-  border: '#2A4166',
-  divider: '#2A4166',
-  icon: '#CCCCCC',
-  
-  // Interactive elements - brighter for dark mode
-  primary: '#5C9DFF',
-  success: '#6BCB70',
-  danger: '#FF5252',
-  
+  // Backgrounds — dark roast browns
+  background: '#1A1410',
+  secondaryBackground: '#221A14',
+  cardBackground: '#2A201A',
+  surface: '#2A201A',
+  surfaceMuted: '#332720',
+  inputBackground: '#332720',
+
+  // Text — cream on espresso
+  text: '#F2E9D8',
+  secondaryText: '#BCAC97',
+  tertiaryText: '#8C7D6B',
+  textSecondary: '#BCAC97',
+
+  // Lines
+  border: '#3B2E24',
+  divider: '#3B2E24',
+  icon: '#BCAC97',
+
+  // Brand / interactive — brighter caramel pops on the dark roast
+  primary: '#E0944A',
+  accent: '#E0944A',
+  accentSoft: 'rgba(224, 148, 74, 0.16)',
+  accentBorder: 'rgba(224, 148, 74, 0.40)',
+  onAccent: '#241710',            // dark ink reads better on bright caramel
+
+  success: '#7FB158',
+  successSoft: 'rgba(127, 177, 88, 0.18)',
+  danger: '#E5705F',
+  dangerSoft: 'rgba(229, 112, 95, 0.16)',
+  warning: '#E8A23C',
+  warningSoft: 'rgba(232, 162, 60, 0.18)',
+  favorite: '#E07B62',
+  favoriteSoft: 'rgba(224, 123, 98, 0.20)',
+
   // Specific component backgrounds
-  menuBackground: '#1E3356',
-  overlayBackground: 'rgba(15, 26, 46, 0.98)',
-  modalBackground: 'rgba(0, 0, 0, 0.7)',
-  
+  menuBackground: '#2A201A',
+  overlayBackground: 'rgba(26, 20, 16, 0.98)',
+  modalBackground: 'rgba(0, 0, 0, 0.6)',
+
+  // Effects
+  shadow: '#000000',
+
   // Map related
-  locationButton: '#5C9DFF',
-  locationButtonText: '#FFFFFF',
+  locationButton: '#E0944A',
+  locationButtonText: '#241710',
 };
 
 // Create the context
