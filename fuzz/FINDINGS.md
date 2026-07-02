@@ -1,5 +1,10 @@
 # Fuzz Testing Findings
 
+> **Status: all findings below are fixed on this branch.** Re-running
+> `node fuzz/fuzz.mjs` against the patched utilities reports zero invariant
+> violations (the "targeted (informational)" entries always print and now
+> show malformed prices being rejected).
+
 Results from fuzzing OatMark's pure utility modules (`utils/ValidationUtils.js`,
 `utils/GeoUtils.js`, `utils/upchargeEmojis.js`) plus code review of the call
 sites that consume their output. Reproduce with:

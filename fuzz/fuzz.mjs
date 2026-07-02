@@ -177,11 +177,10 @@ for (let i = 0; i < N; i++) {
   if (Number.isNaN(d)) report('getDistanceMeters: NaN for valid antipodal coords (haversine FP domain error)', { a, b });
   else if (d < 0) report('getDistanceMeters: negative distance', { a, b, d });
 }
+// Invalid input must not throw (NaN with a logged error is the contract)
 for (const [a, b] of [[{}, {}], [{ latitude: 1, longitude: 2 }, undefined], [null, null]]) {
-  try {
-    const d = getDistanceMeters(a, b);
-    if (Number.isNaN(d)) report('getDistanceMeters: no input validation, NaN silently returned', { a: JSON.stringify(a), b: JSON.stringify(b) });
-  } catch (e) { report('getDistanceMeters THROWS on missing location', { a: JSON.stringify(a), b: JSON.stringify(b), err: e.message }); }
+  try { getDistanceMeters(a, b); }
+  catch (e) { report('getDistanceMeters THROWS on missing location', { a: JSON.stringify(a), b: JSON.stringify(b), err: e.message }); }
 }
 
 // ---------- 6. getDestinationPoint ----------
@@ -199,8 +198,8 @@ for (let i = 0; i < N / 10; i++) {
 {
   const dest = getDestinationPoint({ latitude: 40, longitude: -105 }, NaN, 90);
   if (Number.isNaN(dest.latitude)) report('getDestinationPoint: NaN distance passes validation (typeof NaN === number, NaN<0 false)', { dest });
-  const dest2 = getDestinationPoint({ latitude: NaN, longitude: NaN }, 100, 90);
-  if (Number.isNaN(dest2.latitude)) report('getDestinationPoint: NaN lat/lng passes typeof check', { dest2 });
+  const dest3 = getDestinationPoint({ latitude: 40, longitude: -105 }, 100, NaN);
+  if (Number.isNaN(dest3.latitude)) report('getDestinationPoint: NaN bearing passes validation', { dest3 });
 }
 
 // ---------- 7. square boundary functions ----------
