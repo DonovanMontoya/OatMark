@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Share, Text, TouchableOpacity, View,} from "react-native";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./components/FreeMapView";
@@ -16,6 +16,8 @@ import AdminScreen from "./components/AdminScreen";
 import AdjustPinModal from "./components/AdjustPinModal";
 import ManageShopModal from "./components/ManageShopModal";
 import ShopCard from "./components/ShopCard";
+import ShopFilterBar from "./components/ShopFilterBar";
+import {filterShops, getTopBrands} from "./utils/shopFilters";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
@@ -283,6 +285,26 @@ export default function HomeScreen() {
   const [favorites, setFavorites] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
+  const [brandFilter, setBrandFilter] = useState(null);
+  const [priceFilter, setPriceFilter] = useState(null);
+
+  // Brand chips derived from the loaded shops (no extra Firestore reads,
+  // stays in sync with real-time updates, works offline from cache)
+  const topBrands = useMemo(() => getTopBrands(shops), [shops]);
+
+  // Shops shown on the map and in the list after applying active filters
+  const visibleShops = useMemo(
+    () => filterShops(shops, { brand: brandFilter, priceId: priceFilter }),
+    [shops, brandFilter, priceFilter],
+  );
+  const hasActiveFilters = brandFilter !== null || priceFilter !== null;
+
+  // If the selected shop gets filtered out, close its overlay
+  useEffect(() => {
+    if (selectedShop && !visibleShops.some((shop) => shop.id === selectedShop.id)) {
+      setSelectedShop(null);
+    }
+  }, [visibleShops, selectedShop]);
 
   // Animation values
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -848,7 +870,7 @@ export default function HomeScreen() {
               }}
               onPress={(e) => {
                 const tapped = e.nativeEvent.coordinate;
-                const nearby = shops.find((shop) => {
+                const nearby = visibleShops.find((shop) => {
                   const distance = getDistanceMeters(tapped, shop.location);
                   return distance < 100;
                 });
@@ -856,7 +878,7 @@ export default function HomeScreen() {
               }}
               showsUserLocation
               isDark={isDark}
-              markers={shops.map((shop) => ({
+              markers={visibleShops.map((shop) => ({
                 key: shop.id,
                 coordinate: {
                   latitude: shop.location.latitude,
@@ -883,14 +905,14 @@ export default function HomeScreen() {
               }}
               onPress={(e) => {
                 const tapped = e.nativeEvent.coordinate;
-                const nearby = shops.find((shop) => {
+                const nearby = visibleShops.find((shop) => {
                   const distance = getDistanceMeters(tapped, shop.location);
                   return distance < 100;
                 });
                 setSelectedShop(nearby || null);
               }}
             >
-              {shops.map((shop) => (
+              {visibleShops.map((shop) => (
                 <Marker
                   key={shop.id}
                   coordinate={{
@@ -958,11 +980,40 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {shops.length > 0 && (
+        <ShopFilterBar
+          brands={topBrands}
+          selectedBrand={brandFilter}
+          onSelectBrand={setBrandFilter}
+          selectedPriceId={priceFilter}
+          onSelectPrice={setPriceFilter}
+        />
+      )}
+
       <FlatList
-        data={shops}
+        data={visibleShops}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.flatListContainer}
+        ListEmptyComponent={
+          hasActiveFilters ? (
+            <View style={styles.filterEmptyState}>
+              <Text style={styles.filterEmptyText}>
+                No shops match your filters
+              </Text>
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={() => {
+                  setBrandFilter(null);
+                  setPriceFilter(null);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.filterClearButtonText}>Clear filters</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
           <ShopCard
             item={item}
