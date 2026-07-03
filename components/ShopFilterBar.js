@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity} from 'react-native';
 import {useTheme} from '../contexts/ThemeContext';
 import {fonts, radius, space} from '../styles/tokens';
-import {PRICE_FILTERS} from '../utils/shopFilters';
+import {PRICE_FILTERS, ensureBrandIncluded, isSameBrand} from '../utils/shopFilters';
 
 /**
  * Horizontal chip row for filtering shops by upcharge and oat milk brand.
@@ -19,7 +19,14 @@ const ShopFilterBar = ({
     const {colors} = useTheme();
     const styles = useMemo(() => getStyles(colors), [colors]);
 
-    if ((!brands || brands.length === 0) && PRICE_FILTERS.length === 0) {
+    // Keep the active brand renderable even if it drops out of the
+    // top-brands list, so the filter always has a visible, clearable chip
+    const chipBrands = useMemo(
+        () => ensureBrandIncluded(brands, selectedBrand),
+        [brands, selectedBrand],
+    );
+
+    if (chipBrands.length === 0 && PRICE_FILTERS.length === 0) {
         return null;
     }
 
@@ -54,12 +61,12 @@ const ShopFilterBar = ({
                     () => onSelectPrice(selectedPriceId === filter.id ? null : filter.id)
                 )
             )}
-            {(brands || []).map((brand) =>
+            {chipBrands.map((brand) =>
                 renderChip(
                     `brand-${brand}`,
                     brand,
-                    selectedBrand === brand,
-                    () => onSelectBrand(selectedBrand === brand ? null : brand)
+                    isSameBrand(selectedBrand, brand),
+                    () => onSelectBrand(isSameBrand(selectedBrand, brand) ? null : brand)
                 )
             )}
         </ScrollView>
