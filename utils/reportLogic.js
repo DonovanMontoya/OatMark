@@ -117,33 +117,59 @@ export const describeDataStatus = (shop, now = Date.now()) => {
  * Computes the materialized counter updates a report applies to its shop
  * document. Timestamps are returned as epoch millis; the service layer
  * converts them to Dates for Firestore.
+ *
+ * Because a user's report doc is keyed by uid, submitting again OVERWRITES
+ * their previous report — so `previousType` is used to reconcile the old
+ * contribution out of the counters first. Counters therefore track live
+ * reports (one per user), not submission events: a lone user re-disputing
+ * can never push disputeCount to the disputed threshold by themselves.
+ *
+ * Must be called with fresh shop data (the service runs it inside a
+ * Firestore transaction) so concurrent reports can't clobber each other.
+ *
  * @param {Object} shop - Current shop document data
- * @param {Object} report - {type: 'confirm'|'dispute', onSite: boolean, now?: number}
+ * @param {Object} report - {type, onSite, now?, previousType?} where
+ *   previousType is the user's overwritten report type, if any
  * @returns {Object} Field updates for the shop document
  */
-export const computeShopUpdateForReport = (shop, {type, onSite = false, now = Date.now()}) => {
+export const computeShopUpdateForReport = (
+    shop,
+    {type, onSite = false, now = Date.now(), previousType = null}
+) => {
     const confirmCount = (shop && shop.confirmCount) || 0;
     const disputeCount = (shop && shop.disputeCount) || 0;
+    const hadOnSiteDispute = Boolean(shop && shop.lastDisputeOnSite);
 
     if (type === 'confirm') {
-        const update = {
+        // Replacing our own dispute removes it; an on-site confirmation
+        // clears all disputes — being at the counter outweighs remote reports
+        let newDisputeCount = previousType === 'dispute'
+            ? Math.max(0, disputeCount - 1)
+            : disputeCount;
+        if (onSite) newDisputeCount = 0;
+
+        return {
             lastConfirmedAt: now,
-            confirmCount: confirmCount + 1,
+            // Replacing our own confirmation refreshes the clock without
+            // inflating the count
+            confirmCount: confirmCount + (previousType === 'confirm' ? 0 : 1),
+            disputeCount: newDisputeCount,
+            lastDisputeOnSite: newDisputeCount === 0 ? false : hadOnSiteDispute,
+            ...(onSite ? {lastOnSiteConfirmedAt: now} : {}),
         };
-        if (onSite) {
-            // Being at the counter outweighs remote disputes
-            update.lastOnSiteConfirmedAt = now;
-            update.disputeCount = 0;
-            update.lastDisputeOnSite = false;
-        }
-        return update;
     }
 
     if (type === 'dispute') {
+        const newDisputeCount = disputeCount + (previousType === 'dispute' ? 0 : 1);
         return {
-            disputeCount: disputeCount + 1,
+            disputeCount: newDisputeCount,
             lastDisputedAt: now,
-            lastDisputeOnSite: Boolean(onSite || (shop && shop.lastDisputeOnSite)),
+            // The sticky on-site flag only survives if disputes other than
+            // this user's replaced one could have set it
+            lastDisputeOnSite: onSite || (newDisputeCount > 1 && hadOnSiteDispute),
+            ...(previousType === 'confirm'
+                ? {confirmCount: Math.max(0, confirmCount - 1)}
+                : {}),
         };
     }
 

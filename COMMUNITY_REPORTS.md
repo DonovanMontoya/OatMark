@@ -27,15 +27,24 @@ coffee_shops/{shopId}/reports/{userId}
 
 One report doc per user per shop (doc id = uid): re-reporting overwrites,
 which bounds volume and makes the rate limit enforceable in rules. Repeat
-reports of the same type within 24 h are ignored client-side.
+reports of the same type within 24 h are ignored.
+
+Every submission runs in a **Firestore transaction**: the shop counters and
+the user's previous report are read fresh, so concurrent reports can't lose
+updates, and overwriting your own report reconciles the old contribution
+out of the counters. Counters therefore track **live reports (one per
+user)**, not submission events — a lone user re-disputing can never reach
+the disputed threshold alone.
 
 ## Consensus rules (utils/reportLogic.js, unit-tested)
 
 | Event | Effect |
 |---|---|
-| Confirm | `lastConfirmedAt = now`, `confirmCount + 1` |
+| Confirm | `lastConfirmedAt = now`, `confirmCount + 1` (unchanged if it replaces your own confirmation) |
 | Confirm **on site** | also clears disputes — being at the counter outweighs remote reports |
-| Dispute | `disputeCount + 1`; suggestions stored on the report for admin review |
+| Confirm replacing your own dispute | your dispute is removed from the count |
+| Dispute | `disputeCount + 1` (unchanged if it replaces your own dispute); suggestions stored on the report for admin review |
+| Dispute replacing your own confirmation | your confirmation is removed from the count |
 
 Derived status, shown on cards and the shop detail view:
 
@@ -86,7 +95,9 @@ match /coffee_shops/{shopId} {
 - Consensus is computed client-side and trusted; rules limit blast radius
   but a hostile client can still inflate counters. Server-side aggregation
   (Cloud Function on report write) is the upgrade path.
-- `confirmCount` counts confirmations, not unique confirmers — a user
-  re-confirming after the cooldown increments it again.
+- `lastDisputeOnSite` is a single sticky flag, not per-report: if several
+  users dispute and the on-site one later changes their report, the flag
+  can linger until disputes clear. Exact tracking would require scanning
+  the reports subcollection.
 - Disputed shops are flagged visually but there is no dedicated admin
   "disputed queue" yet; the reports subcollection holds the suggestions.
