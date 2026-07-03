@@ -46,6 +46,15 @@ const normalizeBrand = (brand) =>
     typeof brand === 'string' ? brand.trim().toLowerCase() : '';
 
 /**
+ * Whether two brand names refer to the same brand (case/whitespace
+ * insensitive). Both must be non-empty to match.
+ */
+export const isSameBrand = (a, b) => {
+    const na = normalizeBrand(a);
+    return na !== '' && na === normalizeBrand(b);
+};
+
+/**
  * Filters shops by brand and/or price.
  * Shops whose upcharge can't be parsed are excluded when a price filter is
  * active — an unverifiable "maybe free" result would defeat the filter.
@@ -74,6 +83,25 @@ export const filterShops = (shops, {brand = null, priceId = null} = {}) => {
         }
         return true;
     });
+};
+
+/**
+ * Ensures the selected brand always has a chip to represent it, even when
+ * a real-time shop update pushes it out of the top-brands list. Without
+ * this, the list/map stay filtered by a brand with no visible, clearable
+ * chip.
+ * @param {Array<string>} brands - Brand names for the chip row
+ * @param {string|null} selectedBrand - Currently active brand filter
+ * @returns {Array<string>} Brands with the selected brand guaranteed present
+ */
+export const ensureBrandIncluded = (brands, selectedBrand) => {
+    const list = Array.isArray(brands) ? brands : [];
+    if (!selectedBrand) return list;
+
+    const wanted = normalizeBrand(selectedBrand);
+    return list.some((brand) => normalizeBrand(brand) === wanted)
+        ? list
+        : [selectedBrand, ...list];
 };
 
 /**
