@@ -77,9 +77,10 @@ service cloud.firestore {
 
 ## 4. Optional decisions
 
-- [ ] Old shops will show the ⏳ stale badge immediately (nothing has ever
-      confirmed them). If that's too aggressive for launch, widen
-      `FRESHNESS_WINDOW_DAYS` in `utils/reportLogic.js` (currently 90).
+- [ ] Badges are positive-only (✓ / ⚠, never a stale badge) since the
+      community is small. When confirmations actually flow, consider
+      restoring a stale badge in `ShopCard.getFreshnessBadge` and/or
+      tuning `FRESHNESS_WINDOW_DAYS` in `utils/reportLogic.js` (90).
 - [ ] No data migration or backfill is needed — counter fields appear
       lazily as reports come in. Nothing to run.
 - [ ] When submissions grow: consider a Cloud Function to compute the

@@ -50,8 +50,19 @@ Derived status, shown on cards and the shop detail view:
 
 - **disputed** — 2+ disputes, or a single on-site dispute
 - **fresh** — confirmed (or created) within the last 90 days
-- **stale** — no confirmation in 90+ days; the UI asks "still accurate?"
+- **stale** — no confirmation in 90+ days; the detail view invites
+  re-confirmation ("been here recently?")
 - **unverified** — no usable timestamps at all
+
+Display is **positive-only while the community is small**: cards show ✓
+(confirmed) and ⚠ (disputed) badges but never a stale badge — with few
+users almost nothing gets confirmed, and a map full of stale marks reads
+as "abandoned app" rather than honest freshness. Revisit once
+confirmations flow (restore a stale badge in `ShopCard.getFreshnessBadge`).
+
+Admin approval also stamps `lastConfirmedAt`: approval is a human
+verification, so every shop enters the map already carrying a genuine
+freshness signal — no manual founder confirmation pass needed.
 
 Disputes never edit the listing directly — they flag the shop and carry the
 suggested correction; admins fix the listing with the existing Manage flow.

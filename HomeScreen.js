@@ -1363,9 +1363,9 @@ export default function HomeScreen() {
                     ? colors.success
                     : status === "disputed"
                       ? colors.danger
-                      : status === "stale"
-                        ? colors.warning
-                        : colors.tertiaryText;
+                      // Stale/unverified read as neutral invitations, not
+                      // warnings — expected state while the community is small
+                      : colors.tertiaryText;
                 return (
                   <View style={styles.communityRow}>
                     <Text style={[styles.communityStatusText, { color: statusColor }]}>

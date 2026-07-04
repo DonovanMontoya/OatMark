@@ -8,6 +8,12 @@ import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Compact freshness badge content for a shop card.
+ *
+ * Positive-only: cards show ✓ when confirmed and ⚠ when disputed, and
+ * nothing otherwise. With a small user base almost nothing gets confirmed,
+ * so a stale badge would wallpaper the map with "abandoned" signals the
+ * data can't earn its way out of. The detail view still nudges for
+ * re-confirmation of stale shops.
  * @returns {{text: string, colorKey: string}|null} null when there's nothing useful to show
  */
 const getFreshnessBadge = (shop) => {
@@ -17,10 +23,6 @@ const getFreshnessBadge = (shop) => {
   }
   if (status === 'fresh' && shop.lastConfirmedAt) {
     return { text: `✓ ${formatTimeAgo(shop.lastConfirmedAt)}`, colorKey: 'success' };
-  }
-  if (status === 'stale') {
-    const ago = formatTimeAgo(shop.lastConfirmedAt || shop.createdAt);
-    return ago ? { text: `⏳ ${ago}`, colorKey: 'tertiaryText' } : null;
   }
   return null;
 };

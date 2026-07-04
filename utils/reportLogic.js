@@ -105,12 +105,14 @@ export const describeDataStatus = (shop, now = Date.now()) => {
             : {status, label: `Added ${ago} — not yet confirmed`};
     }
     if (status === 'stale') {
+        // Phrased as an invitation to re-confirm, not a warning — staleness
+        // is expected while the community is small
         const ago = formatTimeAgo(toMillis(shop.lastConfirmedAt) ?? toMillis(shop.createdAt), now);
         return shop.lastConfirmedAt
-            ? {status, label: `⏳ Last confirmed ${ago} — still accurate?`}
-            : {status, label: `⏳ Added ${ago} — never confirmed`};
+            ? {status, label: `Last confirmed ${ago} — been here recently?`}
+            : {status, label: `Added ${ago} — been here recently?`};
     }
-    return {status, label: 'Not yet confirmed by the community'};
+    return {status, label: 'Been here? Help confirm this info'};
 };
 
 /**
