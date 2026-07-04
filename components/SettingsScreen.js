@@ -12,6 +12,16 @@ import {handleError, showDestructiveConfirmation} from "../utils/ErrorUtils";
 
 const SUPPORT_EMAIL = "donovan.montoya1@gmail.com";
 
+// Firebase requires a recent sign-in for sensitive operations like account
+// deletion (roughly a 5-minute window). Checking up front lets us bail out
+// BEFORE any destructive side effects instead of discovering it halfway.
+const RECENT_LOGIN_WINDOW_MS = 5 * 60 * 1000;
+
+const requiresRecentLogin = (user) => {
+    const lastSignIn = Date.parse(user?.metadata?.lastSignInTime ?? "");
+    return !Number.isFinite(lastSignIn) || Date.now() - lastSignIn > RECENT_LOGIN_WINDOW_MS;
+};
+
 const SettingsScreen = ({onClose}) => {
     // Get theme context
     const {themePreference, setThemePreference, colors} = useTheme();
@@ -40,22 +50,34 @@ const SettingsScreen = ({onClose}) => {
     };
 
     const handleDeleteAccount = () => {
+        const user = auth.currentUser;
+        if (!user || isDeleting) return;
+
+        // Gate on recent reauth BEFORE any destructive step, so the common
+        // stale-session case exits with no side effects
+        if (requiresRecentLogin(user)) {
+            Alert.alert(
+                "Please log in again",
+                "For security, deleting your account requires a recent login. " +
+                "Log out, log back in, then try deleting again.",
+            );
+            return;
+        }
+
         showDestructiveConfirmation(
             "Delete Account",
             "This permanently deletes your account and saved favorites. " +
             "Shops you submitted stay on the map for the community. " +
             "This cannot be undone.",
             async () => {
-                const user = auth.currentUser;
-                if (!user || isDeleting) return;
-
                 setIsDeleting(true);
                 try {
                     // Remove the user's data doc first — after deleteUser the
-                    // request is unauthenticated and rules would deny it
-                    await deleteDoc(doc(db, "users", user.uid)).catch(() => {
-                        // Doc may not exist; account deletion still proceeds
-                    });
+                    // request is unauthenticated and rules would deny it.
+                    // deleteDoc succeeds on a missing doc, so any failure here
+                    // is real (offline, permissions) and aborts the deletion
+                    // with both account and data intact.
+                    await deleteDoc(doc(db, "users", user.uid));
                     await deleteUser(user);
                     // Auth listener flips the app back to the login screen
                 } catch (error) {
@@ -63,7 +85,8 @@ const SettingsScreen = ({onClose}) => {
                         Alert.alert(
                             "Please log in again",
                             "For security, deleting your account requires a recent login. " +
-                            "Log out, log back in, then try deleting again.",
+                            "Log out, log back in, then try deleting again. " +
+                            "You may need to re-save your favorites.",
                         );
                     } else {
                         handleError(error, "Failed to delete your account. Please try again.");
