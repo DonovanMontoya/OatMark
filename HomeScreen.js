@@ -7,7 +7,6 @@ import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import NetInfo from "@react-native-community/netinfo";
 import {auth, db} from "./services/firebase";
 import {arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc} from "firebase/firestore";
-import {getIdTokenResult} from "firebase/auth";
 import HamburgerMenu from "./components/HamburgerMenu";
 import SubmitShopScreen from "./components/SubmitShopScreen";
 import SettingsScreen from "./components/SettingsScreen";
@@ -25,6 +24,9 @@ import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
 import {useTheme} from "./contexts/ThemeContext";
+import {useUnits} from "./contexts/UnitsContext";
+import {useAdminStatus} from "./hooks/useAdminStatus";
+import {formatDistance} from "./utils/distanceFormat";
 import {createHomeScreenStyles} from "./styles/ThemeStyles";
 import {isValidLocation} from "./utils/ValidationUtils";
 import {handleError, handleLocationError, showSuccess} from "./utils/ErrorUtils";
@@ -282,12 +284,14 @@ export default function HomeScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPendingShops, setShowPendingShops] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const {isAdmin} = useAdminStatus();
+  const {unit} = useUnits();
   const [showAdjustPinModal, setShowAdjustPinModal] = useState(false);
   const [showManageShopModal, setShowManageShopModal] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
+  const [shopsLoaded, setShopsLoaded] = useState(false);
   const [brandFilter, setBrandFilter] = useState(null);
   const [priceFilter, setPriceFilter] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -707,6 +711,7 @@ export default function HomeScreen() {
           console.log('Loaded shops from cache for offline access');
           setShops(cachedShops);
           setIsLoadingFromCache(true);
+          setShopsLoaded(true);
         }
       } catch (error) {
         console.error('Error loading cached shops:', error);
@@ -761,6 +766,7 @@ export default function HomeScreen() {
 
         setShops(shopsList);
         setIsLoadingFromCache(false);
+        setShopsLoaded(true);
 
         // Save to cache for offline access
         saveShopsToCache(shopsList).catch((err) =>
@@ -777,27 +783,6 @@ export default function HomeScreen() {
 
     return () => unsubscribe();
   }, [location]);
-
-  // Check if the current user is an admin
-  useEffect(() => {
-    if (!auth.currentUser) {
-      setIsAdmin(false);
-      return;
-    }
-
-    const checkAdminStatus = async () => {
-      try {
-        const tokenResult = await getIdTokenResult(auth.currentUser);
-        const adminStatus = !!tokenResult.claims.admin;
-        setIsAdmin(adminStatus);
-      } catch (error) {
-        console.error("Failed to fetch admin status:", error);
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, []);
 
   // Start admin button pulse when admin status changes
   useEffect(() => {
@@ -1090,6 +1075,20 @@ export default function HomeScreen() {
                 <Text style={styles.filterClearButtonText}>Clear filters</Text>
               </TouchableOpacity>
             </View>
+          ) : shopsLoaded ? (
+            // First-open in an unseeded area: explain instead of a blank list
+            <View style={styles.filterEmptyState}>
+              <Text style={styles.filterEmptyText}>
+                No shops on the map here yet — be the first to add one! ☕
+              </Text>
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={handleSubmitShop}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.filterClearButtonText}>Submit a shop</Text>
+              </TouchableOpacity>
+            </View>
           ) : null
         }
         renderItem={({ item }) => (
@@ -1344,11 +1343,10 @@ export default function HomeScreen() {
                       />
                       <Text style={styles.statLabel}>Distance</Text>
                       <Text style={styles.statValue}>
-                        {(
-                          getDistanceMeters(location, selectedShop.location) /
-                          1000
-                        ).toFixed(1)}
-                        km
+                        {formatDistance(
+                          getDistanceMeters(location, selectedShop.location),
+                          unit,
+                        ) ?? "—"}
                       </Text>
                     </View>
                   </>

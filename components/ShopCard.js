@@ -4,7 +4,9 @@ import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { getFormattedUpcharge, getUpchargeColor } from '../utils/upchargeEmojis';
 import { getDistanceMeters } from '../utils/GeoUtils';
 import { deriveDataStatus, formatTimeAgo } from '../utils/reportLogic';
+import { formatDistance } from '../utils/distanceFormat';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUnits } from '../contexts/UnitsContext';
 
 /**
  * Compact freshness badge content for a shop card.
@@ -35,10 +37,14 @@ const ShopCard = ({
   styles
 }) => {
   const { colors } = useTheme();
+  const { unit } = useUnits();
   // Create animated value with useRef to prevent recreation on each render
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const freshness = getFreshnessBadge(item);
+  const distanceText = location
+    ? formatDistance(getDistanceMeters(location, item.location), unit)
+    : null;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -110,11 +116,7 @@ const ShopCard = ({
                   iconStyle="solid"
                 />
                 <Text style={styles.distanceText}>
-                  {location
-                    ? `${(
-                        getDistanceMeters(location, item.location) / 1000
-                      ).toFixed(1)}km away`
-                    : "Location unavailable"}
+                  {distanceText ? `${distanceText} away` : "Location unavailable"}
                 </Text>
                 {freshness && (
                   <Text style={[styles.freshnessBadge, { color: colors[freshness.colorKey] }]}>

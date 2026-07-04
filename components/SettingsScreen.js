@@ -1,20 +1,23 @@
 import React, {useState} from "react";
-import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
+import {Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {signOut} from "firebase/auth";
-import {auth} from "../services/firebase";
+import {deleteUser, signOut} from "firebase/auth";
+import {deleteDoc, doc} from "firebase/firestore";
+import {auth, db} from "../services/firebase";
 import Constants from "expo-constants";
 import {useTheme} from "../contexts/ThemeContext";
+import {useUnits} from "../contexts/UnitsContext";
 import {fonts, radius, space} from "../styles/tokens";
+import {handleError, showDestructiveConfirmation} from "../utils/ErrorUtils";
+
+const SUPPORT_EMAIL = "donovan.montoya1@gmail.com";
 
 const SettingsScreen = ({onClose}) => {
     // Get theme context
     const {themePreference, setThemePreference, colors} = useTheme();
+    const {unit, setUnit} = useUnits();
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    // noinspection JSUnusedLocalSymbols
-    const [notifications, setNotifications] = useState(true);
-    // noinspection JSUnusedLocalSymbols
-    const [locationSharing, setLocationSharing] = useState(true);
     const handleThemePreferenceChange = (preference) => {
         setThemePreference(preference);
     };
@@ -28,13 +31,57 @@ const SettingsScreen = ({onClose}) => {
                 onPress: async () => {
                     try {
                         await signOut(auth);
-                        console.log("Logged out!");
                     } catch (err) {
                         console.error("Logout error", err);
                     }
                 },
             },
         ]);
+    };
+
+    const handleDeleteAccount = () => {
+        showDestructiveConfirmation(
+            "Delete Account",
+            "This permanently deletes your account and saved favorites. " +
+            "Shops you submitted stay on the map for the community. " +
+            "This cannot be undone.",
+            async () => {
+                const user = auth.currentUser;
+                if (!user || isDeleting) return;
+
+                setIsDeleting(true);
+                try {
+                    // Remove the user's data doc first — after deleteUser the
+                    // request is unauthenticated and rules would deny it
+                    await deleteDoc(doc(db, "users", user.uid)).catch(() => {
+                        // Doc may not exist; account deletion still proceeds
+                    });
+                    await deleteUser(user);
+                    // Auth listener flips the app back to the login screen
+                } catch (error) {
+                    if (error?.code === "auth/requires-recent-login") {
+                        Alert.alert(
+                            "Please log in again",
+                            "For security, deleting your account requires a recent login. " +
+                            "Log out, log back in, then try deleting again.",
+                        );
+                    } else {
+                        handleError(error, "Failed to delete your account. Please try again.");
+                    }
+                } finally {
+                    setIsDeleting(false);
+                }
+            },
+            null,
+            "Delete",
+        );
+    };
+
+    const handleHelp = () => {
+        const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("OatMark Support")}`;
+        Linking.openURL(url).catch(() => {
+            Alert.alert("Help & Support", `Email us at ${SUPPORT_EMAIL}`);
+        });
     };
 
     const handleAbout = () => {
@@ -49,13 +96,26 @@ const SettingsScreen = ({onClose}) => {
     const handlePrivacy = () => {
         Alert.alert(
             "Privacy Policy",
-            "Your location data is used only to show nearby coffee shops and is not stored permanently.",
+            "Your live location is used to show nearby shops and is not tracked in the background. " +
+            "When you submit a shop or confirm its info, your account id and the shop's location " +
+            "are stored with that contribution. You can delete your account at any time from this screen.",
             [{text: "OK"}],
         );
     };
 
     // Generate styles based on the current theme
     const styles = getStyles(colors);
+
+    const themeOptions = [
+        {key: "light", label: "Light", icon: "sun"},
+        {key: "dark", label: "Dark", icon: "moon"},
+        {key: "auto", label: "Auto", icon: "circle-half-stroke"},
+    ];
+
+    const unitOptions = [
+        {key: "km", label: "Kilometers"},
+        {key: "mi", label: "Miles"},
+    ];
 
     return (
         <View style={styles.container}>
@@ -70,42 +130,6 @@ const SettingsScreen = ({onClose}) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Preferences</Text>
 
-                    {/*<View style={styles.settingItem}>*/}
-                    {/*  <View style={styles.settingLeft}>*/}
-                    {/*    <FontAwesome6*/}
-                    {/*      name="bell"*/}
-                    {/*      size={18}*/}
-                    {/*      color="#333"*/}
-                    {/*      iconStyle="solid"*/}
-                    {/*    />*/}
-                    {/*    <Text style={styles.settingText}>Notifications</Text>*/}
-                    {/*  </View>*/}
-                    {/*  <Switch*/}
-                    {/*    value={notifications}*/}
-                    {/*    onValueChange={setNotifications}*/}
-                    {/*    trackColor={{ false: "#767577", true: "#4285F4" }}*/}
-                    {/*    thumbColor="#fff"*/}
-                    {/*  />*/}
-                    {/*</View>*/}
-
-                    {/*<View style={styles.settingItem}>*/}
-                    {/*  <View style={styles.settingLeft}>*/}
-                    {/*    <FontAwesome6*/}
-                    {/*      name="location-dot"*/}
-                    {/*      size={18}*/}
-                    {/*      color="#333"*/}
-                    {/*      iconStyle="solid"*/}
-                    {/*    />*/}
-                    {/*    <Text style={styles.settingText}>Location Sharing</Text>*/}
-                    {/*  </View>*/}
-                    {/*  <Switch*/}
-                    {/*    value={locationSharing}*/}
-                    {/*    onValueChange={setLocationSharing}*/}
-                    {/*    trackColor={{ false: "#767577", true: "#4285F4" }}*/}
-                    {/*    thumbColor="#fff"*/}
-                    {/*  />*/}
-                    {/*</View>*/}
-
                     <View style={styles.settingItem}>
                         <View style={styles.settingLeft}>
                             <FontAwesome6
@@ -119,86 +143,76 @@ const SettingsScreen = ({onClose}) => {
                     </View>
 
                     <View style={styles.themeOptionsRow}>
-                        <TouchableOpacity
-                            style={[
-                                styles.themeOption,
-                                themePreference === "light" && styles.themeOptionSelected,
-                            ]}
-                            onPress={() => handleThemePreferenceChange("light")}
-                        >
-                            <FontAwesome6
-                                name="sun"
-                                size={16}
-                                color={themePreference === "light" ? colors.primary : colors.icon}
-                                iconStyle="solid"
-                            />
-                            <Text
+                        {themeOptions.map(({key, label, icon}) => (
+                            <TouchableOpacity
+                                key={key}
                                 style={[
-                                    styles.themeOptionText,
-                                    {color: themePreference === "light" ? colors.primary : colors.text},
+                                    styles.themeOption,
+                                    themePreference === key && styles.themeOptionSelected,
                                 ]}
+                                onPress={() => handleThemePreferenceChange(key)}
                             >
-                                Light
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.themeOption,
-                                themePreference === "dark" && styles.themeOptionSelected,
-                            ]}
-                            onPress={() => handleThemePreferenceChange("dark")}
-                        >
-                            <FontAwesome6
-                                name="moon"
-                                size={16}
-                                color={themePreference === "dark" ? colors.primary : colors.icon}
-                                iconStyle="solid"
-                            />
-                            <Text
-                                style={[
-                                    styles.themeOptionText,
-                                    {color: themePreference === "dark" ? colors.primary : colors.text},
-                                ]}
-                            >
-                                Dark
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.themeOption,
-                                themePreference === "auto" && styles.themeOptionSelected,
-                            ]}
-                            onPress={() => handleThemePreferenceChange("auto")}
-                        >
-                            <FontAwesome6
-                                name="circle-half-stroke"
-                                size={16}
-                                color={themePreference === "auto" ? colors.primary : colors.icon}
-                                iconStyle="solid"
-                            />
-                            <Text
-                                style={[
-                                    styles.themeOptionText,
-                                    {color: themePreference === "auto" ? colors.primary : colors.text},
-                                ]}
-                            >
-                                Auto
-                            </Text>
-                        </TouchableOpacity>
+                                <FontAwesome6
+                                    name={icon}
+                                    size={16}
+                                    color={themePreference === key ? colors.primary : colors.icon}
+                                    iconStyle="solid"
+                                />
+                                <Text
+                                    style={[
+                                        styles.themeOptionText,
+                                        {color: themePreference === key ? colors.primary : colors.text},
+                                    ]}
+                                >
+                                    {label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
                     <Text style={styles.themeHelperText}>
                         Auto follows your device appearance and switches between light and dark
                         automatically.
                     </Text>
+
+                    <View style={styles.settingItem}>
+                        <View style={styles.settingLeft}>
+                            <FontAwesome6
+                                name="ruler"
+                                size={18}
+                                color={colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text style={styles.settingText}>Distance units</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.themeOptionsRow}>
+                        {unitOptions.map(({key, label}) => (
+                            <TouchableOpacity
+                                key={key}
+                                style={[
+                                    styles.themeOption,
+                                    unit === key && styles.themeOptionSelected,
+                                ]}
+                                onPress={() => setUnit(key)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.themeOptionText,
+                                        {color: unit === key ? colors.primary : colors.text},
+                                    ]}
+                                >
+                                    {label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
 
-                    <TouchableOpacity style={styles.settingItem} onPress={() => {
-                    }}>
+                    <View style={styles.settingItem}>
                         <View style={styles.settingLeft}>
                             <FontAwesome6
                                 name="user"
@@ -206,42 +220,47 @@ const SettingsScreen = ({onClose}) => {
                                 color={colors.icon}
                                 iconStyle="solid"
                             />
-                            <Text style={styles.settingText}>Profile</Text>
+                            <Text style={styles.settingText} numberOfLines={1}>
+                                {auth.currentUser?.email || "Signed in"}
+                            </Text>
                         </View>
-                        <FontAwesome6
-                            name="chevron-right"
-                            size={16}
-                            color={colors.tertiaryText}
-                            iconStyle="solid"
-                        />
-                    </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
                         <View style={styles.settingLeft}>
                             <FontAwesome6
                                 name="right-from-bracket"
                                 size={18}
+                                color={colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text style={styles.settingText}>Logout</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.settingItem}
+                        onPress={handleDeleteAccount}
+                        disabled={isDeleting}
+                    >
+                        <View style={styles.settingLeft}>
+                            <FontAwesome6
+                                name="trash-can"
+                                size={18}
                                 color={colors.danger}
                                 iconStyle="solid"
                             />
                             <Text style={[styles.settingText, {color: colors.danger}]}>
-                                Logout
+                                {isDeleting ? "Deleting Account…" : "Delete Account"}
                             </Text>
                         </View>
-                        <FontAwesome6
-                            name="chevron-right"
-                            size={16}
-                            color={colors.tertiaryText}
-                            iconStyle="solid"
-                        />
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Support</Text>
 
-                    <TouchableOpacity style={styles.settingItem} onPress={() => {
-                    }}>
+                    <TouchableOpacity style={styles.settingItem} onPress={handleHelp}>
                         <View style={styles.settingLeft}>
                             <FontAwesome6
                                 name="circle-question"
@@ -314,7 +333,7 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: space.lg,
-        paddingTop: 50,
+        paddingTop: Constants.statusBarHeight + space.sm,
         paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
@@ -404,6 +423,7 @@ const getStyles = (colors) => StyleSheet.create({
         color: colors.secondaryText,
         marginTop: space.sm,
         lineHeight: 18,
+        marginBottom: space.sm,
     },
 });
 

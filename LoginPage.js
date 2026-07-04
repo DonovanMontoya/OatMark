@@ -1,17 +1,32 @@
 import React, {useState} from 'react';
-import {Image, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Text,
+    TextInput,
+    TouchableOpacity,
+} from 'react-native';
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import {auth} from './services/firebase';
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword,} from 'firebase/auth';
+import {
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+} from 'firebase/auth';
 import {useTheme} from './contexts/ThemeContext';
 import {createLoginPageStyles} from './styles/ThemeStyles';
 import {isValidEmail, validatePassword} from './utils/ValidationUtils';
-import {handleAuthError} from './utils/ErrorUtils';
+import {getFirebaseErrorMessage} from './utils/ErrorUtils';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [isSigningUp, setIsSigningUp] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState('');
 
     // Get theme context
@@ -20,20 +35,21 @@ export default function LoginPage() {
     // Create theme-aware styles
     const styles = createLoginPageStyles(colors);
 
-    const handleSignUp = async () => {
-        // Clear any previous errors
-        setError('');
-
-        // Validate inputs
+    const validateEmailInput = () => {
         if (!email.trim()) {
             setError('Please enter your email address.');
-            return;
+            return false;
         }
-
         if (!isValidEmail(email)) {
             setError('Please enter a valid email address.');
-            return;
+            return false;
         }
+        return true;
+    };
+
+    const handleSignUp = async () => {
+        setError('');
+        if (!validateEmailInput()) return;
 
         if (!password.trim()) {
             setError('Please enter a password.');
@@ -50,26 +66,16 @@ export default function LoginPage() {
         try {
             await createUserWithEmailAndPassword(auth, email.trim(), password);
         } catch (err) {
-            handleAuthError(err, 'signup');
+            console.error('Signup error:', err);
+            setError(getFirebaseErrorMessage(err?.code));
         } finally {
             setIsSigningUp(false);
         }
     };
 
     const handleLogin = async () => {
-        // Clear any previous errors
         setError('');
-
-        // Validate inputs
-        if (!email.trim()) {
-            setError('Please enter your email address.');
-            return;
-        }
-
-        if (!isValidEmail(email)) {
-            setError('Please enter a valid email address.');
-            return;
-        }
+        if (!validateEmailInput()) return;
 
         if (!password.trim()) {
             setError('Please enter your password.');
@@ -80,16 +86,39 @@ export default function LoginPage() {
         try {
             await signInWithEmailAndPassword(auth, email.trim(), password);
         } catch (err) {
-            handleAuthError(err, 'login');
+            console.error('Login error:', err);
+            setError(getFirebaseErrorMessage(err?.code));
         } finally {
             setIsLoggingIn(false);
         }
     };
 
-    const isAnyLoading = isLoggingIn || isSigningUp;
+    const handleForgotPassword = async () => {
+        setError('');
+        if (!validateEmailInput()) return;
+
+        setIsResetting(true);
+        try {
+            await sendPasswordResetEmail(auth, email.trim());
+            Alert.alert(
+                'Check your email',
+                `A password reset link was sent to ${email.trim()}.`,
+            );
+        } catch (err) {
+            console.error('Password reset error:', err);
+            setError(getFirebaseErrorMessage(err?.code));
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
+    const isAnyLoading = isLoggingIn || isSigningUp || isResetting;
 
     return (
-        <View style={styles.authContainer}>
+        <KeyboardAvoidingView
+            style={styles.authContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <Image source={require('./assets/icon.png')} style={styles.authLogo}/>
             <Text style={styles.authTitle}>Welcome to OatMark</Text>
             <Text style={styles.authSubtitle}>Please sign in to use OatMark</Text>
@@ -100,6 +129,7 @@ export default function LoginPage() {
                 placeholderTextColor={colors.tertiaryText}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                autoComplete="email"
                 value={email}
                 onChangeText={(text) => {
                     setEmail(text);
@@ -107,18 +137,34 @@ export default function LoginPage() {
                 }}
                 editable={!isAnyLoading}
             />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={colors.tertiaryText}
-                secureTextEntry
-                value={password}
-                onChangeText={(text) => {
-                    setPassword(text);
-                    setError('');
-                }}
-                editable={!isAnyLoading}
-            />
+            <TouchableOpacity activeOpacity={1} style={styles.passwordRow}>
+                <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Password"
+                    placeholderTextColor={colors.tertiaryText}
+                    secureTextEntry={!showPassword}
+                    autoComplete="password"
+                    value={password}
+                    onChangeText={(text) => {
+                        setPassword(text);
+                        setError('');
+                    }}
+                    editable={!isAnyLoading}
+                />
+                <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                >
+                    <FontAwesome6
+                        name={showPassword ? 'eye-slash' : 'eye'}
+                        size={16}
+                        color={colors.tertiaryText}
+                        iconStyle="solid"
+                    />
+                </TouchableOpacity>
+            </TouchableOpacity>
 
             {error ? (
                 <Text style={styles.errorText}>{error}</Text>
@@ -143,6 +189,16 @@ export default function LoginPage() {
                     {isSigningUp ? 'Creating Account...' : 'Sign Up'}
                 </Text>
             </TouchableOpacity>
-        </View>
+
+            <TouchableOpacity
+                style={styles.forgotLink}
+                onPress={handleForgotPassword}
+                disabled={isAnyLoading}
+            >
+                <Text style={styles.forgotLinkText}>
+                    {isResetting ? 'Sending reset email…' : 'Forgot password?'}
+                </Text>
+            </TouchableOpacity>
+        </KeyboardAvoidingView>
     );
 }
