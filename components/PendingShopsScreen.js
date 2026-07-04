@@ -8,6 +8,7 @@ import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {useTheme} from "../contexts/ThemeContext";
 import {fonts, makeShadow, radius, space} from "../styles/tokens";
+import Constants from "expo-constants";
 
 const PendingShopsScreen = ({onClose}) => {
     const {isDark, colors} = useTheme();
@@ -312,7 +313,7 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: space.lg,
-        paddingTop: 50,
+        paddingTop: Constants.statusBarHeight + space.sm,
         paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,

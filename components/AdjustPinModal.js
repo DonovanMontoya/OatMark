@@ -7,6 +7,7 @@ import MapView from "react-native-maps";
 import FreeMapView from "./FreeMapView";
 import {useTheme} from "../contexts/ThemeContext";
 import {fonts, radius, space} from "../styles/tokens";
+import Constants from "expo-constants";
 
 const AdjustPinModal = ({
                             shop,
@@ -195,7 +196,7 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 20,
-        paddingTop: 50,
+        paddingTop: Constants.statusBarHeight + space.sm,
         paddingBottom: 20,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,

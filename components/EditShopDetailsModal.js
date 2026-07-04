@@ -7,6 +7,7 @@ import EmojiSelector from "./EmojiSelector";
 import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji} from "../utils/ValidationUtils";
 import {useTheme} from "../contexts/ThemeContext";
 import {fonts, makeShadow, radius, space} from "../styles/tokens";
+import Constants from "expo-constants";
 
 const EditShopDetailsModal = ({
     shop,
@@ -292,7 +293,7 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: space.lg,
-        paddingTop: 50,
+        paddingTop: Constants.statusBarHeight + space.sm,
         paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,

@@ -5,6 +5,7 @@ import {onAuthStateChanged} from 'firebase/auth';
 import LoginPage from './LoginPage';
 import HomeScreen from './HomeScreen';
 import {ThemeProvider, useTheme} from './contexts/ThemeContext';
+import {UnitsProvider} from './contexts/UnitsContext';
 import {createThemeStyles} from './styles/ThemeStyles';
 import {fontAssets, fonts} from './styles/tokens';
 import {useFonts} from 'expo-font';
@@ -58,7 +59,9 @@ const AppContent = () => {
 export default function App() {
     return (
         <ThemeProvider>
-            <AppContent/>
+            <UnitsProvider>
+                <AppContent/>
+            </UnitsProvider>
         </ThemeProvider>
     );
 }

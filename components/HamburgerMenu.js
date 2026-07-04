@@ -1,15 +1,16 @@
-import React, {useEffect, useState} from 'react';
-import {Modal, Text, TouchableOpacity, View} from 'react-native';
+import React, {useState} from 'react';
+import {Alert, Modal, Text, TouchableOpacity, View} from 'react-native';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
-import {getIdTokenResult, signOut} from 'firebase/auth';
+import {signOut} from 'firebase/auth';
 import {auth} from '../services/firebase';
 import {useTheme} from '../contexts/ThemeContext';
+import {useAdminStatus} from '../hooks/useAdminStatus';
 import {createHamburgerMenuStyles} from '../styles/ThemeStyles';
 
 
 const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel}) => {
     const [isMenuVisible, setIsMenuVisible] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const {isAdmin} = useAdminStatus();
 
     // Get theme context
     const {colors} = useTheme();
@@ -17,28 +18,24 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
     // Create theme-aware styles
     const styles = createHamburgerMenuStyles(colors);
 
-    useEffect(() => {
-        const checkAdmin = async () => {
-            if (auth.currentUser) {
-                try {
-                    const tokenResult = await getIdTokenResult(auth.currentUser);
-                    setIsAdmin(!!tokenResult.claims.admin);
-                } catch (error) {
-                    console.error('Failed to fetch token:', error);
-                }
-            }
-        };
-        checkAdmin();
-    }, []);
-
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            console.log('Logged out!');
-            setIsMenuVisible(false);
-        } catch (err) {
-            console.error('Logout error', err);
-        }
+    const handleLogout = () => {
+        setIsMenuVisible(false);
+        // Confirm, matching the Settings screen — logout shouldn't be one
+        // accidental tap away
+        Alert.alert('Logout', 'Are you sure you want to logout?', [
+            {text: 'Cancel', style: 'cancel'},
+            {
+                text: 'Logout',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await signOut(auth);
+                    } catch (err) {
+                        console.error('Logout error', err);
+                    }
+                },
+            },
+        ]);
     };
 
     const handleSubmitShop = () => {
