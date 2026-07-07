@@ -40,6 +40,11 @@ const ShopCard = ({
 
   const freshness = getFreshnessBadge(item);
 
+  // NaN when either location is missing or malformed
+  const distanceMeters = location && item.location
+    ? getDistanceMeters(location, item.location)
+    : NaN;
+
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.96,
@@ -110,10 +115,8 @@ const ShopCard = ({
                   iconStyle="solid"
                 />
                 <Text style={styles.distanceText}>
-                  {location
-                    ? `${(
-                        getDistanceMeters(location, item.location) / 1000
-                      ).toFixed(1)}km away`
+                  {Number.isFinite(distanceMeters)
+                    ? `${(distanceMeters / 1000).toFixed(1)}km away`
                     : "Location unavailable"}
                 </Text>
                 {freshness && (
