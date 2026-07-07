@@ -136,7 +136,10 @@ export const handleLocationError = (error, action = 'get location') => {
  * @param {string} action - Action being performed
  */
 export const handleNetworkError = (error, action = 'network request') => {
-  const isOffline = !navigator?.onLine;
+  // Only claim offline when the platform actually reports it. In React
+  // Native, navigator exists but onLine is undefined, and !undefined is
+  // true — which made every network error display as "you are offline".
+  const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
   const errorCode = isOffline ? 'network/offline' : 'network/timeout';
   
   const context = { action, errorCode, isOffline };

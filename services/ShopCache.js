@@ -55,6 +55,15 @@ export const loadShopsFromCache = async () => {
     }
 
     const { shops, timestamp } = JSON.parse(cachedData);
+
+    // Corrupt cache data must count as expired: a non-numeric timestamp
+    // makes cacheAge NaN, and NaN > CACHE_EXPIRATION_TIME is false, which
+    // would make the cache immortal
+    if (!Array.isArray(shops) || !Number.isFinite(timestamp)) {
+      console.warn('Cached shop data is malformed, ignoring cache');
+      return null;
+    }
+
     const now = Date.now();
     const cacheAge = now - timestamp;
 
@@ -82,6 +91,8 @@ export const getCacheAge = async () => {
     if (!timestampStr) return null;
 
     const timestamp = parseInt(timestampStr, 10);
+    if (!Number.isFinite(timestamp)) return null;
+
     return Date.now() - timestamp;
   } catch (error) {
     console.error('Error getting cache age:', error);
@@ -157,6 +168,11 @@ export const loadFavoritesFromCache = async () => {
     }
 
     const favorites = JSON.parse(cachedFavorites);
+    if (!Array.isArray(favorites)) {
+      console.warn('Cached favorites are malformed, ignoring cache');
+      return [];
+    }
+
     console.log(`Loaded ${favorites.length} favorites from cache`);
     return favorites;
   } catch (error) {

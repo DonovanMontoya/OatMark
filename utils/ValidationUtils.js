@@ -14,14 +14,27 @@ export const sanitizeTextInput = (input, maxLength = 100) => {
     return '';
   }
 
-  return input
-    .trim()
+  const cleaned = input
     // Remove HTML tags and potentially dangerous characters
     .replace(/[<>]/g, '')
-    // Remove null bytes and other control characters
-    .replace(/[\x00-\x1f\x7f]/g, '')
-    // Limit length
-    .substring(0, maxLength);
+    // Remove null bytes and other control characters (C0, DEL, C1)
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+    // Remove invisible format characters: zero-width chars, bidi controls
+    // (e.g. U+202E right-to-left override), BOM, soft hyphen
+    .replace(/\p{Cf}/gu, '');
+
+  // Truncate by code point so surrogate pairs (emoji) are never split in
+  // half, and drop any unpaired surrogates that arrived in the input —
+  // both produce invalid UTF-16 that renders as � and can break
+  // serialization.
+  return [...cleaned]
+    .filter((c) => {
+      const cp = c.codePointAt(0);
+      return cp < 0xd800 || cp > 0xdfff;
+    })
+    .slice(0, maxLength)
+    .join('')
+    .trim();
 };
 
 /**
@@ -34,8 +47,9 @@ export const isValidEmail = (email) => {
     return false;
   }
   
+  const trimmed = email.trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim()) && email.length <= 254;
+  return emailRegex.test(trimmed) && trimmed.length <= 254;
 };
 
 /**
@@ -136,13 +150,6 @@ export const validateShopName = (shopName) => {
     result.error = result.message;
   }
 
-  // Check for suspicious patterns
-  if (/^\s*$/.test(sanitized)) {
-    result.isValid = false;
-    result.message = 'Shop name cannot be empty or only whitespace';
-    result.error = result.message;
-  }
-
   return result;
 };
 
@@ -189,42 +196,29 @@ export const validateUpcharge = (upCharge, isFree = false) => {
   }
 
   // Handle undefined, null, or non-string values by converting to string
-  const upChargeStr = upCharge == null ? '' : String(upCharge);
+  const upChargeStr = upCharge == null ? '' : String(upCharge).trim();
 
-  if (!upChargeStr || upChargeStr.trim() === '') {
+  if (!upChargeStr) {
     result.isValid = false;
     result.message = 'Upcharge is required when not free';
     result.error = result.message;
     return result;
   }
 
-  // Remove non-numeric characters except decimal point
-  const numericValue = upChargeStr.replace(/[^0-9.]/g, '');
-  
-  // Check for valid decimal format
-  const decimalParts = numericValue.split('.');
-  if (decimalParts.length > 2) {
-    result.isValid = false;
-    result.message = 'Invalid price format';
-    result.error = result.message;
-    return result;
-  }
+  // Require an actual price: optional $, digits, optional cents.
+  // Stripping unexpected characters and parsing what's left silently
+  // misreads input ("-5" became $5.00, "1e3" became $13.00), so anything
+  // that doesn't look like a price is rejected instead.
+  const match = upChargeStr.match(/^\$?(\d{1,3}(?:\.\d{0,2})?|\.\d{1,2})$/);
 
-  const price = parseFloat(numericValue);
-  
-  if (isNaN(price)) {
+  if (!match) {
     result.isValid = false;
     result.message = 'Please enter a valid price';
     result.error = result.message;
     return result;
   }
 
-  if (price < 0) {
-    result.isValid = false;
-    result.message = 'Price cannot be negative';
-    result.error = result.message;
-    return result;
-  }
+  const price = parseFloat(match[1]);
 
   if (price > 99.99) {
     result.isValid = false;
@@ -245,14 +239,24 @@ export const validateUpcharge = (upCharge, isFree = false) => {
 export const validateEmoji = (emoji) => {
   const result = {
     isValid: true,
-    sanitized: emoji || '☕',
+    sanitized: '☕',
     message: '',
     error: ''
   };
 
-  // Basic emoji validation - just ensure it's a single character
-  if (emoji && emoji.length > 4) {
-    result.sanitized = '☕';
+  if (!emoji || typeof emoji !== 'string') {
+    return result;
+  }
+
+  // A valid emoji starts with a pictographic character, optionally followed
+  // by modifiers/components (skin tones, variation selectors) or further
+  // ZWJ-joined pictographs (e.g. 👨‍👩‍👧‍👦). Length cap guards against
+  // pathological ZWJ chains. Anything else falls back to the default.
+  const emojiPattern = /^\p{Extended_Pictographic}(?:\p{Extended_Pictographic}|\p{Emoji_Component}|\u200D|\uFE0E|\uFE0F)*$/u;
+
+  if (emoji.length <= 16 && emojiPattern.test(emoji)) {
+    result.sanitized = emoji;
+  } else {
     result.message = 'Invalid emoji, using default';
     result.error = result.message;
   }

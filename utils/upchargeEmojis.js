@@ -11,20 +11,34 @@
  */
 
 /**
+ * Normalizes an upcharge value to a display string.
+ * Firestore data may contain numbers (legacy docs) or other types; only
+ * strings and numbers are meaningful here.
+ * @param {*} upcharge - The raw upcharge value
+ * @returns {string} Normalized string, or '' if the value is unusable
+ */
+const normalizeUpcharge = (upcharge) => {
+    if (typeof upcharge === 'string') return upcharge;
+    if (typeof upcharge === 'number' && Number.isFinite(upcharge)) return String(upcharge);
+    return '';
+};
+
+/**
  * Get emoji based on upcharge value
- * @param {string} upcharge - The upcharge value (e.g., "Free", "$0.50", "$1.25")
+ * @param {string|number} upcharge - The upcharge value (e.g., "Free", "$0.50", 1.25)
  * @returns {string} - Appropriate emoji
  */
 export const getUpchargeEmoji = (upcharge) => {
-    if (!upcharge) return "💰";
+    const str = normalizeUpcharge(upcharge);
+    if (!str) return "💰";
 
     // Handle "Free" case
-    if (upcharge.toLowerCase() === "free") {
+    if (str.toLowerCase() === "free") {
         return "🆓";
     }
 
     // Extract numeric value from string like "$1.50"
-    const numericValue = parseFloat(upcharge.replace(/[^0-9.]/g, ""));
+    const numericValue = parseFloat(str.replace(/[^0-9.]/g, ""));
 
     if (isNaN(numericValue)) return "💰";
 
@@ -37,32 +51,36 @@ export const getUpchargeEmoji = (upcharge) => {
 
 /**
  * Get formatted upcharge text with emoji
- * @param {string} upcharge - The upcharge value
+ * @param {string|number} upcharge - The upcharge value
  * @returns {string} - Formatted text with emoji
  */
 export const getFormattedUpcharge = (upcharge) => {
     const emoji = getUpchargeEmoji(upcharge);
+    const str = normalizeUpcharge(upcharge);
 
-    if (upcharge?.toLowerCase() === "free") {
+    if (!str) return emoji;
+
+    if (str.toLowerCase() === "free") {
         return `${emoji} Free`;
     }
 
-    return `${emoji} +${upcharge}`;
+    return `${emoji} +${str}`;
 };
 
 /**
  * Get upcharge color based on value
- * @param {string} upcharge - The upcharge value
+ * @param {string|number} upcharge - The upcharge value
  * @returns {string} - Color hex code
  */
 export const getUpchargeColor = (upcharge) => {
-    if (!upcharge) return "#666";
+    const str = normalizeUpcharge(upcharge);
+    if (!str) return "#666";
 
-    if (upcharge.toLowerCase() === "free") {
+    if (str.toLowerCase() === "free") {
         return "#4CAF50"; // Green for free
     }
 
-    const numericValue = parseFloat(upcharge.replace(/[^0-9.]/g, ""));
+    const numericValue = parseFloat(str.replace(/[^0-9.]/g, ""));
 
     if (isNaN(numericValue)) return "#666";
 
