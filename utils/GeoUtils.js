@@ -32,12 +32,59 @@ const metersPerDegreeLongitude = (latitude) => {
 };
 
 /**
+ * Checks that a point has finite latitude and longitude values
+ * @param {Object} point - Point with latitude and longitude properties
+ * @returns {boolean} True if the point is usable for calculations
+ */
+const isFinitePoint = (point) =>
+    point != null &&
+    Number.isFinite(point.latitude) &&
+    Number.isFinite(point.longitude);
+
+/**
+ * Wraps a longitude value into the [-180, 180] range
+ * @param {number} longitude - Longitude in degrees
+ * @returns {number} Wrapped longitude
+ */
+const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
+
+/**
+ * Clamps a latitude value into the [-90, 90] range
+ * @param {number} latitude - Latitude in degrees
+ * @returns {number} Clamped latitude
+ */
+const clampLatitude = (latitude) => Math.max(-90, Math.min(90, latitude));
+
+/**
+ * Calculates the lat/lng degree offsets covering distanceMeters at a center.
+ * The longitude offset is capped at 180 degrees so the math stays sane at
+ * extreme latitudes, where meters-per-degree-longitude approaches zero.
+ * @param {Object} center - Center point with latitude and longitude
+ * @param {number} distanceMeters - Distance in meters
+ * @returns {Object} {latOffset, lngOffset} in degrees
+ */
+const degreeOffsets = (center, distanceMeters) => {
+    const latOffset = distanceMeters / METERS_PER_DEGREE_LATITUDE;
+    const metersPerDegree = metersPerDegreeLongitude(center.latitude);
+    const lngOffset = metersPerDegree > 0
+        ? Math.min(180, distanceMeters / metersPerDegree)
+        : 180;
+    return { latOffset, lngOffset };
+};
+
+/**
  * Calculates the distance in meters between two geographical points
  * @param {Object} a - First point with latitude and longitude properties
  * @param {Object} b - Second point with latitude and longitude properties
  * @returns {number} Distance in meters
  */
 export function getDistanceMeters(a, b) {
+    // Input validation
+    if (!isFinitePoint(a) || !isFinitePoint(b)) {
+        console.error('Invalid points for distance calculation:', {a, b});
+        return NaN;
+    }
+
     // Convert latitude and longitude to radians
     const lat1 = toRadians(a.latitude);
     const lon1 = toRadians(a.longitude);
@@ -48,11 +95,13 @@ export function getDistanceMeters(a, b) {
     const dLat = lat2 - lat1;
     const dLon = lon2 - lon1;
 
-    // Haversine formula
-    const a_val =
+    // Haversine formula. Clamp to 1 because floating-point error can push
+    // the value slightly above 1 for near-antipodal points, which would
+    // make Math.sqrt(1 - a_val) NaN.
+    const a_val = Math.min(1,
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(lat1) * Math.cos(lat2) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.sin(dLon / 2) * Math.sin(dLon / 2));
 
     const c = 2 * Math.atan2(Math.sqrt(a_val), Math.sqrt(1 - a_val));
     return EARTH_RADIUS * c;
@@ -66,18 +115,19 @@ export function getDistanceMeters(a, b) {
  * @returns {Object} Destination point with latitude and longitude properties
  */
 export function getDestinationPoint(start, distance, bearing) {
-    // Input validation
-    if (!start || typeof start.latitude !== 'number' || typeof start.longitude !== 'number') {
+    // Input validation (Number.isFinite also rejects NaN, which passes a
+    // typeof check and would silently poison every calculation below)
+    if (!isFinitePoint(start)) {
         console.error('Invalid starting point:', start);
         return start; // Return the original point to avoid crashes
     }
 
-    if (typeof distance !== 'number' || distance < 0) {
+    if (!Number.isFinite(distance) || distance < 0) {
         console.error('Invalid distance:', distance);
         return start; // Return the original point to avoid crashes
     }
 
-    if (typeof bearing !== 'number') {
+    if (!Number.isFinite(bearing)) {
         console.error('Invalid bearing:', bearing);
         return start; // Return the original point to avoid crashes
     }
@@ -102,7 +152,7 @@ export function getDestinationPoint(start, distance, bearing) {
 
     return {
         latitude: toDegrees(lat2),
-        longitude: toDegrees(lon2)
+        longitude: wrapLongitude(toDegrees(lon2))
     };
 }
 
@@ -114,26 +164,26 @@ export function getDestinationPoint(start, distance, bearing) {
  */
 export function calculateSquareCorners(center, distanceMeters) {
     // Input validation
-    if (!center || typeof center.latitude !== 'number' || typeof center.longitude !== 'number') {
+    if (!isFinitePoint(center)) {
         console.error('Invalid center point:', center);
         return [center, center, center, center]; // Return four copies of the center to avoid crashes
     }
 
-    if (typeof distanceMeters !== 'number' || distanceMeters < 0) {
+    if (!Number.isFinite(distanceMeters) || distanceMeters < 0) {
         console.error('Invalid distance:', distanceMeters);
         return [center, center, center, center]; // Return four copies of the center to avoid crashes
     }
 
     // Calculate the offsets in degrees
-    const latOffset = distanceMeters / METERS_PER_DEGREE_LATITUDE;
-    const lngOffset = distanceMeters / metersPerDegreeLongitude(center.latitude);
+    const { latOffset, lngOffset } = degreeOffsets(center, distanceMeters);
 
-    // Calculate the four corners (NW, NE, SE, SW)
+    // Calculate the four corners (NW, NE, SE, SW), keeping them inside
+    // valid coordinate ranges near the poles and the antimeridian
     return [
-        {latitude: center.latitude + latOffset, longitude: center.longitude - lngOffset}, // NW
-        {latitude: center.latitude + latOffset, longitude: center.longitude + lngOffset}, // NE
-        {latitude: center.latitude - latOffset, longitude: center.longitude + lngOffset}, // SE
-        {latitude: center.latitude - latOffset, longitude: center.longitude - lngOffset}  // SW
+        {latitude: clampLatitude(center.latitude + latOffset), longitude: wrapLongitude(center.longitude - lngOffset)}, // NW
+        {latitude: clampLatitude(center.latitude + latOffset), longitude: wrapLongitude(center.longitude + lngOffset)}, // NE
+        {latitude: clampLatitude(center.latitude - latOffset), longitude: wrapLongitude(center.longitude + lngOffset)}, // SE
+        {latitude: clampLatitude(center.latitude - latOffset), longitude: wrapLongitude(center.longitude - lngOffset)}  // SW
     ];
 }
 
@@ -146,16 +196,13 @@ export function calculateSquareCorners(center, distanceMeters) {
  */
 export function isPointInSquare(point, center, distanceMeters) {
     // Input validation
-    if (!point || !center || typeof point.latitude !== 'number' || typeof point.longitude !== 'number' ||
-        typeof center.latitude !== 'number' || typeof center.longitude !== 'number' ||
-        typeof distanceMeters !== 'number') {
+    if (!isFinitePoint(point) || !isFinitePoint(center) || !Number.isFinite(distanceMeters)) {
         console.error('Invalid parameters:', {point, center, distanceMeters});
         return false;
     }
 
     // Calculate the offsets in degrees
-    const latOffset = distanceMeters / METERS_PER_DEGREE_LATITUDE;
-    const lngOffset = distanceMeters / metersPerDegreeLongitude(center.latitude);
+    const { latOffset, lngOffset } = degreeOffsets(center, distanceMeters);
 
     // Check if the point is within the square boundary
     return (
@@ -175,9 +222,7 @@ export function isPointInSquare(point, center, distanceMeters) {
  */
 export function getNearestPointOnSquare(point, center, distanceMeters) {
     // Input validation
-    if (!point || !center || typeof point.latitude !== 'number' || typeof point.longitude !== 'number' ||
-        typeof center.latitude !== 'number' || typeof center.longitude !== 'number' ||
-        typeof distanceMeters !== 'number') {
+    if (!isFinitePoint(point) || !isFinitePoint(center) || !Number.isFinite(distanceMeters)) {
         console.error('Invalid parameters:', {point, center, distanceMeters});
         return center; // Return the center to avoid crashes
     }
@@ -188,8 +233,7 @@ export function getNearestPointOnSquare(point, center, distanceMeters) {
     }
 
     // Calculate the offsets in degrees
-    const latOffset = distanceMeters / METERS_PER_DEGREE_LATITUDE;
-    const lngOffset = distanceMeters / metersPerDegreeLongitude(center.latitude);
+    const { latOffset, lngOffset } = degreeOffsets(center, distanceMeters);
 
     // Calculate the min/max boundaries of the square
     const minLat = center.latitude - latOffset;
