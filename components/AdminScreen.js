@@ -154,6 +154,9 @@ const AdminScreen = ({onClose}) => {
                                     createdAt: shop.createdAt || new Date(),
                                     approvedAt: new Date(),
                                     approvedBy: auth.currentUser.uid,
+                                    // Approval is a human verification, so the shop
+                                    // enters the map with a genuine freshness stamp
+                                    lastConfirmedAt: new Date(),
                                 };
                                 transaction.set(newShopRef, shopData);
 
