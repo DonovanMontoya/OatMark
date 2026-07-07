@@ -42,7 +42,9 @@ const ShopCard = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const freshness = getFreshnessBadge(item);
-  const distanceText = location
+
+  // Null when either location is missing or malformed
+  const distanceText = location && item.location
     ? formatDistance(getDistanceMeters(location, item.location), unit)
     : null;
 
