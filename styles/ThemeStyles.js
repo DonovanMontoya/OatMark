@@ -256,6 +256,41 @@ export const createHomeScreenStyles = (colors) => {
             fontFamily: fonts.semibold,
             color: colors.accent,
         },
+        freshnessBadge: {
+            fontSize: 12,
+            fontFamily: fonts.semibold,
+        },
+        communityRow: {
+            marginBottom: space.md,
+        },
+        communityStatusText: {
+            fontSize: 13,
+            fontFamily: fonts.semibold,
+            marginBottom: space.xs,
+        },
+        communityActions: {
+            flexDirection: "row",
+            gap: space.xs,
+        },
+        communityButton: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.xxs + 2,
+            paddingVertical: space.xs,
+            paddingHorizontal: space.sm,
+            borderRadius: radius.pill,
+            backgroundColor: colors.surfaceMuted,
+            borderWidth: 1,
+            borderColor: colors.border,
+        },
+        communityButtonDisabled: {
+            opacity: 0.5,
+        },
+        communityButtonText: {
+            fontSize: 13,
+            fontFamily: fonts.semibold,
+            color: colors.text,
+        },
         loadMoreButton: {
             alignSelf: "center",
             paddingVertical: space.sm,

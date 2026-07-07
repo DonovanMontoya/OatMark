@@ -17,14 +17,17 @@ import AdjustPinModal from "./components/AdjustPinModal";
 import ManageShopModal from "./components/ManageShopModal";
 import ShopCard from "./components/ShopCard";
 import ShopFilterBar from "./components/ShopFilterBar";
+import ReportChangeModal from "./components/ReportChangeModal";
 import {filterShops, getTopBrands} from "./utils/shopFilters";
+import {describeDataStatus} from "./utils/reportLogic";
+import {submitShopReport} from "./services/reportService";
 import {getFormattedUpcharge, getUpchargeColor} from "./utils/upchargeEmojis";
 import {getDirections} from "./utils/MapLinks";
 import {getDistanceMeters} from "./utils/GeoUtils";
 import {useTheme} from "./contexts/ThemeContext";
 import {createHomeScreenStyles} from "./styles/ThemeStyles";
 import {isValidLocation} from "./utils/ValidationUtils";
-import {handleError, handleLocationError} from "./utils/ErrorUtils";
+import {handleError, handleLocationError, showSuccess} from "./utils/ErrorUtils";
 import {loadShopsFromCache, saveShopsToCache, loadFavoritesFromCache, saveFavoritesToCache} from "./services/ShopCache";
 
 export default function HomeScreen() {
@@ -287,6 +290,8 @@ export default function HomeScreen() {
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
   const [brandFilter, setBrandFilter] = useState(null);
   const [priceFilter, setPriceFilter] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   // Brand chips derived from the loaded shops (no extra Firestore reads,
   // stays in sync with real-time updates, works offline from cache)
@@ -299,10 +304,16 @@ export default function HomeScreen() {
   );
   const hasActiveFilters = brandFilter !== null || priceFilter !== null;
 
-  // If the selected shop gets filtered out, close its overlay
+  // Keep the selected shop in sync with live data: close its overlay if it
+  // gets filtered out, refresh its object when a snapshot update arrives
+  // (so confirmations/disputes reflect immediately in the open card)
   useEffect(() => {
-    if (selectedShop && !visibleShops.some((shop) => shop.id === selectedShop.id)) {
+    if (!selectedShop) return;
+    const updated = visibleShops.find((shop) => shop.id === selectedShop.id);
+    if (!updated) {
       setSelectedShop(null);
+    } else if (updated !== selectedShop) {
+      setSelectedShop(updated);
     }
   }, [visibleShops, selectedShop]);
 
@@ -343,6 +354,73 @@ export default function HomeScreen() {
 
   const handleAdminPanel = () => {
     setShowAdminPanel(true);
+  };
+
+  const handleConfirmShop = async () => {
+    if (!selectedShop || isSubmittingReport) return;
+
+    if (!auth.currentUser) {
+      Alert.alert("Error", "You must be logged in to confirm shop info");
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      const result = await submitShopReport({
+        shop: selectedShop,
+        type: "confirm",
+        userId: auth.currentUser.uid,
+        userLocation: location,
+      });
+
+      if (!result.written) {
+        showSuccess("Already counted", "You've confirmed this shop recently — thank you!");
+      } else if (result.onSite) {
+        showSuccess("Thanks!", "Confirmed on site — that's the strongest signal we have. ☕");
+      } else {
+        showSuccess("Thanks!", "Your confirmation was recorded.");
+      }
+    } catch (error) {
+      handleError(error, "Failed to record your confirmation. Please try again.", true, {
+        action: "confirming shop info",
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  const handleReportChange = async ({ suggestedBrand, suggestedUpCharge }) => {
+    if (!selectedShop || isSubmittingReport) return;
+
+    if (!auth.currentUser) {
+      Alert.alert("Error", "You must be logged in to report a change");
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      const result = await submitShopReport({
+        shop: selectedShop,
+        type: "dispute",
+        userId: auth.currentUser.uid,
+        userLocation: location,
+        suggestedBrand,
+        suggestedUpCharge,
+      });
+
+      setShowReportModal(false);
+      if (!result.written) {
+        showSuccess("Already counted", "You've reported this shop recently — thank you!");
+      } else {
+        showSuccess("Thanks!", "Your report was recorded and this shop will be reviewed.");
+      }
+    } catch (error) {
+      handleError(error, "Failed to send your report. Please try again.", true, {
+        action: "reporting shop change",
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   const handleShare = async () => {
@@ -1277,6 +1355,62 @@ export default function HomeScreen() {
                 )}
               </View>
 
+              {/* Community trust row: freshness status + confirm/dispute */}
+              {(() => {
+                const {status, label} = describeDataStatus(selectedShop);
+                const statusColor =
+                  status === "fresh"
+                    ? colors.success
+                    : status === "disputed"
+                      ? colors.danger
+                      // Stale/unverified read as neutral invitations, not
+                      // warnings — expected state while the community is small
+                      : colors.tertiaryText;
+                return (
+                  <View style={styles.communityRow}>
+                    <Text style={[styles.communityStatusText, { color: statusColor }]}>
+                      {label}
+                    </Text>
+                    <View style={styles.communityActions}>
+                      <TouchableOpacity
+                        style={[
+                          styles.communityButton,
+                          isSubmittingReport && styles.communityButtonDisabled,
+                        ]}
+                        onPress={handleConfirmShop}
+                        disabled={isSubmittingReport}
+                        activeOpacity={0.7}
+                      >
+                        <FontAwesome6
+                          name="check"
+                          size={12}
+                          color={colors.success}
+                          iconStyle="solid"
+                        />
+                        <Text style={styles.communityButtonText}>Still accurate</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.communityButton,
+                          isSubmittingReport && styles.communityButtonDisabled,
+                        ]}
+                        onPress={() => setShowReportModal(true)}
+                        disabled={isSubmittingReport}
+                        activeOpacity={0.7}
+                      >
+                        <FontAwesome6
+                          name="pen"
+                          size={12}
+                          color={colors.warning}
+                          iconStyle="solid"
+                        />
+                        <Text style={styles.communityButtonText}>Report a change</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })()}
+
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 <TouchableOpacity
@@ -1375,6 +1509,14 @@ export default function HomeScreen() {
           </Animated.View>
         </Animated.View>
       )}
+
+      <ReportChangeModal
+        visible={showReportModal}
+        shop={selectedShop}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleReportChange}
+        isSubmitting={isSubmittingReport}
+      />
 
       <Modal
         animationType="slide"
