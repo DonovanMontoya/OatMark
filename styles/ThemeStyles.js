@@ -232,6 +232,30 @@ export const createHomeScreenStyles = (colors) => {
             paddingBottom: space.lg,
             paddingTop: space.xs,
         },
+        filterEmptyState: {
+            alignItems: "center",
+            paddingVertical: space.xl,
+            paddingHorizontal: space.md,
+        },
+        filterEmptyText: {
+            fontSize: 15,
+            fontFamily: fonts.medium,
+            color: colors.secondaryText,
+            marginBottom: space.sm,
+        },
+        filterClearButton: {
+            paddingVertical: space.xs,
+            paddingHorizontal: space.md,
+            borderRadius: radius.pill,
+            backgroundColor: colors.accentSoft,
+            borderWidth: 1,
+            borderColor: colors.accentBorder,
+        },
+        filterClearButtonText: {
+            fontSize: 14,
+            fontFamily: fonts.semibold,
+            color: colors.accent,
+        },
         loadMoreButton: {
             alignSelf: "center",
             paddingVertical: space.sm,
