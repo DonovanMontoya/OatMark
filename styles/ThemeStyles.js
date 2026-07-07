@@ -1,4 +1,5 @@
 import {StyleSheet} from "react-native";
+import Constants from "expo-constants";
 import {fonts, makeShadow, radius, space} from "./tokens";
 
 // Always-dark ink for text sitting on the amber "warning" surface (the offline
@@ -464,7 +465,7 @@ export const createHomeScreenStyles = (colors) => {
         },
         closeButtonTop: {
             position: "absolute",
-            top: 50,
+            top: Constants.statusBarHeight + space.xs,
             left: space.lg,
             zIndex: 20,
         },
@@ -481,7 +482,7 @@ export const createHomeScreenStyles = (colors) => {
         },
         adminFloatingButton: {
             position: "absolute",
-            top: 50,
+            top: Constants.statusBarHeight + space.xs,
             right: space.lg,
             zIndex: 20,
         },
@@ -715,7 +716,7 @@ export const createHamburgerMenuStyles = (colors) => {
     return StyleSheet.create({
         hamburgerButton: {
             position: "absolute",
-            top: 50,
+            top: Constants.statusBarHeight + space.xs,
             left: space.lg,
             backgroundColor: colors.locationButton,
             width: 46,
@@ -819,6 +820,39 @@ export const createLoginPageStyles = (colors) => {
             backgroundColor: colors.inputBackground,
             color: colors.text,
         },
+        passwordRow: {
+            width: "100%",
+            height: 52,
+            flexDirection: "row",
+            alignItems: "center",
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: radius.sm,
+            marginBottom: space.sm,
+            backgroundColor: colors.inputBackground,
+        },
+        passwordInput: {
+            flex: 1,
+            height: "100%",
+            paddingHorizontal: space.md,
+            fontSize: 16,
+            fontFamily: fonts.body,
+            color: colors.text,
+        },
+        eyeButton: {
+            paddingHorizontal: space.md,
+            height: "100%",
+            justifyContent: "center",
+        },
+        forgotLink: {
+            marginTop: space.xs,
+            padding: space.xs,
+        },
+        forgotLinkText: {
+            fontSize: 14,
+            fontFamily: fonts.semibold,
+            color: colors.accent,
+        },
         authButton: {
             width: "100%",
             backgroundColor: colors.accent,
@@ -866,7 +900,7 @@ export const createLoginPageStyles = (colors) => {
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: space.lg,
-            paddingTop: 50,
+            paddingTop: Constants.statusBarHeight + space.sm,
             paddingBottom: space.lg,
         },
         modalTitle: {
