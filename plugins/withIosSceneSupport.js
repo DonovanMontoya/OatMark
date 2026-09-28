@@ -1,4 +1,4 @@
-const {withAppDelegate, withInfoPlist} = require('expo/config-plugins');
+const {withAppDelegate, withInfoPlist, withPodfile} = require('expo/config-plugins');
 
 const legacyWindowStartup = `#if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
@@ -41,7 +41,7 @@ module.exports = (config) => {
     return mod;
   });
 
-  return withInfoPlist(config, (mod) => {
+  config = withInfoPlist(config, (mod) => {
     mod.modResults.UIApplicationSceneManifest = {
       UIApplicationSupportsMultipleScenes: false,
       UISceneConfigurations: {
@@ -51,6 +51,26 @@ module.exports = (config) => {
         }],
       },
     };
+    return mod;
+  });
+
+  return withPodfile(config, (mod) => {
+    const marker = `    )\n  end\nend`;
+    if (mod.modResults.contents.includes('installer.pods_project.targets.each do |target|')) return mod;
+    if (!mod.modResults.contents.includes(marker)) {
+      throw new Error('The iOS Podfile template changed; review its post_install hook before building.');
+    }
+    mod.modResults.contents = mod.modResults.contents.replace(marker, `    )
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |configuration|
+        version = configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if version && Gem::Version.new(version) < Gem::Version.new('15.1')
+          configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+      end
+    end
+  end
+end`);
     return mod;
   });
 };
