@@ -64,6 +64,7 @@ const ShopCard = ({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       activeOpacity={0.8}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -86,7 +87,7 @@ const ShopCard = ({
           </View>
           <View style={styles.cardContent}>
             <View style={styles.cardHeader}>
-              <Text style={styles.shopName} numberOfLines={1}>
+              <Text style={styles.shopName} numberOfLines={2}>
                 {item.name}
               </Text>
               <View style={styles.upchargeContainer}>

@@ -3,6 +3,7 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -71,7 +72,12 @@ const ReportChangeModal = ({visible, shop, onClose, onSubmit, isSubmitting = fal
                 style={styles.backdrop}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <View style={styles.card}>
+                <ScrollView
+                    style={styles.card}
+                    contentContainerStyle={styles.cardContent}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                >
                     <Text style={styles.title}>What changed at {shop.name}?</Text>
                     <Text style={styles.subtitle}>
                         Your report flags this shop for review — it won't change the
@@ -133,7 +139,7 @@ const ReportChangeModal = ({visible, shop, onClose, onSubmit, isSubmitting = fal
                             </Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </ScrollView>
             </KeyboardAvoidingView>
         </Modal>
     );
@@ -147,10 +153,16 @@ const getStyles = (colors) => StyleSheet.create({
         padding: space.lg,
     },
     card: {
+        flexGrow: 0,
+        width: '100%',
+        maxWidth: 480,
+        alignSelf: 'center',
         backgroundColor: colors.surface,
         borderRadius: radius.xl,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    cardContent: {
         padding: space.lg,
     },
     title: {

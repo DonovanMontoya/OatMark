@@ -22,9 +22,10 @@ import {validateShopName, validateOatMilk, validateUpcharge, validateEmoji, isVa
 import {handleError, handleLocationError, showSuccess} from "../utils/ErrorUtils";
 import {useTheme} from "../contexts/ThemeContext";
 import {fonts, makeShadow, radius, space} from "../styles/tokens";
-import Constants from "expo-constants";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 const SubmitShopScreen = ({onClose}) => {
+    const insets = useSafeAreaInsets();
     const {isDark, colors} = useTheme();
     const [shopName, setShopName] = useState("");
     const [oatMilk, setOatMilk] = useState("");
@@ -303,14 +304,14 @@ const SubmitShopScreen = ({onClose}) => {
             style={styles.container}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <View style={[styles.header, {paddingTop: insets.top + space.sm}]}>
+                <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.closeButton}>
                     <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                 </TouchableOpacity>
                 <Text style={styles.title}>Submit Coffee Shop</Text>
             </View>
 
-            <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.form} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{paddingBottom: insets.bottom + space.xl}}>
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Shop Name *</Text>
                     <TextInput
@@ -550,16 +551,21 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: space.lg,
-        paddingTop: Constants.statusBarHeight + space.sm,
+        paddingTop: space.sm,
         paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
+        minWidth: 44,
+        minHeight: 44,
+        alignItems: "center",
+        justifyContent: "center",
         padding: space.xxs,
         marginRight: space.md,
     },
     title: {
+        flex: 1,
         fontSize: 24,
         fontFamily: fonts.display,
         color: colors.text,
