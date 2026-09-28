@@ -961,7 +961,10 @@ export default function HomeScreen() {
                 },
                 title: shop.name,
                 description: `Oat Milk: ${shop.oatMilk}`,
-                props: {onPress: () => openShop(shop)},
+                props: {onPress: (event) => {
+                  event.stopPropagation();
+                  openShop(shop);
+                }},
               }))}
             />
           ) : (
