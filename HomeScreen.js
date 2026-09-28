@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, Share, Text, TouchableOpacity, View,} from "react-native";
+import {Alert, Animated, Easing, FlatList, Image, Modal, Platform, ScrollView, Share, useWindowDimensions, Text, TouchableOpacity, View,} from "react-native";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 import MapView, {Marker} from "react-native-maps";
 import FreeMapView from "./components/FreeMapView";
 import * as Location from "expo-location";
@@ -33,6 +34,9 @@ import {handleError, handleLocationError, showSuccess} from "./utils/ErrorUtils"
 import {loadShopsFromCache, saveShopsToCache, loadFavoritesFromCache, saveFavoritesToCache} from "./services/ShopCache";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const mapRegionRef = useRef(null);
+  const {height, fontScale} = useWindowDimensions();
   // Get theme context
   const { isDark, colors } = useTheme();
 
@@ -466,6 +470,12 @@ export default function HomeScreen() {
     if (selectedShop && selectedShop.id === updatedShop.id) {
       setSelectedShop(updatedShop);
     }
+  };
+
+  const openShop = (shop) => {
+    if (!shop) return;
+    setSelectedShop(shop);
+    animateCardIn(shop);
   };
 
   // Animation functions
@@ -911,6 +921,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{flex: 1}} accessibilityElementsHidden={!!selectedShop}
+        importantForAccessibility={selectedShop ? "no-hide-descendants" : "auto"}>
       <HamburgerMenu
         onSubmitShop={handleSubmitShop}
         onSettings={handleSettings}
@@ -937,7 +949,7 @@ export default function HomeScreen() {
                   const distance = getDistanceMeters(tapped, shop.location);
                   return distance < 100;
                 });
-                setSelectedShop(nearby || null);
+                if (nearby) openShop(nearby);
               }}
               showsUserLocation
               isDark={isDark}
@@ -949,30 +961,38 @@ export default function HomeScreen() {
                 },
                 title: shop.name,
                 description: `Oat Milk: ${shop.oatMilk}`,
+                props: {onPress: (event) => {
+                  event.stopPropagation();
+                  openShop(shop);
+                }},
               }))}
             />
           ) : (
             // Use react-native-maps for iOS with Apple Maps
             <MapView
+              // Rebuild the marker collection together; incremental removals can
+              // crash AIRMap under the native view interop layer.
+              key={JSON.stringify(visibleShops.map((shop) => shop.id))}
               showsPointsOfInterest
               ref={mapRef}
               style={styles.map}
               mapType="standard"
               showsUserLocation
               userInterfaceStyle={isDark ? "dark" : "light"}
-              initialRegion={{
+              initialRegion={mapRegionRef.current || {
                 latitude: location.latitude,
                 longitude: location.longitude,
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
               }}
+              onRegionChangeComplete={(region) => { mapRegionRef.current = region; }}
               onPress={(e) => {
                 const tapped = e.nativeEvent.coordinate;
                 const nearby = visibleShops.find((shop) => {
                   const distance = getDistanceMeters(tapped, shop.location);
                   return distance < 100;
                 });
-                setSelectedShop(nearby || null);
+                if (nearby) openShop(nearby);
               }}
             >
               {visibleShops.map((shop) => (
@@ -981,6 +1001,10 @@ export default function HomeScreen() {
                   coordinate={{
                     latitude: shop.location.latitude,
                     longitude: shop.location.longitude,
+                  }}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    openShop(shop);
                   }}
                   title={shop.name}
                   description={`Oat Milk: ${shop.oatMilk}`}
@@ -991,6 +1015,8 @@ export default function HomeScreen() {
 
           {/* Location button positioned absolutely outside MapView */}
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Center on my location"
             style={styles.locationButton}
             onPress={() => {
               if (mapRef.current) {
@@ -1015,7 +1041,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <Text style={styles.label}>
+        <Text style={[styles.label, {paddingTop: insets.top + 56, paddingHorizontal: 24}]}>
           {locationUnavailableReason === "denied"
             ? "Location permission denied. Showing shops without distance."
             : locationUnavailableReason
@@ -1023,7 +1049,7 @@ export default function HomeScreen() {
               : "Fetching location..."}
         </Text>
       )}
-      <Text style={styles.label}>Welcome to OatMark</Text>
+      <Text style={styles.label}>Coffee shops</Text>
 
       {/* Offline indicator banner */}
       {!isOnline && (
@@ -1057,7 +1083,8 @@ export default function HomeScreen() {
         data={visibleShops}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.flatListContainer}
+        style={{flex: 1}}
+        contentContainerStyle={[styles.flatListContainer, {paddingBottom: insets.bottom + 16}]}
         ListEmptyComponent={
           hasActiveFilters ? (
             <View style={styles.filterEmptyState}>
@@ -1097,31 +1124,14 @@ export default function HomeScreen() {
             location={location}
             isFavorite={isFavorite(item.id)}
             styles={styles}
-            onPress={(shop) => {
-              // Set the selected shop
-              setSelectedShop(shop);
-
-              // Start entrance animation
-              animateCardIn(shop);
-
-              // First animate to normal view, then the overlay will zoom in
-              if (mapRef.current) {
-                mapRef.current.animateToRegion(
-                  {
-                    latitude: shop.location.latitude,
-                    longitude: shop.location.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  },
-                  300,
-                );
-              }
-            }}
+            onPress={openShop}
           />
         )}
       />
+      </View>
       {selectedShop && (
         <Animated.View
+          accessibilityViewIsModal
           style={[
             styles.selectedShopOverlay,
             {
@@ -1207,7 +1217,9 @@ export default function HomeScreen() {
 
           {/* Close Button - Top Right */}
           <TouchableOpacity
-            style={styles.closeButtonTop}
+            accessibilityRole="button"
+            accessibilityLabel="Close shop details"
+            style={[styles.closeButtonTop, {top: insets.top + 8}]}
             onPress={() => {
               animateCardOut(() => setSelectedShop(null));
             }}
@@ -1228,6 +1240,7 @@ export default function HomeScreen() {
             <Animated.View
               style={[
                 styles.adminFloatingButton,
+                {top: insets.top + 8},
                 {
                   transform: [{ scale: adminButtonScale }],
                 },
@@ -1252,6 +1265,7 @@ export default function HomeScreen() {
           <Animated.View
             style={[
               styles.bottomSection,
+              {maxHeight: Math.max(160, height - insets.top - 76)},
               {
                 transform: [
                   {
@@ -1265,7 +1279,7 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <View style={styles.bottomContent}>
+            <ScrollView contentContainerStyle={[styles.bottomContent, {paddingBottom: insets.bottom + 20}]} showsVerticalScrollIndicator>
               {/* Shop Name and Info */}
               <View style={styles.shopNameSection}>
                 <Animated.View
@@ -1301,7 +1315,7 @@ export default function HomeScreen() {
               </View>
 
               {/* Quick Stats */}
-              <View style={styles.quickStats}>
+              <View style={[styles.quickStats, fontScale > 1.3 && {flexDirection: "column", gap: 16}]}>
                 <View style={styles.statItem}>
                   <Image
                     source={require("./assets/splash-icon.png")}
@@ -1311,7 +1325,7 @@ export default function HomeScreen() {
                   <Text style={styles.statValue}>{selectedShop.oatMilk}</Text>
                 </View>
 
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, fontScale > 1.3 && {display: "none"}]} />
 
                 <View style={styles.statItem}>
                   <FontAwesome6
@@ -1333,7 +1347,7 @@ export default function HomeScreen() {
 
                 {location && (
                   <>
-                    <View style={styles.statDivider} />
+                    <View style={[styles.statDivider, fontScale > 1.3 && {display: "none"}]} />
                     <View style={styles.statItem}>
                       <FontAwesome6
                         name="location-dot"
@@ -1503,7 +1517,7 @@ export default function HomeScreen() {
                   )}
                 </View>
               </View>
-            </View>
+            </ScrollView>
           </Animated.View>
         </Animated.View>
       )}

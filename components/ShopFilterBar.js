@@ -48,6 +48,7 @@ const ShopFilterBar = ({
 
     return (
         <ScrollView
+            style={{flexGrow: 0, flexShrink: 0}}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.container}
@@ -80,6 +81,8 @@ const getStyles = (colors) => StyleSheet.create({
         gap: space.xs,
     },
     chip: {
+        minHeight: 44,
+        justifyContent: 'center',
         paddingHorizontal: space.sm,
         paddingVertical: space.xs,
         borderRadius: radius.pill,

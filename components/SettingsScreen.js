@@ -5,6 +5,7 @@ import {deleteUser, signOut} from "firebase/auth";
 import {deleteDoc, doc} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import Constants from "expo-constants";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {useTheme} from "../contexts/ThemeContext";
 import {useUnits} from "../contexts/UnitsContext";
 import {fonts, radius, space} from "../styles/tokens";
@@ -23,6 +24,7 @@ const requiresRecentLogin = (user) => {
 };
 
 const SettingsScreen = ({onClose}) => {
+    const insets = useSafeAreaInsets();
     // Get theme context
     const {themePreference, setThemePreference, colors} = useTheme();
     const {unit, setUnit} = useUnits();
@@ -142,14 +144,14 @@ const SettingsScreen = ({onClose}) => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <View style={[styles.header, {paddingTop: insets.top + space.sm}]}>
+                <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.closeButton}>
                     <FontAwesome6 name="xmark" size={20} color={colors.icon} iconStyle="solid"/>
                 </TouchableOpacity>
                 <Text style={styles.title}>Settings</Text>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{paddingBottom: insets.bottom + space.xl}}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Preferences</Text>
 
@@ -173,6 +175,9 @@ const SettingsScreen = ({onClose}) => {
                                     styles.themeOption,
                                     themePreference === key && styles.themeOptionSelected,
                                 ]}
+                                accessibilityRole="button"
+                                accessibilityLabel={label}
+                                accessibilityState={{selected: themePreference === key}}
                                 onPress={() => handleThemePreferenceChange(key)}
                             >
                                 <FontAwesome6
@@ -217,6 +222,9 @@ const SettingsScreen = ({onClose}) => {
                                     styles.themeOption,
                                     unit === key && styles.themeOptionSelected,
                                 ]}
+                                accessibilityRole="button"
+                                accessibilityLabel={label}
+                                accessibilityState={{selected: unit === key}}
                                 onPress={() => setUnit(key)}
                             >
                                 <Text
@@ -356,16 +364,21 @@ const getStyles = (colors) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: space.lg,
-        paddingTop: Constants.statusBarHeight + space.sm,
+        paddingTop: space.sm,
         paddingBottom: space.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
     closeButton: {
+        minWidth: 44,
+        minHeight: 44,
+        alignItems: "center",
+        justifyContent: "center",
         padding: space.xxs,
         marginRight: space.md,
     },
     title: {
+        flex: 1,
         fontSize: 24,
         fontFamily: fonts.display,
         color: colors.text,
@@ -400,12 +413,14 @@ const getStyles = (colors) => StyleSheet.create({
         flex: 1,
     },
     settingText: {
+        flexShrink: 1,
         fontSize: 16,
         fontFamily: fonts.medium,
         color: colors.text,
         marginLeft: space.md,
     },
     themeOptionsRow: {
+        flexWrap: "wrap",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
@@ -413,6 +428,7 @@ const getStyles = (colors) => StyleSheet.create({
         gap: space.xs,
     },
     themeOption: {
+        minWidth: 90,
         flex: 1,
         flexDirection: "row",
         alignItems: "center",

@@ -1,5 +1,6 @@
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import React, {useState} from 'react';
-import {Alert, Modal, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import {signOut} from 'firebase/auth';
 import {auth} from '../services/firebase';
@@ -9,6 +10,7 @@ import {createHamburgerMenuStyles} from '../styles/ThemeStyles';
 
 
 const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel}) => {
+    const insets = useSafeAreaInsets();
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const {isAdmin} = useAdminStatus();
 
@@ -69,7 +71,9 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
     return (
         <>
             <TouchableOpacity
-                style={styles.hamburgerButton}
+                accessibilityRole="button"
+                accessibilityLabel="Open menu"
+                style={[styles.hamburgerButton, {top: insets.top + 8}]}
                 onPress={() => setIsMenuVisible(true)}
             >
                 <FontAwesome6
@@ -86,13 +90,16 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
                 visible={isMenuVisible}
                 onRequestClose={() => setIsMenuVisible(false)}
             >
-                <TouchableOpacity
-                    style={styles.overlay}
-                    activeOpacity={1}
-                    onPress={() => setIsMenuVisible(false)}
-                >
-                    <View style={styles.menuContainer}>
+                <View style={styles.overlay}>
+                    <TouchableOpacity
+                        style={StyleSheet.absoluteFill}
+                        accessible={false}
+                        activeOpacity={1}
+                        onPress={() => setIsMenuVisible(false)}
+                    />
+                    <View style={[styles.menuContainer, {marginTop: insets.top + 62}]}>
                         <TouchableOpacity
+                            accessibilityRole="button"
                             style={styles.menuItem}
                             onPress={handleSubmitShop}
                         >
@@ -108,6 +115,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
 
                         {auth.currentUser && (
                             <TouchableOpacity
+                                accessibilityRole="button"
                                 style={styles.menuItem}
                                 onPress={handlePendingShops}
                             >
@@ -124,6 +132,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
 
                         {isAdmin && (
                             <TouchableOpacity
+                                accessibilityRole="button"
                                 style={styles.menuItem}
                                 onPress={handleAdminPanel}
                             >
@@ -139,6 +148,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
                         )}
 
                         <TouchableOpacity
+                            accessibilityRole="button"
                             style={styles.menuItem}
                             onPress={handleSettings}
                         >
@@ -153,6 +163,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
                         </TouchableOpacity>
 
                         <TouchableOpacity
+                            accessibilityRole="button"
                             style={[styles.menuItem, styles.logoutMenuItem]}
                             onPress={handleLogout}
                         >
@@ -166,7 +177,7 @@ const HamburgerMenu = ({onSubmitShop, onSettings, onPendingShops, onAdminPanel})
                             <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
                         </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
         </>
     );

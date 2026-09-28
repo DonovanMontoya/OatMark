@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import React, {useEffect, useState} from 'react';
 import {auth} from './services/firebase';
 import {onAuthStateChanged} from 'firebase/auth';
@@ -31,15 +32,19 @@ const StatusBarManager = () => {
 // Main app content that uses theme context
 const AppContent = () => {
     const [user, setUser] = useState(null);
+    const [authReady, setAuthReady] = useState(false);
     const {colors} = useTheme();
     const styles = createThemeStyles(colors);
 
     const [fontsLoaded, fontError] = useFonts(fontAssets);
 
-    useEffect(() => onAuthStateChanged(auth, setUser), []);
+    useEffect(() => onAuthStateChanged(auth, (nextUser) => {
+        setUser(nextUser);
+        setAuthReady(true);
+    }), []);
 
     // Hold on a warm cream/espresso splash until type is ready (or has failed).
-    if (!fontsLoaded && !fontError) {
+    if (!authReady || (!fontsLoaded && !fontError)) {
         return (
             <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
                 <StatusBarManager/>
@@ -58,10 +63,12 @@ const AppContent = () => {
 
 export default function App() {
     return (
-        <ThemeProvider>
-            <UnitsProvider>
-                <AppContent/>
-            </UnitsProvider>
-        </ThemeProvider>
+        <SafeAreaProvider>
+            <ThemeProvider>
+                <UnitsProvider>
+                    <AppContent/>
+                </UnitsProvider>
+            </ThemeProvider>
+        </SafeAreaProvider>
     );
 }

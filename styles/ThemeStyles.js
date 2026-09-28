@@ -239,12 +239,15 @@ export const createHomeScreenStyles = (colors) => {
             paddingHorizontal: space.md,
         },
         filterEmptyText: {
+            textAlign: "center",
             fontSize: 15,
             fontFamily: fonts.medium,
             color: colors.secondaryText,
             marginBottom: space.sm,
         },
         filterClearButton: {
+            minHeight: 44,
+            justifyContent: "center",
             paddingVertical: space.xs,
             paddingHorizontal: space.md,
             borderRadius: radius.pill,
@@ -271,9 +274,11 @@ export const createHomeScreenStyles = (colors) => {
         },
         communityActions: {
             flexDirection: "row",
+            flexWrap: "wrap",
             gap: space.xs,
         },
         communityButton: {
+            minHeight: 44,
             flexDirection: "row",
             alignItems: "center",
             gap: space.xxs + 2,
@@ -399,12 +404,14 @@ export const createHomeScreenStyles = (colors) => {
             gap: space.xs,
         },
         oatMilk: {
+            flex: 1,
             fontFamily: fonts.medium,
             fontSize: 14,
             color: colors.text,
         },
         locationRow: {
             flexDirection: "row",
+            flexWrap: "wrap",
             alignItems: "center",
             gap: space.xs,
         },
@@ -503,7 +510,7 @@ export const createHomeScreenStyles = (colors) => {
             left: 0,
             right: 0,
             zIndex: 20,
-            backgroundColor: colors.overlayBackground,
+            backgroundColor: colors.surface,
             borderTopLeftRadius: radius.xl,
             borderTopRightRadius: radius.xl,
             shadowColor: colors.shadow,
@@ -618,6 +625,7 @@ export const createHomeScreenStyles = (colors) => {
             marginTop: space.xs,
         },
         secondaryActionButton: {
+            minHeight: 44,
             flex: 1,
             flexDirection: "row",
             alignItems: "center",
@@ -658,7 +666,7 @@ export const createHomeScreenStyles = (colors) => {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "transparent",
+            backgroundColor: colors.background,
             zIndex: 1000,
             overflow: "hidden",
         },
@@ -779,11 +787,16 @@ export const createHamburgerMenuStyles = (colors) => {
 export const createLoginPageStyles = (colors) => {
     return StyleSheet.create({
         authContainer: {
-            flex: 1,
+            flexGrow: 1,
             justifyContent: "center",
             alignItems: "center",
             paddingHorizontal: space.xl,
             backgroundColor: colors.background,
+        },
+        authForm: {
+            width: "100%",
+            maxWidth: 420,
+            alignItems: "center",
         },
         authLogo: {
             width: 116,
