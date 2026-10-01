@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
-import {deleteUser, signOut} from "firebase/auth";
+import {deleteUser, sendPasswordResetEmail, signOut} from "firebase/auth";
 import {deleteDoc, doc} from "firebase/firestore";
 import {auth, db} from "../services/firebase";
 import Constants from "expo-constants";
@@ -29,6 +29,7 @@ const SettingsScreen = ({onClose}) => {
     const {themePreference, setThemePreference, colors} = useTheme();
     const {unit, setUnit} = useUnits();
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     const handleThemePreferenceChange = (preference) => {
         setThemePreference(preference);
@@ -49,6 +50,26 @@ const SettingsScreen = ({onClose}) => {
                 },
             },
         ]);
+    };
+
+    const handleResetPassword = async () => {
+        if (isResetting || isDeleting) return;
+
+        const email = auth.currentUser?.email?.trim();
+        if (!email) {
+            Alert.alert("Unable to reset password", "Please log in with an email account to reset your password.");
+            return;
+        }
+
+        setIsResetting(true);
+        try {
+            await sendPasswordResetEmail(auth, email);
+            Alert.alert("Check your email", `A password reset link was sent to ${email}.`);
+        } catch (error) {
+            handleError(error);
+        } finally {
+            setIsResetting(false);
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -256,6 +277,28 @@ const SettingsScreen = ({onClose}) => {
                             </Text>
                         </View>
                     </View>
+
+                    <TouchableOpacity
+                        style={styles.settingItem}
+                        onPress={handleResetPassword}
+                        disabled={isResetting || isDeleting}
+                        accessibilityRole="button"
+                        accessibilityLabel="Reset Password"
+                        accessibilityHint="Sends a password reset link to your account email"
+                        accessibilityState={{disabled: isResetting || isDeleting, busy: isResetting}}
+                    >
+                        <View style={styles.settingLeft}>
+                            <FontAwesome6
+                                name="key"
+                                size={18}
+                                color={colors.icon}
+                                iconStyle="solid"
+                            />
+                            <Text style={styles.settingText}>
+                                {isResetting ? "Sending reset email…" : "Reset Password"}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
 
                     <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
                         <View style={styles.settingLeft}>
